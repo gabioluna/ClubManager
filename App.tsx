@@ -5,67 +5,138 @@ import { Button, Card, Input, Badge, SideSheet, Select } from './components/UI';
 import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType } from './types';
 import { analyzeFinancials } from './services/geminiService';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Lottie from "lottie-react";
 
 // --- Components ---
 
+const RemoteLottie = ({ url, fallbackText }: { url: string, fallbackText: string }) => {
+  const [animationData, setAnimationData] = useState<any>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+    setAnimationData(null);
+    
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.json();
+      })
+      .then(data => setAnimationData(data))
+      .catch(err => {
+        console.warn("Failed to load Lottie:", url);
+        setHasError(true);
+      });
+  }, [url]);
+
+  if (hasError || !animationData) {
+    return (
+       <div className="w-48 h-48 mx-auto mb-6 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100">
+          <div className="text-center text-xs text-gray-400 font-medium px-4">{fallbackText}</div>
+       </div>
+    );
+  }
+
+  return <div className="w-48 h-48 mx-auto mb-6"><Lottie animationData={animationData} loop={true} /></div>;
+};
+
 const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   
-  // Placeholder animation data structure since we cannot fetch external JSONs reliably in this env without a proxy or correct CORS. 
-  // In a real app, these would be imported JSON files.
-  // We use a simple visual block for the "Lottie" if data isn't provided, but here we just show the structure.
-  const defaultOptions = {
-    loop: true,
-    autoplay: true, 
+  const steps = [
+    {
+      id: 1,
+      title: "Bienvenido a GestorClub",
+      description: "La plataforma definitiva para administrar tu complejo deportivo de manera simple, eficiente y elegante.",
+      lottieUrl: "https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json", 
+      fallback: "Bienvenido",
+      buttonText: "Comenzar Configuración"
+    },
+    {
+      id: 2,
+      title: "Personaliza tu Espacio",
+      description: "Configura tus horarios, carga tus canchas y define los roles de tu equipo en pocos pasos.",
+      lottieUrl: "https://assets2.lottiefiles.com/packages/lf20_w51pcehl.json",
+      fallback: "Configuración",
+      buttonText: "Siguiente"
+    },
+    {
+      id: 3,
+      title: "¡Todo Listo!",
+      description: "Ya puedes empezar a gestionar reservas, controlar tu inventario y potenciar tus ingresos con AI.",
+      lottieUrl: "https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json",
+      fallback: "Éxito",
+      buttonText: "Ir al Dashboard"
+    }
+  ];
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      onComplete();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
-      <Card className="w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300">
-        <div className="text-center space-y-6 py-8">
-           {step === 1 && (
-             <>
-               <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  {/* Lottie Animation Placeholder */}
-                  <div className="text-center text-xs text-gray-400">Lottie Animation<br/>(Welcome)</div>
-               </div>
-               <h2 className="text-2xl font-medium text-gray-900">Bienvenido a GestorClub</h2>
-               <p className="text-gray-500">La plataforma definitiva para administrar tu complejo deportivo de manera simple y eficiente.</p>
-               <Button onClick={() => setStep(2)} className="w-full">Comenzar Configuración</Button>
-             </>
-           )}
-           {step === 2 && (
-             <>
-               <div className="w-32 h-32 mx-auto mb-4 bg-blue-50 rounded-full flex items-center justify-center">
-                   {/* Lottie Animation Placeholder */}
-                   <div className="text-center text-xs text-blue-300">Lottie Animation<br/>(Setup)</div>
-               </div>
-               <h2 className="text-xl font-medium text-gray-900">Personaliza tu Espacio</h2>
-               <p className="text-gray-500">Configura tus horarios, carga tus canchas y define los roles de tu equipo.</p>
-               <Button onClick={() => setStep(3)} className="w-full">Siguiente</Button>
-             </>
-           )}
-           {step === 3 && (
-             <>
-               <div className="w-32 h-32 mx-auto mb-4 bg-green-50 rounded-full flex items-center justify-center">
-                   {/* Lottie Animation Placeholder */}
-                   <div className="text-center text-xs text-green-300">Lottie Animation<br/>(Success)</div>
-               </div>
-               <h2 className="text-xl font-medium text-gray-900">¡Todo Listo!</h2>
-               <p className="text-gray-500">Ya puedes empezar a gestionar reservas y potenciar tus ingresos.</p>
-               <Button onClick={onComplete} className="w-full">Ir al Dashboard</Button>
-             </>
-           )}
-           <div className="flex justify-center gap-2 mt-4">
-             <div className={`w-2 h-2 rounded-full ${step === 1 ? 'bg-gray-900' : 'bg-gray-200'}`} />
-             <div className={`w-2 h-2 rounded-full ${step === 2 ? 'bg-gray-900' : 'bg-gray-200'}`} />
-             <div className={`w-2 h-2 rounded-full ${step === 3 ? 'bg-gray-900' : 'bg-gray-200'}`} />
-           </div>
-        </div>
-      </Card>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-md p-4 overflow-hidden">
+      <div className="relative w-full max-w-md aspect-[3/4] md:aspect-[4/5] max-h-[600px]">
+        {steps.map((step, index) => {
+          // Logic for Card Stack Effect
+          let cardStyle = "";
+          if (index === currentStep) {
+             // Active Card
+             cardStyle = "z-30 opacity-100 transform translate-x-0 rotate-0 scale-100";
+          } else if (index < currentStep) {
+             // Previous Card (Thrown away)
+             cardStyle = "z-40 opacity-0 transform translate-x-[120%] rotate-12 scale-95 pointer-events-none";
+          } else {
+             // Next Card (Stacked behind)
+             const offset = (index - currentStep) * 15;
+             const scale = 1 - (index - currentStep) * 0.05;
+             cardStyle = `z-${20 - index} opacity-40 transform translate-y-${offset}px scale-${scale * 100} pointer-events-none`;
+          }
+
+          return (
+            <div 
+              key={step.id}
+              className={`absolute inset-0 bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${cardStyle}`}
+              style={index > currentStep ? { 
+                 transform: `translateY(${(index - currentStep) * 20}px) scale(${1 - (index - currentStep) * 0.05})` 
+              } : {}}
+            >
+              <div className="flex-1 flex flex-col justify-center w-full">
+                <div className="mb-6 relative">
+                   <div className="absolute inset-0 bg-gradient-to-tr from-blue-50 to-transparent rounded-full opacity-50 blur-xl"></div>
+                   <RemoteLottie url={step.lottieUrl} fallbackText={step.fallback} />
+                </div>
+
+                <h2 className="text-2xl font-semibold text-gray-900 mb-3">{step.title}</h2>
+                <p className="text-gray-500 font-light leading-relaxed">{step.description}</p>
+              </div>
+
+              <div className="w-full mt-8">
+                <Button onClick={handleNext} className="w-full py-4 text-lg shadow-lg shadow-gray-200 group">
+                  {step.buttonText}
+                  {index < steps.length - 1 && <ChevronRight className="w-5 h-5 ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />}
+                </Button>
+                
+                {/* Step Indicators */}
+                <div className="flex justify-center gap-2 mt-6">
+                  {steps.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-gray-900' : 'w-2 bg-gray-200'}`} 
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -74,51 +145,95 @@ const ReservasPage = ({
   courts, 
   reservations, 
   onAddReservation,
-  onSelectReservation 
+  onSelectReservation,
+  onBlockSchedule,
+  selectedDate,
+  onDateChange
 }: { 
   courts: Court[], 
   reservations: Reservation[], 
   onAddReservation: (date?: string, time?: string, courtId?: string) => void,
-  onSelectReservation: (res: Reservation) => void
+  onSelectReservation: (res: Reservation) => void,
+  onBlockSchedule: () => void,
+  selectedDate: string,
+  onDateChange: (date: string) => void
 }) => {
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  
+  // Helper to generate next 7 days
+  const generateNext7Days = () => {
+    const dates = [];
+    const today = new Date();
+    const daysMap = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      dates.push({
+        iso: d.toISOString().split('T')[0],
+        dayNum: d.getDate(),
+        dayName: i === 0 ? 'Hoy' : daysMap[d.getDay()]
+      });
+    }
+    return dates;
+  };
+
+  const weekDays = generateNext7Days();
 
   const getReservation = (courtId: string, hour: number) => {
     return reservations.find(r => {
-      const start = new Date(r.startTime).getHours();
-      return r.courtId === courtId && start === hour;
+      // Must match selected date AND hour
+      const resDate = r.startTime.split('T')[0];
+      const resHour = new Date(r.startTime).getHours();
+      return r.courtId === courtId && resHour === hour && resDate === selectedDate;
     });
   };
 
   const handleSlotClick = (courtId: string, hour: number) => {
-    const today = new Date().toISOString().split('T')[0];
     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-    onAddReservation(today, timeStr, courtId);
+    onAddReservation(selectedDate, timeStr, courtId);
   };
 
   return (
     <div className="p-8 space-y-6 flex flex-col h-full overflow-hidden">
-      <header className="flex justify-between items-center mb-2 flex-shrink-0">
-        <div>
-          <h1 className="text-3xl font-light text-gray-900">Reservas</h1>
-          <p className="text-base text-gray-500 font-light mt-1">Gestión de ocupación diaria.</p>
-        </div>
-        <div className="flex gap-3">
-            <div className="flex bg-gray-100 p-1 rounded-lg">
-                <button 
-                  onClick={() => setViewMode('day')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'day' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                >
-                  Día
-                </button>
-                <button 
-                  onClick={() => setViewMode('week')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                >
-                  Semana
-                </button>
+      <header className="flex flex-col gap-6 flex-shrink-0">
+        <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-light text-gray-900">Reservas</h1>
+              <p className="text-base text-gray-500 font-light mt-1">Gestión de ocupación diaria.</p>
             </div>
-            <Button onClick={() => onAddReservation()}><Plus className="w-4 h-4 mr-2" /> Nueva Reserva</Button>
+            <div className="flex gap-3">
+                <Button variant="secondary" onClick={onBlockSchedule}>
+                    <Lock className="w-4 h-4 mr-2" /> Bloquear horario
+                </Button>
+                <Button onClick={() => onAddReservation(selectedDate)}>
+                    <Plus className="w-4 h-4 mr-2" /> Nueva Reserva
+                </Button>
+            </div>
+        </div>
+
+        {/* 7-Day Navigation Strip */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {weekDays.map((day) => {
+                const isSelected = selectedDate === day.iso;
+                return (
+                    <button
+                        key={day.iso}
+                        onClick={() => onDateChange(day.iso)}
+                        className={`flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-xl border transition-all duration-200 ${
+                            isSelected 
+                             ? 'bg-gray-900 text-white border-gray-900 shadow-md transform scale-105' 
+                             : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        <span className={`text-xs font-medium uppercase tracking-wider mb-1 ${isSelected ? 'text-gray-300' : 'text-gray-400'}`}>
+                            {day.dayName}
+                        </span>
+                        <span className={`text-xl font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                            {day.dayNum}
+                        </span>
+                    </button>
+                );
+            })}
         </div>
       </header>
 
@@ -162,14 +277,22 @@ const ReservasPage = ({
                             <div 
                               onClick={() => onSelectReservation(res)}
                               className={`w-full h-full rounded-md p-3 text-xs flex flex-col justify-between shadow-sm cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                                res.status === ReservationStatus.PENDING 
-                                  ? 'bg-yellow-50 border border-yellow-200 text-yellow-900' 
-                                  : 'bg-gray-900 text-white hover:bg-gray-800'
+                                res.status === ReservationStatus.BLOCKED
+                                    ? 'bg-red-50 border border-red-200 text-red-900'
+                                    : res.status === ReservationStatus.PENDING 
+                                        ? 'bg-yellow-50 border border-yellow-200 text-yellow-900' 
+                                        : 'bg-gray-900 text-white hover:bg-gray-800'
                               }`}
                             >
-                              <div className="truncate font-bold text-sm">{res.clientName}</div>
+                              <div className="truncate font-bold text-sm">
+                                {res.status === ReservationStatus.BLOCKED ? (
+                                    <span className="flex items-center gap-1"><Ban size={12}/> Bloqueado</span>
+                                ) : res.clientName}
+                              </div>
                               <div className="flex justify-between items-end mt-1">
-                                <span className="opacity-90 font-medium">${res.price}</span>
+                                <span className="opacity-90 font-medium">
+                                    {res.status === ReservationStatus.BLOCKED ? res.clientName : `$${res.price}`}
+                                </span>
                                 {res.isPaid && <Check size={14} className="opacity-70" />}
                               </div>
                             </div>
@@ -589,12 +712,13 @@ const App: React.FC = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   // Prefill State for New Reservation
   const [prefillReservation, setPrefillReservation] = useState<{date: string, time: string, courtId: string} | null>(null);
 
   // SideSheet State
-  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'PRODUCT' | 'VIEW_RESERVATION'>(null);
+  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'PRODUCT' | 'VIEW_RESERVATION' | 'BLOCK_SCHEDULE'>(null);
 
   const closeSheet = () => {
     setActiveSheet(null);
@@ -634,6 +758,29 @@ const App: React.FC = () => {
     };
     setReservations([...reservations, newRes]);
     closeSheet();
+  };
+
+  const handleBlockSchedule = (e: React.FormEvent) => {
+      e.preventDefault();
+      const form = e.target as any;
+      const date = form.date.value;
+      const time = form.time.value;
+      const startIso = `${date}T${time}:00`;
+      const endHour = parseInt(time.split(':')[0]) + 1;
+      const endIso = `${date}T${endHour.toString().padStart(2, '0')}:00:00`;
+
+      const blockedRes: Reservation = {
+          id: Math.random().toString(36),
+          courtId: form.courtId.value,
+          clientName: form.reason.value || "Mantenimiento",
+          startTime: startIso,
+          endTime: endIso,
+          price: 0,
+          status: ReservationStatus.BLOCKED,
+          isPaid: true
+      };
+      setReservations([...reservations, blockedRes]);
+      closeSheet();
   };
 
   const handleDeleteReservation = () => {
@@ -775,6 +922,9 @@ const App: React.FC = () => {
                     reservations={reservations} 
                     onAddReservation={openNewReservation} 
                     onSelectReservation={openViewReservation}
+                    onBlockSchedule={() => setActiveSheet('BLOCK_SCHEDULE')}
+                    selectedDate={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
             } />
             <Route path="/courts" element={
@@ -795,7 +945,17 @@ const App: React.FC = () => {
             } />
             <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => setActiveSheet('PRODUCT')} />} />
             <Route path="/reports" element={<ReportsPage />} />
-            <Route path="*" element={<ReservasPage courts={courts} reservations={reservations} onAddReservation={openNewReservation} onSelectReservation={openViewReservation} />} />
+            <Route path="*" element={
+                <ReservasPage 
+                    courts={courts} 
+                    reservations={reservations} 
+                    onAddReservation={openNewReservation} 
+                    onSelectReservation={openViewReservation}
+                    onBlockSchedule={() => setActiveSheet('BLOCK_SCHEDULE')}
+                    selectedDate={selectedDate}
+                    onDateChange={setSelectedDate}
+                />
+            } />
           </Routes>
         </main>
       </div>
@@ -810,7 +970,7 @@ const App: React.FC = () => {
             </Select>
             <Input name="clientName" label="Nombre del Cliente" placeholder="Ej. Juan Pérez" required />
             <div className="grid grid-cols-2 gap-4">
-               <Input name="date" label="Fecha" type="date" required defaultValue={prefillReservation?.date || new Date().toISOString().split('T')[0]} />
+               <Input name="date" label="Fecha" type="date" required defaultValue={prefillReservation?.date || selectedDate} />
                <Input name="time" label="Hora" type="time" required defaultValue={prefillReservation?.time} />
             </div>
             <Input name="price" label="Precio" type="number" defaultValue="4500" />
@@ -820,14 +980,41 @@ const App: React.FC = () => {
             </div>
          </form>
       </SideSheet>
+      
+      {/* 1b. Block Schedule */}
+      <SideSheet isOpen={activeSheet === 'BLOCK_SCHEDULE'} onClose={closeSheet} title="Bloquear Horario">
+         <form onSubmit={handleBlockSchedule} className="space-y-6">
+            <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100 flex gap-2">
+                <Ban className="w-5 h-5 flex-shrink-0" />
+                <p>Esta acción deshabilitará la cancha seleccionada para reservas en el horario indicado.</p>
+            </div>
+            <Select name="courtId" label="Cancha a bloquear">
+               {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+            <Input name="reason" label="Motivo (Opcional)" placeholder="Ej. Mantenimiento, Clase particular..." />
+            <div className="grid grid-cols-2 gap-4">
+               <Input name="date" label="Fecha" type="date" required defaultValue={selectedDate} />
+               <Input name="time" label="Hora Inicio" type="time" required />
+            </div>
+            <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
+               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
+               <Button type="submit" variant="destructive">Bloquear Horario</Button>
+            </div>
+         </form>
+      </SideSheet>
 
       {/* 2. View/Delete Reservation */}
       <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
          {selectedReservation && (
              <div className="space-y-6 h-full flex flex-col">
                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                    {selectedReservation.status === ReservationStatus.BLOCKED && (
+                         <div className="flex items-center gap-2 text-red-600 font-medium pb-2 border-b border-gray-200">
+                             <Ban size={18} /> <span>Horario Bloqueado</span>
+                         </div>
+                    )}
                     <div>
-                        <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Cliente</span>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Cliente / Motivo</span>
                         <p className="text-lg font-medium text-gray-900">{selectedReservation.clientName}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -840,15 +1027,17 @@ const App: React.FC = () => {
                             <p className="text-gray-900">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p>
                         </div>
                     </div>
-                    <div>
-                        <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Precio</span>
-                        <p className="text-xl font-semibold text-gray-900">${selectedReservation.price}</p>
-                    </div>
+                    {selectedReservation.status !== ReservationStatus.BLOCKED && (
+                        <div>
+                            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Precio</span>
+                            <p className="text-xl font-semibold text-gray-900">${selectedReservation.price}</p>
+                        </div>
+                    )}
                  </div>
 
                  <div className="pt-6 border-t border-gray-100 mt-auto flex flex-col gap-3">
                     <Button variant="destructive" onClick={handleDeleteReservation} className="w-full">
-                        <Trash2 className="w-4 h-4 mr-2"/> Eliminar Reserva
+                        <Trash2 className="w-4 h-4 mr-2"/> {selectedReservation.status === ReservationStatus.BLOCKED ? 'Desbloquear' : 'Eliminar Reserva'}
                     </Button>
                     <Button variant="ghost" onClick={closeSheet} className="w-full">Cerrar</Button>
                  </div>

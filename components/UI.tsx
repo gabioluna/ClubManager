@@ -4,8 +4,8 @@ import { Loader2, X } from 'lucide-react';
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'destructive', isLoading?: boolean }> = ({ 
   children, variant = 'primary', className = '', isLoading, ...props 
 }) => {
-  // Increased padding: px-5 py-3. Font size 16px (text-base), Font weight 700 (font-bold)
-  const baseStyles = "inline-flex items-center justify-center rounded-lg px-5 py-3 text-base font-bold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none";
+  // Changed font-bold (700) to font-semibold (600)
+  const baseStyles = "inline-flex items-center justify-center rounded-lg px-5 py-3 text-base font-semibold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none";
   const variants = {
     primary: "bg-gray-900 text-white hover:bg-gray-800",
     secondary: "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50",
@@ -50,13 +50,14 @@ export const Card: React.FC<{ children: React.ReactNode, className?: string }> =
   </div>
 );
 
-export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'blue' | 'gray' | 'red' | 'yellow' }> = ({ children, color = 'gray' }) => {
+export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'blue' | 'gray' | 'red' | 'yellow' | 'black' }> = ({ children, color = 'gray' }) => {
   const colors = {
     green: "bg-emerald-50 text-emerald-700 border-emerald-100",
     blue: "bg-blue-50 text-blue-700 border-blue-100",
     gray: "bg-gray-50 text-gray-600 border-gray-200",
     red: "bg-red-50 text-red-700 border-red-100",
-    yellow: "bg-yellow-50 text-yellow-700 border-yellow-100"
+    yellow: "bg-yellow-50 text-yellow-700 border-yellow-100",
+    black: "bg-gray-900 text-white border-gray-800"
   };
   return (
     <span className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium ${colors[color]}`}>

@@ -26,7 +26,8 @@ export interface Court {
 export enum ReservationStatus {
   CONFIRMED = "Confirmed",
   PENDING = "Pending",
-  CANCELLED = "Cancelled"
+  CANCELLED = "Cancelled",
+  BLOCKED = "Blocked"
 }
 
 export interface Reservation {
