@@ -1,29 +1,47 @@
+
 import { Court, CourtType, Reservation, ReservationStatus, SurfaceType, User, Product } from "./types";
+
+export const SPORTS_LIST = [
+  "Básquet 3vs3", "Básquet 5vs5", "Beach Tenis", "Beach Volley", "Frontón", 
+  "Fútbol 4", "Fútbol 5", "Fútbol 6", "Fútbol 7", "Fútbol 8", "Fútbol 9", 
+  "Fútbol 10", "Fútbol 11", "Fútgolf", "Futvóley", "Golf Virtual", "Handball", 
+  "Hockey", "Natación", "Padbol", "Pádel", "Padel Single", "Pickleball", 
+  "Ping Pong", "Squash", "Surf", "Tenis", "Vóley"
+];
+
+export const SURFACE_LIST = [
+  "Parquet", "Flotante", "Sintético", "Cemento", "Césped Natural", "Muro", 
+  "Sintético y Blindex", "Sintético y Muro", "Cemento y Blindex", 
+  "Polvo de Ladrillo", "Court-Flex", "Agua", "Arena"
+];
 
 export const MOCK_COURTS: Court[] = [
   {
     id: "c1",
     name: "Cancha Central",
-    types: [CourtType.FUTBOL_5],
-    surface: SurfaceType.SYNTHETIC,
+    types: ["Fútbol 5"],
+    surface: "Sintético",
     isIndoor: true,
-    basePrice: 5000
+    hasLighting: true,
+    forceStart: 'ON_HOUR'
   },
   {
     id: "c2",
     name: "Pádel Panorámica",
-    types: [CourtType.PADEL],
-    surface: SurfaceType.CEMENT,
+    types: ["Pádel"],
+    surface: "Sintético y Blindex",
     isIndoor: false,
-    basePrice: 4500
+    hasLighting: true,
+    forceStart: 'HALF_HOUR'
   },
   {
     id: "c3",
     name: "Estadio F8",
-    types: [CourtType.FUTBOL_8],
-    surface: SurfaceType.GRASS,
+    types: ["Fútbol 8"],
+    surface: "Césped Natural",
     isIndoor: false,
-    basePrice: 8000
+    hasLighting: true,
+    forceStart: 'NO_ROUNDING'
   }
 ];
 

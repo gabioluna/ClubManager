@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
-export const analyzeFinancials = async (data: any[]) => {
+export const analyzeFinancials = async (data: any) => {
   try {
     const dataString = JSON.stringify(data);
     const prompt = `

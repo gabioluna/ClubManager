@@ -1,26 +1,61 @@
+
 export enum CourtType {
+  BASKET_3X3 = "Básquet 3vs3",
+  BASKET_5X5 = "Básquet 5vs5",
+  BEACH_TENNIS = "Beach Tenis",
+  BEACH_VOLLEY = "Beach Volley",
+  FRONTON = "Frontón",
+  FUTBOL_4 = "Fútbol 4",
   FUTBOL_5 = "Fútbol 5",
+  FUTBOL_6 = "Fútbol 6",
+  FUTBOL_7 = "Fútbol 7",
   FUTBOL_8 = "Fútbol 8",
+  FUTBOL_9 = "Fútbol 9",
+  FUTBOL_10 = "Fútbol 10",
+  FUTBOL_11 = "Fútbol 11",
+  FUTGOLF = "Fútgolf",
+  FUTVOLEY = "Futvóley",
+  GOLF_VIRTUAL = "Golf Virtual",
+  HANDBALL = "Handball",
+  HOCKEY = "Hockey",
+  NATACION = "Natación",
+  PADBOL = "Padbol",
   PADEL = "Pádel",
-  TENNIS = "Tenis",
-  BASKETBALL = "Básquet"
+  PADEL_SINGLE = "Padel Single",
+  PICKLEBALL = "Pickleball",
+  PING_PONG = "Ping Pong",
+  SQUASH = "Squash",
+  SURF = "Surf",
+  TENIS = "Tenis",
+  VOLEY = "Vóley"
 }
 
 export enum SurfaceType {
-  SYNTHETIC = "Sintético",
-  CEMENT = "Cemento",
-  GRASS = "Césped",
   PARQUET = "Parquet",
-  CLAY = "Polvo de Ladrillo"
+  FLOTANTE = "Flotante",
+  SINTETICO = "Sintético",
+  CEMENTO = "Cemento",
+  CESPED_NATURAL = "Césped Natural",
+  MURO = "Muro",
+  SINTETICO_BLINDEX = "Sintético y Blindex",
+  SINTETICO_MURO = "Sintético y Muro",
+  CEMENTO_BLINDEX = "Cemento y Blindex",
+  POLVO_LADRILLO = "Polvo de Ladrillo",
+  COURT_FLEX = "Court-Flex",
+  AGUA = "Agua",
+  ARENA = "Arena"
 }
+
+export type ForceStartOption = 'NO_ROUNDING' | 'ON_HOUR' | 'HALF_HOUR';
 
 export interface Court {
   id: string;
   name: string;
-  types: CourtType[];
-  surface: SurfaceType;
+  types: string[]; // List of sports
+  surface: string;
+  forceStart: ForceStartOption;
   isIndoor: boolean;
-  basePrice: number;
+  hasLighting: boolean;
 }
 
 export enum ReservationStatus {
