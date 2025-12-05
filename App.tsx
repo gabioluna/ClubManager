@@ -6,7 +6,7 @@ import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup,
 import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY, SPORTS_LIST, SURFACE_LIST } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption } from './types';
 import { analyzeFinancials } from './services/geminiService';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import Lottie from "lottie-react";
 
@@ -238,18 +238,18 @@ const ReservasPage = ({
         </div>
       </header>
 
-      <Card className="p-0 border border-gray-200 shadow-sm bg-white flex-1 flex flex-col overflow-hidden">
-        {/* Header Row (Courts) */}
-        <div className="flex border-b border-gray-200 bg-gray-50/50 flex-shrink-0">
-          <div className="w-20 p-4 border-r border-gray-200 font-semibold text-sm text-gray-500 uppercase tracking-wider flex items-center justify-center bg-gray-50 sticky left-0 z-20 flex-shrink-0">
+      <Card className="p-0 border border-gray-200 shadow-sm bg-white flex-1 overflow-auto custom-scrollbar relative">
+        {/* Header Row (Courts) - Sticky Top */}
+        <div className="sticky top-0 z-40 flex border-b border-gray-200 bg-gray-50 min-w-max">
+          <div className="sticky left-0 z-50 w-20 p-4 border-r border-gray-200 font-semibold text-base text-gray-500 uppercase tracking-wider flex items-center justify-center bg-gray-50 shadow-[1px_0_0_0_rgba(229,231,235,1)]">
             Hora
           </div>
           <div 
-            className="flex-1 grid divide-x divide-gray-200"
-            style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(0, 1fr))` }}
+            className="flex-1 grid divide-x divide-gray-200 min-w-[600px]" // Min width ensures horizontal scroll on small screens
+            style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(200px, 1fr))` }} // Fixed min width per court
           >
              {courts.map(court => (
-                <div key={court.id} className="text-center py-4 px-2 flex flex-col justify-center items-center">
+                <div key={court.id} className="text-center py-4 px-2 flex flex-col justify-center items-center bg-gray-50">
                   <span className="text-base font-bold text-gray-800 truncate w-full">{court.name}</span>
                   <span className="text-xs text-gray-400 font-normal mt-0.5">
                      {court.isIndoor ? 'Techada' : 'Aire Libre'}
@@ -260,15 +260,16 @@ const ReservasPage = ({
         </div>
 
         {/* Scrollable Body (Time Slots) */}
-        <div className="overflow-y-auto flex-1 custom-scrollbar">
+        <div className="min-w-max">
           {TIME_SLOTS.map(hour => (
             <div key={hour} className="flex border-b border-gray-100 last:border-0 hover:bg-gray-50/30 transition-colors min-h-[100px]">
-              <div className="w-20 border-r border-gray-200 flex items-center justify-center bg-white sticky left-0 z-10 text-sm font-bold text-gray-500 flex-shrink-0">
+              {/* Sticky Left Time Column */}
+              <div className="sticky left-0 z-30 w-20 border-r border-gray-200 flex items-center justify-center bg-white shadow-[1px_0_0_0_rgba(229,231,235,1)] text-base font-bold text-gray-500 flex-shrink-0">
                 {hour}:00
               </div>
               <div 
-                className="flex-1 grid divide-x divide-gray-100"
-                style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(0, 1fr))` }}
+                className="flex-1 grid divide-x divide-gray-100 min-w-[600px]"
+                style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(200px, 1fr))` }}
               >
                  {courts.map(court => {
                       const res = getReservation(court.id, hour);
@@ -499,26 +500,26 @@ const MyClubPage = () => {
           <Card className="space-y-6">
              <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                <ImageIcon className="text-gray-400" size={20} />
-               <h3 className="font-semibold text-gray-900">Apariencia</h3>
+               <h3 className="text-lg font-semibold text-gray-900">Apariencia</h3>
              </div>
              
              <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">Logo del Club</label>
+                <label className="text-base font-semibold text-gray-700 block mb-2">Logo del Club</label>
                 <div className="w-full aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-gray-50">
                    <div className="w-20 h-20 rounded-full bg-gray-200 mb-3 flex items-center justify-center">
                       <ImageIcon size={32} className="opacity-50" />
                    </div>
-                   <span className="text-sm font-semibold">Click para subir</span>
+                   <span className="text-base font-semibold">Click para subir</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 font-normal">Recomendado: PNG o JPG, máx 2MB. 500x500px.</p>
+                <p className="text-base text-gray-500 mt-2 font-normal">Recomendado: PNG o JPG, máx 2MB. 500x500px.</p>
              </div>
 
              <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">Portada</label>
+                <label className="text-base font-semibold text-gray-700 block mb-2">Portada</label>
                 <div className="w-full h-32 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-gray-50">
-                   <span className="text-sm font-semibold">Subir imagen de portada</span>
+                   <span className="text-base font-semibold">Subir imagen de portada</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 font-normal">Recomendado: JPG, máx 5MB. 1920x1080px.</p>
+                <p className="text-base text-gray-500 mt-2 font-normal">Recomendado: JPG, máx 5MB. 1920x1080px.</p>
              </div>
           </Card>
 
@@ -526,7 +527,7 @@ const MyClubPage = () => {
           <Card className="space-y-6">
              <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                <Link2 className="text-gray-400" size={20} />
-               <h3 className="font-semibold text-gray-900">Integraciones</h3>
+               <h3 className="text-lg font-semibold text-gray-900">Integraciones</h3>
              </div>
              
              <div className="space-y-4">
@@ -536,7 +537,7 @@ const MyClubPage = () => {
                      <DollarSign size={20} />
                    </div>
                    <div>
-                     <p className="font-semibold text-gray-900 text-sm">MercadoPago</p>
+                     <p className="font-semibold text-gray-900 text-base">MercadoPago</p>
                      <p className="text-xs text-gray-500">Pagos online</p>
                    </div>
                  </div>
@@ -549,7 +550,7 @@ const MyClubPage = () => {
                      <Zap size={20} />
                    </div>
                    <div>
-                     <p className="font-semibold text-gray-900 text-sm">Beelup</p>
+                     <p className="font-semibold text-gray-900 text-base">Beelup</p>
                      <p className="text-xs text-gray-500">Automatización</p>
                    </div>
                  </div>
@@ -566,7 +567,7 @@ const MyClubPage = () => {
           <Card className="space-y-6">
             <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                <Map className="text-gray-400" size={20} />
-               <h3 className="font-semibold text-gray-900">Datos Básicos</h3>
+               <h3 className="text-lg font-semibold text-gray-900">Datos Básicos</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -617,7 +618,7 @@ const MyClubPage = () => {
           <Card className="space-y-6">
             <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                <Clock className="text-gray-400" size={20} />
-               <h3 className="font-semibold text-gray-900">Horarios de Apertura</h3>
+               <h3 className="text-lg font-semibold text-gray-900">Horarios de Apertura</h3>
             </div>
 
             <div className="space-y-1">
@@ -630,29 +631,29 @@ const MyClubPage = () => {
                     >
                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${item.isOpen ? 'left-5' : 'left-1'}`} />
                     </button>
-                    <span className="font-semibold text-gray-700 text-sm">{item.day}</span>
+                    <span className="font-semibold text-gray-700 text-base">{item.day}</span>
                   </div>
                   
                   <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Abre</span>
+                        <span className="text-base text-gray-400">Abre</span>
                         <input 
                           type="time" 
                           disabled={!item.isOpen}
                           value={item.open}
                           onChange={(e) => updateTime(idx, 'open', e.target.value)}
-                          className="border border-gray-200 rounded px-2 py-1 text-sm bg-white disabled:bg-gray-100"
+                          className="border border-gray-200 rounded px-2 py-1 text-base bg-white disabled:bg-gray-100"
                         />
                      </div>
                      <span className="text-gray-300">-</span>
                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Cierra</span>
+                        <span className="text-base text-gray-400">Cierra</span>
                         <input 
                           type="time" 
                           disabled={!item.isOpen}
                           value={item.close}
                           onChange={(e) => updateTime(idx, 'close', e.target.value)}
-                          className="border border-gray-200 rounded px-2 py-1 text-sm bg-white disabled:bg-gray-100"
+                          className="border border-gray-200 rounded px-2 py-1 text-base bg-white disabled:bg-gray-100"
                         />
                      </div>
                   </div>
@@ -665,7 +666,7 @@ const MyClubPage = () => {
           <Card className="space-y-6">
             <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                <Check className="text-gray-400" size={20} />
-               <h3 className="font-semibold text-gray-900">Servicios</h3>
+               <h3 className="text-lg font-semibold text-gray-900">Servicios</h3>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -681,6 +682,85 @@ const MyClubPage = () => {
           </Card>
 
         </div>
+      </div>
+    </div>
+  );
+};
+
+const UserProfilePage = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Mock auto-save
+  const handleInput = () => {
+    setIsSaving(true);
+    setTimeout(() => setIsSaving(false), 1000);
+  };
+
+  return (
+    <div className="p-8 space-y-8 w-full pb-20">
+      <div className="border-b border-gray-200 pb-6 flex justify-between items-end">
+        <div>
+           <h1 className="text-3xl font-normal text-gray-900">Mi Perfil</h1>
+           <p className="text-base text-gray-500 mt-1">Gestiona tu información personal y seguridad.</p>
+        </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${isSaving ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
+            <RefreshCw size={14} className={isSaving ? "animate-spin" : ""} />
+            <span className="text-xs font-semibold">{isSaving ? 'Guardando...' : 'Guardado'}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Personal Info */}
+        <Card className="space-y-6">
+           <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+             <UserIcon className="text-gray-400" size={20} />
+             <h3 className="text-lg font-semibold text-gray-900">Información Personal</h3>
+           </div>
+           
+           <div className="space-y-4">
+             <Input label="Nombre Completo" defaultValue="Juan Admin" onChange={handleInput} />
+             <Input label="Email" defaultValue="juan@club.com" disabled className="bg-gray-50 text-gray-500 cursor-not-allowed" />
+             <Input label="Teléfono" defaultValue="+54 9 11 1234 5678" onChange={handleInput} icon={Phone} />
+           </div>
+        </Card>
+
+        {/* Notifications */}
+        <Card className="space-y-6">
+           <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+             <Mail className="text-gray-400" size={20} />
+             <h3 className="text-lg font-semibold text-gray-900">Notificaciones</h3>
+           </div>
+           
+           <div className="space-y-4">
+              <Checkbox label="Enviarme un mail cuando se realiza una reserva online" defaultChecked onChange={handleInput} />
+              <Checkbox label="Enviarme un mail cuando se edite/cancele un turno online" defaultChecked onChange={handleInput} />
+           </div>
+        </Card>
+
+        {/* Security */}
+        <Card className="space-y-6">
+           <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+             <Shield className="text-gray-400" size={20} />
+             <h3 className="text-lg font-semibold text-gray-900">Claves y Seguridad</h3>
+           </div>
+           
+           <div className="space-y-6">
+              <div className="space-y-4">
+                 <h4 className="text-base font-semibold text-gray-700">Cambiar Contraseña</h4>
+                 <Input type="password" placeholder="Contraseña actual" onChange={handleInput} />
+                 <Input type="password" placeholder="Nueva contraseña" onChange={handleInput} />
+                 <Input type="password" placeholder="Confirmar nueva contraseña" onChange={handleInput} />
+              </div>
+              
+              <div className="pt-4 border-t border-gray-100">
+                  <h4 className="text-base font-semibold text-gray-700 mb-2">Código de Acceso</h4>
+                  <p className="text-base text-gray-500 mb-4">Solicita un nuevo código de 4 dígitos para operaciones críticas.</p>
+                  <Button variant="secondary" className="w-full justify-center">
+                     <Key className="w-4 h-4 mr-2" /> Solicitar nuevo código
+                  </Button>
+              </div>
+           </div>
+        </Card>
       </div>
     </div>
   );
@@ -765,14 +845,14 @@ const InventoryPage = ({ inventory, onAddProduct }: { inventory: Product[], onAd
          <Card className="flex items-center gap-4 bg-gray-900 text-white border-0">
             <div className="p-3 bg-gray-800 rounded-lg"><Package className="w-6 h-6"/></div>
             <div>
-              <p className="text-xs text-gray-400 uppercase font-bold tracking-wide">Total Items</p>
+              <p className="text-base text-gray-400 uppercase font-bold tracking-wide">Total Items</p>
               <p className="text-2xl font-bold text-white">{inventory.length}</p>
             </div>
          </Card>
          <Card className="flex items-center gap-4">
             <div className="p-3 bg-red-50 text-red-600 rounded-lg"><Filter className="w-6 h-6"/></div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Bajo Stock</p>
+              <p className="text-base text-gray-500 uppercase font-bold tracking-wide">Bajo Stock</p>
               <p className="text-2xl font-bold text-gray-900">{inventory.filter(i => i.status === 'LOW_STOCK').length}</p>
             </div>
          </Card>
@@ -892,7 +972,7 @@ const ReportsPage = () => {
            <Card key={idx} className="flex flex-col justify-between">
               <div className="flex justify-between items-start mb-4">
                  <div>
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{kpi.label}</p>
+                    <p className="text-base font-semibold text-gray-500 uppercase tracking-wide">{kpi.label}</p>
                     <h3 className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</h3>
                  </div>
                  <div className={`p-2 rounded-lg ${kpi.bg} ${kpi.color}`}>
@@ -1231,23 +1311,7 @@ const App: React.FC = () => {
       <div className="flex min-h-screen bg-[#FAFAFA] text-gray-900 font-sans font-normal text-base">
         <Sidebar />
         <main className="flex-1 overflow-auto relative flex flex-col">
-          {/* Top Bar */}
-          <header className="sticky top-0 z-20 bg-[#FAFAFA]/95 backdrop-blur-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center flex-shrink-0">
-            <div className="relative w-96">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input 
-                type="text" 
-                placeholder="Buscar en todo el sistema..." 
-                className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-gray-400 transition-colors"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="text-gray-400 hover:text-gray-900 transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
-            </div>
-          </header>
+          {/* Header Removed as requested */}
 
           <Routes>
             <Route path="/" element={
@@ -1279,6 +1343,7 @@ const App: React.FC = () => {
             } />
             <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => setActiveSheet('PRODUCT')} />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/profile" element={<UserProfilePage />} />
             <Route path="*" element={
                 <ReservasPage 
                     courts={courts} 
@@ -1407,7 +1472,7 @@ const App: React.FC = () => {
             </Select>
 
             <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">Atributos</label>
+                <label className="text-base font-semibold text-gray-700 block mb-2">Atributos</label>
                 <div className="flex flex-col gap-2">
                     <Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} />
                     <Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} />

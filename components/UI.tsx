@@ -21,21 +21,28 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   );
 };
 
-export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className = '', ...props }) => (
+export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string, icon?: React.ElementType }> = ({ label, icon: Icon, className = '', ...props }) => (
   <div className="space-y-1.5">
-    {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
-    <input 
-      className={`w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-0 transition-all ${className}`}
-      {...props}
-    />
+    {label && <label className="text-base font-semibold text-gray-700">{label}</label>}
+    <div className="relative">
+      {Icon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <Icon size={20} />
+        </div>
+      )}
+      <input 
+        className={`w-full rounded-lg border border-gray-200 bg-white py-2.5 text-base placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-0 transition-all ${Icon ? 'pl-10 pr-4' : 'px-4'} ${className}`}
+        {...props}
+      />
+    </div>
   </div>
 );
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, className = '', children, ...props }) => (
   <div className="space-y-1.5">
-    {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
+    {label && <label className="text-base font-semibold text-gray-700">{label}</label>}
     <select 
-      className={`w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-0 transition-all ${className}`}
+      className={`w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-base focus:border-gray-400 focus:outline-none focus:ring-0 transition-all ${className}`}
       {...props}
     >
       {children}
@@ -54,7 +61,7 @@ export const Checkbox: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { 
         {...props}
       />
     </div>
-    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors font-semibold">{label}</span>
+    <span className="text-base text-gray-700 group-hover:text-gray-900 transition-colors font-semibold">{label}</span>
   </label>
 );
 
@@ -66,7 +73,7 @@ export const RadioGroup: React.FC<{
 }> = ({ label, name, options, defaultValue }) => {
   return (
     <div className="space-y-2">
-      {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
+      {label && <label className="text-base font-semibold text-gray-700">{label}</label>}
       <div className="flex flex-col gap-2">
         {options.map((opt) => (
           <label key={opt.value} className="flex items-center gap-2 cursor-pointer group">
@@ -77,7 +84,7 @@ export const RadioGroup: React.FC<{
                defaultChecked={defaultValue === opt.value}
                className="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
              />
-             <span className="text-sm text-gray-600 group-hover:text-gray-900 font-semibold">{opt.label}</span>
+             <span className="text-base text-gray-600 group-hover:text-gray-900 font-semibold">{opt.label}</span>
           </label>
         ))}
       </div>
@@ -115,11 +122,11 @@ export const MultiSelect: React.FC<{
 
   return (
     <div className="space-y-1.5" ref={containerRef}>
-      {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
+      {label && <label className="text-base font-semibold text-gray-700">{label}</label>}
       
       <div className="relative">
         <div 
-          className="w-full min-h-[46px] rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus-within:border-gray-400 focus-within:ring-0 transition-all cursor-pointer flex flex-wrap gap-2 items-center"
+          className="w-full min-h-[46px] rounded-lg border border-gray-200 bg-white px-2 py-2 text-base focus-within:border-gray-400 focus-within:ring-0 transition-all cursor-pointer flex flex-wrap gap-2 items-center"
           onClick={() => setIsOpen(!isOpen)}
         >
           {selected.length === 0 && <span className="text-gray-400 px-2">Seleccionar deportes...</span>}
@@ -148,7 +155,7 @@ export const MultiSelect: React.FC<{
                return (
                  <div 
                     key={option} 
-                    className={`px-4 py-2 cursor-pointer flex items-center justify-between text-sm hover:bg-gray-50 transition-colors ${isSelected ? 'bg-gray-50 font-semibold text-gray-900' : 'text-gray-600'}`}
+                    className={`px-4 py-2 cursor-pointer flex items-center justify-between text-base hover:bg-gray-50 transition-colors ${isSelected ? 'bg-gray-50 font-semibold text-gray-900' : 'text-gray-600'}`}
                     onClick={() => toggleOption(option)}
                  >
                     {option}

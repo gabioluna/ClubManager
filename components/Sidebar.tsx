@@ -23,7 +23,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
 );
 
 export const Sidebar: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <aside 
@@ -58,18 +58,24 @@ export const Sidebar: React.FC = () => {
         <NavItem to="/reports" icon={BarChart3} label="Reportes" collapsed={collapsed} />
       </nav>
 
-      <div className="pt-6 border-t border-gray-200 mt-4">
-        <div className={`flex items-center gap-3 px-2 mb-4 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 font-semibold flex-shrink-0">
-            JA
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-semibold text-gray-900 truncate">Juan Admin</span>
-              <span className="text-xs text-gray-500 truncate">Propietario</span>
+      <div className="pt-6 border-t border-gray-200 mt-4 space-y-2">
+        <Tooltip text="Mi Perfil" show={collapsed}>
+          <NavLink 
+            to="/profile"
+            className={`flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors group ${collapsed ? 'justify-center' : ''}`}
+          >
+            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 font-semibold flex-shrink-0 group-hover:border-gray-300 transition-colors">
+              JA
             </div>
-          )}
-        </div>
+            {!collapsed && (
+              <div className="flex flex-col overflow-hidden text-left">
+                <span className="text-sm font-semibold text-gray-900 truncate">Juan Admin</span>
+                <span className="text-xs text-gray-500 truncate">Propietario</span>
+              </div>
+            )}
+          </NavLink>
+        </Tooltip>
+        
         <Tooltip text="Cerrar Sesión" show={collapsed}>
           <button className={`w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg text-base transition-colors ${collapsed ? 'justify-center px-2' : ''}`}>
             <LogOut size={20} className="flex-shrink-0" />
