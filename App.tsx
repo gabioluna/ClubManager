@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate, NavLink } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal } from './components/UI';
 import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY, MOCK_CLIENTS, SPORTS_LIST, SURFACE_LIST } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import Lottie from "lottie-react";
 
@@ -40,6 +40,173 @@ const RemoteLottie = ({ url, fallbackText }: { url: string, fallbackText: string
 
   return <div className="w-48 h-48 mx-auto mb-6"><Lottie animationData={animationData} loop={true} /></div>;
 };
+
+// --- Auth Components ---
+
+const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    // Simulating API call
+    setTimeout(() => {
+      setLoading(false);
+      onLogin();
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
+      <Card className="w-full max-w-md p-8 shadow-xl border-none">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 bg-[#1B3530] rounded-xl flex items-center justify-center text-[#C7F269] font-bold text-xl mb-4">
+            G
+          </div>
+          <h1 className="text-2xl font-bold text-[#112320]">Iniciar Sesión</h1>
+          <p className="text-gray-500">Bienvenido a GestorClub</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input 
+            label="Email" 
+            type="email" 
+            placeholder="tu@email.com" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+            icon={Mail}
+          />
+          <Input 
+            label="Contraseña" 
+            type="password" 
+            placeholder="••••••••" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+            icon={Key}
+          />
+          
+          <Button type="submit" className="w-full py-3.5" isLoading={loading}>
+            Ingresar
+          </Button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            ¿No tienes una cuenta?{' '}
+            <Link to="/register" className="text-[#1B3530] font-bold hover:underline">
+              Regístrate aquí
+            </Link>
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    setLoading(true);
+    // Simulating API call
+    setTimeout(() => {
+      setLoading(false);
+      onRegister();
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
+      <Card className="w-full max-w-md p-8 shadow-xl border-none">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#112320]">Crear Cuenta</h1>
+          <p className="text-gray-500">Únete a GestorClub</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input 
+            name="fullName"
+            label="Nombre Completo" 
+            placeholder="Juan Pérez" 
+            value={formData.fullName} 
+            onChange={handleChange}
+            required 
+            icon={UserIcon}
+          />
+          <Input 
+            name="email"
+            label="Email" 
+            type="email" 
+            placeholder="tu@email.com" 
+            value={formData.email} 
+            onChange={handleChange}
+            required 
+            icon={Mail}
+          />
+          <Input 
+            name="password"
+            label="Contraseña" 
+            type="password" 
+            placeholder="••••••••" 
+            value={formData.password} 
+            onChange={handleChange}
+            required 
+            icon={Key}
+          />
+          <Input 
+            name="confirmPassword"
+            label="Confirmar Contraseña" 
+            type="password" 
+            placeholder="••••••••" 
+            value={formData.confirmPassword} 
+            onChange={handleChange}
+            required 
+            icon={Key}
+          />
+          
+          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+
+          <Button type="submit" className="w-full py-3.5 mt-2" isLoading={loading}>
+            Registrarse
+          </Button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-gray-500 text-sm">
+            ¿Ya tienes cuenta?{' '}
+            <Link to="/login" className="text-[#1B3530] font-bold hover:underline">
+              Ingresa aquí
+            </Link>
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// --- Existing Components ---
 
 const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -249,7 +416,7 @@ const ReservasPage = ({
      }
   };
 
-  // Logic for List View: show ALL reservations if in LIST mode
+  // List view state
   const filteredReservationsList = viewMode === 'CALENDAR' 
       ? reservations.filter(r => r.startTime.startsWith(selectedDate))
       : [...reservations].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
@@ -994,7 +1161,7 @@ const UserProfilePage = () => {
 const ClientsPage = ({ 
   clients, 
   onAddClient, 
-  onViewClient,
+  onViewClient, 
   onBookClient
 }: { 
   clients: Client[], 
@@ -1340,6 +1507,36 @@ const App: React.FC = () => {
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
   const [inventory, setInventory] = useState<Product[]>(MOCK_INVENTORY);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const auth = localStorage.getItem('isAuthenticated');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const handleRegister = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION'>(null);
+
+  const handleLogout = () => {
+    setActiveSheet('LOGOUT_CONFIRMATION');
+  };
+
+  const confirmLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+    setActiveSheet(null);
+  };
 
   // App Level State for Schedule and Services
   const [schedule, setSchedule] = useState([
@@ -1383,25 +1580,13 @@ const App: React.FC = () => {
       isRecurring: false
   });
 
-  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW'>(null);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [reviewActionId, setReviewActionId] = useState<number | null>(null);
 
   const closeSheet = () => {
     setActiveSheet(null);
     setTimeout(() => {
-        // Clear selection but wait for animation
-        if (activeSheet !== 'RESERVATION') { 
-            // Don't clear if switching between edit and view too quickly? 
-            // Actually, we manage prefillReservation explicitly.
-        }
-        
-        // Reset Logic
-        // We do this to ensure smooth close animations.
     }, 300);
-    // Immediate resets for functionality
-    // We only clear these if we are truly closing, but react state updates might need care.
-    // For simplicity, we reset form on close or save.
   };
 
   const resetReservationForm = () => {
@@ -1635,10 +1820,22 @@ const App: React.FC = () => {
       setActiveSheet('RESERVATION');
   };
 
+  if (!isAuthenticated) {
+    return (
+      <HashRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/register" element={<RegisterPage onRegister={handleRegister} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </HashRouter>
+    );
+  }
+
   return (
     <HashRouter>
       <div className="flex h-screen bg-white text-[#112320] font-sans font-normal text-base overflow-hidden">
-        <Sidebar onLogout={() => setShowOnboarding(true)} />
+        <Sidebar onLogout={handleLogout} />
         <main className="flex-1 h-full overflow-hidden relative flex flex-col">
           <Routes>
             <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} onAddReservation={openNewReservation} onSelectReservation={openViewReservation} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={schedule} />} />
@@ -1648,7 +1845,7 @@ const App: React.FC = () => {
             <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={openEditProduct} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
             <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT')} />} />
             <Route path="/profile" element={<UserProfilePage />} />
-            <Route path="*" element={<ReservasPage courts={courts} reservations={reservations} onAddReservation={openNewReservation} onSelectReservation={openViewReservation} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={schedule} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
@@ -2112,6 +2309,24 @@ const App: React.FC = () => {
                 <Button type="submit" variant="destructive">Reportar</Button>
             </div>
          </form>
+      </Modal>
+
+      <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
+        <div className="space-y-6">
+            <div className="flex gap-4 items-start">
+                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500">
+                     <LogOut size={24} />
+                 </div>
+                 <div>
+                     <p className="font-bold text-[#112320] mb-1">¿Cerrar sesión?</p>
+                     <p className="text-gray-600 text-sm">Tendrás que volver a ingresar tus credenciales para acceder.</p>
+                 </div>
+            </div>
+            <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
+            </div>
+        </div>
       </Modal>
 
     </HashRouter>
