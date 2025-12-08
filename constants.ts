@@ -1,5 +1,5 @@
 
-import { Court, CourtType, Reservation, ReservationStatus, SurfaceType, User, Product } from "./types";
+import { Court, CourtType, Reservation, ReservationStatus, SurfaceType, User, Product, Client } from "./types";
 
 export const SPORTS_LIST = [
   "Básquet 3vs3", "Básquet 5vs5", "Beach Tenis", "Beach Volley", "Frontón", 
@@ -61,7 +61,8 @@ export const MOCK_RESERVATIONS: Reservation[] = [
     endTime: setTime(19),
     price: 5000,
     status: ReservationStatus.CONFIRMED,
-    isPaid: true
+    isPaid: true,
+    createdBy: "Juan Admin"
   },
   {
     id: "r2",
@@ -71,7 +72,8 @@ export const MOCK_RESERVATIONS: Reservation[] = [
     endTime: setTime(12),
     price: 9000,
     status: ReservationStatus.CONFIRMED,
-    isPaid: false
+    isPaid: false,
+    createdBy: "Laura Recepción"
   },
   {
     id: "r3",
@@ -81,7 +83,8 @@ export const MOCK_RESERVATIONS: Reservation[] = [
     endTime: setTime(17),
     price: 4000,
     status: ReservationStatus.PENDING,
-    isPaid: false
+    isPaid: false,
+    createdBy: "Juan Admin"
   }
 ];
 
@@ -91,11 +94,33 @@ export const MOCK_USERS: User[] = [
   { id: 'u3', name: 'Pedro Mantenimiento', role: 'ADMIN', email: 'pedro@club.com', status: 'INACTIVE' }
 ];
 
+export const MOCK_CLIENTS: Client[] = [
+  { id: 'cl1', name: 'Juan Pérez', email: 'juan.perez@gmail.com', phone: '+54 9 11 2345 6789', totalBookings: 12, totalSpent: 60000, lastBooking: setTime(18) },
+  { id: 'cl2', name: 'María Gomez', email: 'maria.g@hotmail.com', phone: '+54 9 11 9876 5432', totalBookings: 5, totalSpent: 25000, lastBooking: setTime(14) },
+  { id: 'cl3', name: 'Club de Amigos', email: 'contacto@clubamigos.com', phone: '+54 9 11 1111 2222', totalBookings: 45, totalSpent: 225000, lastBooking: setTime(20) },
+];
+
 export const MOCK_INVENTORY: Product[] = [
-  { id: 'p1', name: 'Gatorade 500ml', category: 'Bebidas', stock: 45, price: 1500, status: 'IN_STOCK' },
-  { id: 'p2', name: 'Agua Mineral', category: 'Bebidas', stock: 12, price: 800, status: 'LOW_STOCK' },
-  { id: 'p3', name: 'Alquiler Paleta', category: 'Equipamiento', stock: 0, price: 2000, status: 'OUT_OF_STOCK' },
-  { id: 'p4', name: 'Pelotas Tenis x3', category: 'Venta', stock: 30, price: 5000, status: 'IN_STOCK' },
+  { 
+    id: 'p1', code: 'BEB-001', name: 'Gatorade 500ml', type: 'Bebidas', stock: 45, 
+    purchasePrice: 1000, salePrice: 1500, showInStock: true, active: true, 
+    lastModified: new Date(Date.now() - 86400000).toISOString() 
+  },
+  { 
+    id: 'p2', code: 'BEB-002', name: 'Agua Mineral', type: 'Bebidas', stock: 12, 
+    purchasePrice: 400, salePrice: 800, showInStock: true, active: true, 
+    lastModified: new Date(Date.now() - 172800000).toISOString() 
+  },
+  { 
+    id: 'p3', code: 'EQ-001', name: 'Alquiler Paleta', type: 'Equipamiento', stock: 0, 
+    purchasePrice: 15000, salePrice: 2000, showInStock: true, active: true, 
+    lastModified: new Date(Date.now() - 259200000).toISOString() 
+  },
+  { 
+    id: 'p4', code: 'VEN-001', name: 'Pelotas Tenis x3', type: 'Venta', stock: 30, 
+    purchasePrice: 3500, salePrice: 5000, showInStock: true, active: true, 
+    lastModified: new Date(Date.now() - 345600000).toISOString() 
+  },
 ];
 
 export const TIME_SLOTS = Array.from({ length: 15 }, (_, i) => i + 9); // 09:00 to 23:00

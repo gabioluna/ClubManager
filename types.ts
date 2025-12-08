@@ -74,6 +74,7 @@ export interface Reservation {
   price: number;
   status: ReservationStatus;
   isPaid: boolean;
+  createdBy?: string;
 }
 
 export interface User {
@@ -84,13 +85,27 @@ export interface User {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
-export interface Product {
+export interface Client {
   id: string;
   name: string;
-  category: string;
+  email: string;
+  phone: string;
+  totalBookings: number;
+  totalSpent: number;
+  lastBooking: string; // ISO Date
+}
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  purchasePrice: number;
+  salePrice: number;
+  type: string; // Category
+  showInStock: boolean;
+  active: boolean;
+  lastModified: string;
   stock: number;
-  price: number;
-  status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 }
 
 export interface FinancialMetric {

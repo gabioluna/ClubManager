@@ -9,10 +9,10 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
     <NavLink 
       to={to}
       className={({ isActive }) => 
-        `flex items-center gap-4 px-4 py-3.5 rounded-lg text-base transition-all duration-200 ${
+        `flex items-center gap-4 px-4 py-3.5 rounded-full text-base font-medium transition-all duration-200 ${
           isActive 
-            ? "text-gray-900 bg-gray-100 font-semibold" 
-            : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+            ? "text-[#1B3530] bg-[#C7F269] font-bold shadow-sm" 
+            : "text-gray-500 hover:text-[#1B3530] hover:bg-[#F8F8F8]"
         } ${collapsed ? 'justify-center px-2' : ''}`
       }
     >
@@ -22,38 +22,42 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
   </Tooltip>
 );
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onLogout: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const [collapsed, setCollapsed] = useState(true);
 
   return (
     <aside 
-      className={`${collapsed ? 'w-[80px]' : 'w-[280px]'} border-r border-gray-200 bg-white h-screen sticky top-0 flex flex-col p-4 transition-all duration-300 flex-shrink-0 z-30`}
+      className={`${collapsed ? 'w-[88px]' : 'w-[280px]'} border-r border-gray-200 bg-white h-screen sticky top-0 flex flex-col p-4 transition-all duration-300 flex-shrink-0 z-[60] shadow-sm`}
     >
-      <div className={`mb-8 px-2 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className={`mb-10 px-2 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-gray-200 flex-shrink-0">
+          <div className="w-10 h-10 bg-[#1B3530] rounded-xl flex items-center justify-center text-[#C7F269] font-bold text-lg flex-shrink-0">
             G
           </div>
-          {!collapsed && <span className="font-semibold text-xl text-gray-900 tracking-tight transition-opacity duration-300 delay-100">GestorClub</span>}
+          {!collapsed && <span className="font-bold text-xl text-[#1B3530] tracking-tight transition-opacity duration-300 delay-100">GestorClub</span>}
         </div>
         {!collapsed && (
-          <button onClick={() => setCollapsed(true)} className="p-1 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+          <button onClick={() => setCollapsed(true)} className="p-1 text-gray-400 hover:text-[#1B3530] hover:bg-[#F8F8F8] rounded-full transition-colors">
             <ChevronLeft size={18} />
           </button>
         )}
       </div>
 
       {collapsed && (
-         <button onClick={() => setCollapsed(false)} className="mx-auto mb-6 p-1 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+         <button onClick={() => setCollapsed(false)} className="mx-auto mb-6 p-1 text-gray-400 hover:text-[#1B3530] hover:bg-[#F8F8F8] rounded-full transition-colors">
             <ChevronRight size={18} />
          </button>
       )}
 
       <nav className="space-y-2 flex-1">
         <NavItem to="/" icon={CalendarDays} label="Reservas" collapsed={collapsed} />
+        <NavItem to="/clients" icon={Users} label="Clientes" collapsed={collapsed} />
         <NavItem to="/my-club" icon={Store} label="Mi Club" collapsed={collapsed} />
         <NavItem to="/courts" icon={Trophy} label="Canchas" collapsed={collapsed} />
-        <NavItem to="/users" icon={Users} label="Usuarios" collapsed={collapsed} />
         <NavItem to="/inventory" icon={ShoppingBag} label="Inventario" collapsed={collapsed} />
         <NavItem to="/reports" icon={BarChart3} label="Reportes" collapsed={collapsed} />
       </nav>
@@ -62,14 +66,14 @@ export const Sidebar: React.FC = () => {
         <Tooltip text="Mi Perfil" show={collapsed}>
           <NavLink 
             to="/profile"
-            className={`flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors group ${collapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 px-2 py-2 rounded-full hover:bg-[#F8F8F8] transition-colors group ${collapsed ? 'justify-center' : ''}`}
           >
-            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 font-semibold flex-shrink-0 group-hover:border-gray-300 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#C7F269] border border-[#C7F269] flex items-center justify-center text-[#1B3530] font-bold flex-shrink-0 transition-colors">
               JA
             </div>
             {!collapsed && (
               <div className="flex flex-col overflow-hidden text-left">
-                <span className="text-sm font-semibold text-gray-900 truncate">Juan Admin</span>
+                <span className="text-sm font-bold text-[#1B3530] truncate">Juan Admin</span>
                 <span className="text-xs text-gray-500 truncate">Propietario</span>
               </div>
             )}
@@ -77,7 +81,10 @@ export const Sidebar: React.FC = () => {
         </Tooltip>
         
         <Tooltip text="Cerrar Sesión" show={collapsed}>
-          <button className={`w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg text-base transition-colors ${collapsed ? 'justify-center px-2' : ''}`}>
+          <button 
+            onClick={onLogout}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-full text-base font-medium transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
+          >
             <LogOut size={20} className="flex-shrink-0" />
             {!collapsed && <span>Cerrar Sesión</span>}
           </button>
