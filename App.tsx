@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
@@ -7,54 +6,21 @@ import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY,
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
 import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
-import Lottie from "lottie-react";
 
-// --- Components ---
-
-const RemoteLottie = ({ url, fallbackText }: { url: string, fallbackText: string }) => {
-  const [animationData, setAnimationData] = useState<any>(null);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    setHasError(false);
-    setAnimationData(null);
-    
-    fetch(url)
-      .then(response => {
-        if (!response.ok) throw new Error("Network response was not ok");
-        return response.json();
-      })
-      .then(data => setAnimationData(data))
-      .catch(err => {
-        setHasError(true);
-      });
-  }, [url]);
-
-  if (hasError || !animationData) {
-    return (
-       <div className="w-48 h-48 mx-auto mb-6 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100">
-          <div className="text-center text-xs text-gray-400 font-semibold px-4">{fallbackText}</div>
-       </div>
-    );
-  }
-
-  return <div className="w-48 h-48 mx-auto mb-6"><Lottie animationData={animationData} loop={true} /></div>;
-};
-
-// --- Auth Components ---
+// --- Auth Components (Mock) ---
 
 const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulating API call
+    // Simulate API call
     setTimeout(() => {
-      setLoading(false);
-      onLogin();
+        setLoading(false);
+        onLogin();
     }, 1000);
   };
 
@@ -107,7 +73,7 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
-const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
+const RegisterPage = ({ onLogin }: { onLogin: (data: {fullName: string, email: string}) => void }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -115,14 +81,14 @@ const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+    setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
@@ -130,10 +96,10 @@ const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
     }
     
     setLoading(true);
-    // Simulating API call
+    // Simulate API call
     setTimeout(() => {
-      setLoading(false);
-      onRegister();
+        setLoading(false);
+        onLogin({ fullName: formData.fullName, email: formData.email });
     }, 1000);
   };
 
@@ -144,6 +110,13 @@ const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
           <h1 className="text-2xl font-bold text-[#112320]">Crear Cuenta</h1>
           <p className="text-gray-500">Únete a GestorClub</p>
         </div>
+
+        {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                <AlertTriangle size={16} />
+                {error}
+            </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input 
@@ -186,8 +159,6 @@ const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
             icon={Key}
           />
           
-          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
-
           <Button type="submit" className="w-full py-3.5 mt-2" isLoading={loading}>
             Registrarse
           </Button>
@@ -206,98 +177,7 @@ const RegisterPage = ({ onRegister }: { onRegister: () => void }) => {
   );
 };
 
-// --- Existing Components ---
-
-const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  
-  const steps = [
-    {
-      id: 1,
-      title: "Bienvenido a GestorClub",
-      description: "La plataforma definitiva para administrar tu complejo deportivo de manera simple, eficiente y elegante.",
-      lottieUrl: "https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json", 
-      fallback: "Bienvenido",
-      buttonText: "Comenzar Configuración"
-    },
-    {
-      id: 2,
-      title: "Personaliza tu Espacio",
-      description: "Configura tus horarios, carga tus canchas y define los roles de tu equipo en pocos pasos.",
-      lottieUrl: "https://assets2.lottiefiles.com/packages/lf20_w51pcehl.json",
-      fallback: "Configuración",
-      buttonText: "Siguiente"
-    },
-    {
-      id: 3,
-      title: "¡Todo Listo!",
-      description: "Ya puedes empezar a gestionar reservas, controlar tu inventario y potenciar tus ingresos con AI.",
-      lottieUrl: "https://assets5.lottiefiles.com/packages/lf20_xwmj0hsk.json",
-      fallback: "Éxito",
-      buttonText: "Ir al Dashboard"
-    }
-  ];
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      onComplete();
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#112320]/60 backdrop-blur-md p-4 overflow-hidden">
-      <div className="relative w-full max-w-md aspect-[3/4] md:aspect-[4/5] max-h-[600px]">
-        {steps.map((step, index) => {
-          let cardStyle = "";
-          if (index === currentStep) {
-             cardStyle = "z-30 opacity-100 transform translate-x-0 rotate-0 scale-100";
-          } else if (index < currentStep) {
-             cardStyle = "z-40 opacity-0 transform translate-x-[120%] rotate-12 scale-95 pointer-events-none";
-          } else {
-             const offset = (index - currentStep) * 15;
-             const scale = 1 - (index - currentStep) * 0.05;
-             cardStyle = `z-${20 - index} opacity-40 transform translate-y-${offset}px scale-${scale * 100} pointer-events-none`;
-          }
-
-          return (
-            <div 
-              key={step.id}
-              className={`absolute inset-0 bg-white rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${cardStyle}`}
-            >
-              <div className="flex-1 flex flex-col justify-center w-full">
-                <div className="mb-6 relative">
-                   <div className="absolute inset-0 bg-gradient-to-tr from-[#C7F269]/20 to-transparent rounded-full opacity-50 blur-xl"></div>
-                   <RemoteLottie url={step.lottieUrl} fallbackText={step.fallback} />
-                </div>
-
-                <h2 className="text-2xl font-bold text-[#112320] mb-3">{step.title}</h2>
-                <p className="text-gray-500 font-normal leading-relaxed">{step.description}</p>
-              </div>
-
-              <div className="w-full mt-8">
-                <Button onClick={handleNext} className="w-full py-4 text-lg group">
-                  {step.buttonText}
-                  {index < steps.length - 1 && <ChevronRight className="w-5 h-5 ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />}
-                </Button>
-                
-                <div className="flex justify-center gap-2 mt-6">
-                  {steps.map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-[#1B3530]' : 'w-2 bg-gray-200'}`} 
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+// --- Page Components ---
 
 const ReservasPage = ({ 
   courts, 
@@ -318,10 +198,8 @@ const ReservasPage = ({
 }) => {
   const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
   const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // List view state
-  const [listPage, setListPage] = useState(1);
   const itemsPerPage = 10;
+  const [listPage, setListPage] = useState(1);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -640,6 +518,7 @@ const ReservasPage = ({
   );
 };
 
+// ... other components ...
 const CourtsPage = ({ 
   courts, 
   onAddCourt, 
@@ -701,7 +580,7 @@ const UsersPage = ({
 }: { 
   users: User[], 
   onAddUser: () => void, 
-  onEditUser: (u: User) => void,
+  onEditUser: (u: User) => void, 
   onDeleteUser: (id: string) => void
 }) => {
   return (
@@ -756,412 +635,10 @@ const UsersPage = ({
   );
 };
 
-interface MyClubProps {
-  users: User[];
-  onAddUser: () => void;
-  onEditUser: (u: User) => void;
-  onDeleteUser: (id: string) => void;
-  reviews: any[];
-  schedule: any[];
-  setSchedule: (s: any[]) => void;
-  services: string[];
-  setServices: (s: string[]) => void;
-  onReplyReview: (id: number) => void;
-  onReportReview: (id: number) => void;
-}
-
-const MyClubPage = ({ users, onAddUser, onEditUser, onDeleteUser, reviews, schedule, setSchedule, services, setServices, onReplyReview, onReportReview }: MyClubProps) => {
-  const [activeTab, setActiveTab] = useState('DATOS');
-  const [basicInfo, setBasicInfo] = useState({ name: 'Club Central', phone: '', address: '', coords: '', status: 'ACTIVE' });
-  
-  const TABS = [
-    { id: 'DATOS', label: 'Datos Básicos', icon: Map },
-    { id: 'HORARIOS', label: 'Horarios', icon: Clock },
-    { id: 'SERVICIOS', label: 'Servicios', icon: Check },
-    { id: 'INTEGRACIONES', label: 'Integraciones', icon: Link2 },
-    { id: 'APARIENCIA', label: 'Apariencia', icon: ImageIcon },
-    { id: 'USUARIOS', label: 'Usuarios', icon: UsersIcon },
-    { id: 'RESEÑAS', label: 'Reseñas', icon: MessageSquare },
-  ];
-
-  const toggleService = (service: string) => {
-    if (services.includes(service)) {
-        setServices(services.filter(s => s !== service));
-    } else {
-        setServices([...services, service]);
-    }
-  };
-
-  const handleScheduleChange = (dayIndex: number, field: string, value: any) => {
-      const newSchedule = [...schedule];
-      newSchedule[dayIndex] = { ...newSchedule[dayIndex], [field]: value };
-      setSchedule(newSchedule);
-  };
-
-  const copyMondayToAll = () => {
-      const monday = schedule[0];
-      const newSchedule = schedule.map(day => ({
-          ...day,
-          open: monday.open,
-          start: monday.start,
-          end: monday.end
-      }));
-      setSchedule(newSchedule);
-  };
-
-  return (
-    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
-      <div className="pb-2">
-        <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
-      </div>
-
-      <div className="flex gap-2 p-1 bg-gray-100/50 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar">
-        {TABS.map(tab => {
-            const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
-                        isActive 
-                        ? 'bg-[#C7F269] text-[#1B3530] font-bold shadow-sm' 
-                        : 'text-gray-500 hover:text-[#112320]'
-                    }`}
-                >
-                    <TabIcon size={16} />
-                    {tab.label}
-                </button>
-            )
-        })}
-      </div>
-
-      <div className="py-4 w-full">
-        <div className={(activeTab === 'USUARIOS' || activeTab === 'RESEÑAS') ? 'w-full' : 'max-w-4xl'}>
-            {activeTab === 'DATOS' && (
-              <Card className="space-y-6 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input name="name" label="Nombre del Complejo" placeholder="Ej. Club Central" value={basicInfo.name} onChange={(e) => setBasicInfo({...basicInfo, name: e.target.value})} />
-                  <Input name="phone" label="Teléfono" placeholder="+54 9 11..." icon={Phone} value={basicInfo.phone} onChange={(e) => setBasicInfo({...basicInfo, phone: e.target.value})} />
-                  <Input name="address" label="Dirección" placeholder="Calle, Número, Ciudad" className="md:col-span-2" value={basicInfo.address} onChange={(e) => setBasicInfo({...basicInfo, address: e.target.value})} />
-                  <Input name="coords" label="Coordenadas" placeholder="Lat, Long" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
-                  <Select name="status" label="Estado del Complejo" value={basicInfo.status} onChange={(e) => setBasicInfo({...basicInfo, status: e.target.value})}>
-                    <option value="ACTIVE">Activo</option>
-                    <option value="INACTIVE">Inactivo</option>
-                  </Select>
-                </div>
-                <div className="flex justify-end pt-4 border-t border-gray-100"><Button>Guardar Cambios</Button></div>
-              </Card>
-            )}
-
-            {activeTab === 'USUARIOS' && (
-                <UsersPage users={users} onAddUser={onAddUser} onEditUser={onEditUser} onDeleteUser={onDeleteUser} />
-            )}
-
-            {activeTab === 'RESEÑAS' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                     <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
-                        <div className="flex items-center gap-2">
-                            <MessageSquare className="text-gray-400" size={20} />
-                            <h3 className="text-lg font-bold text-[#112320]">Opiniones de Clientes</h3>
-                        </div>
-                     </div>
-                     <Card className="p-0 overflow-hidden w-full">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#F8F8F8] border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Fecha</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Calificación</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Comentario</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {reviews.map((review) => (
-                                    <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-base text-gray-500 font-medium whitespace-nowrap">{new Date(review.date).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 text-base font-bold text-[#112320] whitespace-nowrap">{review.author}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex text-yellow-400">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} size={16} fill={i < review.rating ? "currentColor" : "none"} strokeWidth={i < review.rating ? 0 : 2} className={i >= review.rating ? "text-gray-300" : ""} />
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-base text-gray-600 max-w-md truncate">{review.comment}</td>
-                                        <td className="px-6 py-4 text-right whitespace-nowrap">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="secondary" className="px-3 h-8 text-xs rounded-full" onClick={() => onReplyReview(review.id)}>Responder</Button>
-                                                <Button variant="destructive" className="px-3 h-8 text-xs rounded-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100" onClick={() => onReportReview(review.id)}>
-                                                    <Flag size={14} className="mr-1"/> Reportar
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </Card>
-                </div>
-            )}
-            
-            {activeTab === 'HORARIOS' && (
-               <Card className="animate-in fade-in duration-300 space-y-6">
-                 <div className="flex justify-between items-center mb-4">
-                     <div>
-                        <h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3>
-                        <p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p>
-                     </div>
-                     <Button variant="secondary" className="h-9 text-xs rounded-full" onClick={copyMondayToAll}>Copiar Lunes a Todos</Button>
-                 </div>
-                 <div className="space-y-4">
-                    {schedule.map((day, idx) => (
-                        <div key={day.day} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
-                            <div className="w-24 font-bold text-[#112320]">{day.day}</div>
-                            <div className="flex-1 flex items-center gap-4">
-                                <Checkbox 
-                                    label="Abierto" 
-                                    checked={day.open} 
-                                    onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} 
-                                />
-                                {day.open && (
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="time" 
-                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
-                                            value={day.start} 
-                                            onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)}
-                                        />
-                                        <span className="text-gray-400">-</span>
-                                        <input 
-                                            type="time" 
-                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
-                                            value={day.end}
-                                            onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button>Guardar Horarios</Button></div>
-               </Card>
-            )}
-
-            {activeTab === 'SERVICIOS' && (
-               <Card className="animate-in fade-in duration-300">
-                 <h3 className="text-lg font-bold mb-6 text-[#112320]">Servicios del Club</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                        'Wi-Fi', 'Vestuario', 'Gimnasio', 'Estacionamiento', 'Ayuda Médica', 
-                        'Torneos', 'Cumpleaños', 'Parrilla', 'Escuelita deportiva', 'Colegios', 
-                        'Bar / Restaurante', 'Quincho'
-                    ].map(s => {
-                        const isChecked = services.includes(s);
-                        return (
-                            <div 
-                                key={s} 
-                                className={`flex items-center justify-between p-4 border rounded-2xl transition-all cursor-pointer ${isChecked ? 'border-[#1B3530] bg-[#C7F269]/10' : 'border-gray-100 bg-[#F8F8F8]/50 hover:border-gray-300'}`}
-                                onClick={() => toggleService(s)}
-                            >
-                                <span className="font-medium text-[#112320]">{s}</span>
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${isChecked ? 'bg-[#1B3530] border-[#1B3530]' : 'border-gray-300 bg-white'}`}>
-                                    {isChecked && <Check size={14} className="text-[#C7F269]" />}
-                                </div>
-                            </div>
-                        )
-                    })}
-                 </div>
-                 <div className="flex justify-end pt-6 border-t border-gray-100 mt-6"><Button>Actualizar Servicios</Button></div>
-               </Card>
-            )}
-
-            {activeTab === 'INTEGRACIONES' && (
-               <Card className="animate-in fade-in duration-300 space-y-6">
-                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Integraciones</h3>
-                 
-                 <div className="space-y-4">
-                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold">MP</div>
-                            <div>
-                                <h4 className="font-bold text-[#112320] text-lg">Mercado Pago</h4>
-                                <p className="text-sm text-gray-500">Procesa pagos online para señas y reservas.</p>
-                            </div>
-                        </div>
-                        <Button variant="secondary" className="rounded-full">Conectar</Button>
-                     </div>
-
-                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-[#112320] text-lg">Google Calendar</h4>
-                                <p className="text-sm text-gray-500">Sincroniza tus reservas con tu calendario personal.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1"><Check size={10}/> Conectado</span>
-                             <Button variant="ghost" className="text-gray-400">Desconectar</Button>
-                        </div>
-                     </div>
-                 </div>
-               </Card>
-            )}
-
-            {activeTab === 'APARIENCIA' && (
-               <Card className="animate-in fade-in duration-300 space-y-8">
-                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Personalización Visual</h3>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <label className="text-base font-medium text-[#112320] block">Logo del Club</label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
-                             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <ImageIcon className="text-gray-400" size={32} />
-                             </div>
-                             <p className="text-sm font-bold text-[#1B3530]">Subir Logo</p>
-                             <p className="text-xs text-gray-400">PNG, JPG (Max 2MB)</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <label className="text-base font-medium text-[#112320] block">Imagen de Portada</label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
-                             <div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300">
-                                <ImageIcon size={48} />
-                             </div>
-                             <p className="text-sm font-bold text-[#1B3530]">Subir Portada</p>
-                             <p className="text-xs text-gray-400">1920x1080 px recomendado</p>
-                        </div>
-                    </div>
-                 </div>
-
-                 <div className="pt-4">
-                     <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" />
-                 </div>
-
-                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button>Guardar Apariencia</Button></div>
-               </Card>
-            )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const UserProfilePage = () => {
-  const [activeTab, setActiveTab] = useState('PERSONAL');
-
-  const tabs = [
-    { id: 'PERSONAL', label: 'Información Personal', icon: UserIcon },
-    { id: 'NOTIFICATIONS', label: 'Notificaciones', icon: Mail },
-    { id: 'PASSWORD', label: 'Cambiar Contraseña', icon: Key },
-    { id: 'ACCESS_CODE', label: 'Código de Acceso', icon: Shield },
-  ];
-
-  return (
-    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
-      <div className="pb-2">
-           <h1 className="text-3xl font-bold text-[#112320]">Mi Perfil</h1>
-      </div>
-
-       <div className="flex gap-2 p-1 bg-gray-100/50 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar">
-        {tabs.map(tab => {
-            const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
-                        isActive 
-                        ? 'bg-[#C7F269] text-[#1B3530] font-bold shadow-sm' 
-                        : 'text-gray-500 hover:text-[#112320]'
-                    }`}
-                >
-                    <TabIcon size={16} />
-                    {tab.label}
-                </button>
-            )
-        })}
-      </div>
-
-      <div className="max-w-4xl py-4">
-          {activeTab === 'PERSONAL' && (
-            <Card className="space-y-6 animate-in fade-in duration-300">
-               <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
-                 <UserIcon className="text-gray-400" size={20} />
-                 <h3 className="text-lg font-bold text-[#112320]">Información Personal</h3>
-               </div>
-               <div className="space-y-4">
-                 <Input label="Nombre Completo" defaultValue="Juan Admin" />
-                 <Input label="Email" defaultValue="juan@club.com" disabled className="bg-gray-50 text-gray-500 cursor-not-allowed" />
-                 <Input label="Teléfono" defaultValue="+54 9 11 1234 5678" icon={Phone} />
-               </div>
-               <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-                   <Button>Guardar Cambios</Button>
-               </div>
-            </Card>
-          )}
-          {activeTab === 'NOTIFICATIONS' && (
-            <Card className="space-y-6 animate-in fade-in duration-300">
-               <h3 className="text-lg font-bold mb-4 text-[#112320]">Preferencias de Notificación</h3>
-               <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Recibir resumen diario por email</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Notificar nuevas reservas</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Notificar cancelaciones</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-               </div>
-            </Card>
-          )}
-          {activeTab === 'PASSWORD' && (
-             <Card className="space-y-6 animate-in fade-in duration-300">
-                <h3 className="text-lg font-bold mb-4 text-[#112320]">Seguridad</h3>
-                <div className="space-y-4">
-                  <Input label="Contraseña Actual" type="password" />
-                  <Input label="Nueva Contraseña" type="password" />
-                  <Input label="Confirmar Nueva Contraseña" type="password" />
-                </div>
-                <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-                   <Button>Actualizar Contraseña</Button>
-               </div>
-             </Card>
-          )}
-           {activeTab === 'ACCESS_CODE' && (
-             <Card className="space-y-6 animate-in fade-in duration-300">
-                <h3 className="text-lg font-bold mb-4 text-[#112320]">Código de Acceso Rápido</h3>
-                <p className="text-gray-500 mb-4">Este código permite a los empleados fichar su ingreso.</p>
-                <div className="flex justify-center py-6">
-                   <span className="text-4xl font-mono font-bold tracking-[1em] text-[#1B3530]">8291</span>
-                </div>
-                <div className="flex justify-center">
-                   <Button variant="secondary" className="rounded-full"><RefreshCw size={16} className="mr-2"/> Generar Nuevo</Button>
-                </div>
-             </Card>
-          )}
-      </div>
-    </div>
-  );
-};
-
 const ClientsPage = ({ 
   clients, 
   onAddClient, 
-  onViewClient, 
+  onViewClient,
   onBookClient
 }: { 
   clients: Client[], 
@@ -1318,7 +795,6 @@ const ReportsPage = ({ onExport }: { onExport: () => void }) => {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  // Mock data updates based on selection (simulation)
   const multiplier = dateRange === 'LAST_MONTH' ? 4 : dateRange === 'CUSTOM' ? 2 : 1;
 
   const revenueData = [
@@ -1498,6 +974,517 @@ const ReportsPage = ({ onExport }: { onExport: () => void }) => {
   );
 }
 
+interface MyClubProps {
+  users: User[];
+  onAddUser: () => void;
+  onEditUser: (u: User) => void;
+  onDeleteUser: (id: string) => void;
+  reviews: any[];
+  clubConfig: any;
+  onUpdateClub: (data: any) => void;
+  onReplyReview: (id: number) => void;
+  onReportReview: (id: number) => void;
+}
+
+const MyClubPage = ({ users, onAddUser, onEditUser, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview }: MyClubProps) => {
+  const [activeTab, setActiveTab] = useState('DATOS');
+  
+  // Initialize local state with props, but allow editing
+  const [basicInfo, setBasicInfo] = useState({ name: 'Club Central', phone: '', address: '', coords: '', status: 'ACTIVE' });
+  const [schedule, setSchedule] = useState<any[]>([]);
+  const [services, setServices] = useState<string[]>([]);
+
+  useEffect(() => {
+      if (clubConfig) {
+          setBasicInfo({
+              name: clubConfig.name || '',
+              phone: clubConfig.phone || '',
+              address: clubConfig.address || '',
+              coords: clubConfig.coords || '',
+              status: clubConfig.status || 'ACTIVE'
+          });
+          setSchedule(clubConfig.schedule || []);
+          setServices(clubConfig.services || []);
+      }
+  }, [clubConfig]);
+
+  const toggleService = (service: string) => {
+    let newServices;
+    if (services.includes(service)) {
+        newServices = services.filter(s => s !== service);
+    } else {
+        newServices = [...services, service];
+    }
+    setServices(newServices);
+  };
+
+  const handleUpdateServices = () => {
+      onUpdateClub({ services });
+  };
+
+  const handleScheduleChange = (dayIndex: number, field: string, value: any) => {
+      const newSchedule = [...schedule];
+      newSchedule[dayIndex] = { ...newSchedule[dayIndex], [field]: value };
+      setSchedule(newSchedule);
+  };
+
+  const copyMondayToAll = () => {
+      const monday = schedule[0];
+      const newSchedule = schedule.map(day => ({
+          ...day,
+          open: monday.open,
+          start: monday.start,
+          end: monday.end
+      }));
+      setSchedule(newSchedule);
+  };
+
+  const handleUpdateSchedule = () => {
+      onUpdateClub({ schedule });
+  };
+
+  const handleUpdateBasicInfo = () => {
+      onUpdateClub(basicInfo);
+  };
+  
+  const TABS = [
+    { id: 'DATOS', label: 'Datos Básicos', icon: Map },
+    { id: 'HORARIOS', label: 'Horarios', icon: Clock },
+    { id: 'SERVICIOS', label: 'Servicios', icon: Check },
+    { id: 'INTEGRACIONES', label: 'Integraciones', icon: Link2 },
+    { id: 'APARIENCIA', label: 'Apariencia', icon: ImageIcon },
+    { id: 'USUARIOS', label: 'Usuarios', icon: UsersIcon },
+    { id: 'RESEÑAS', label: 'Reseñas', icon: MessageSquare },
+  ];
+
+  // Calculate review stats
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1) : 0;
+  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as any;
+  reviews.forEach(r => distribution[r.rating] = (distribution[r.rating] || 0) + 1);
+
+  return (
+    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
+      <div className="pb-2">
+        <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
+      </div>
+
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
+        {TABS.map(tab => {
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
+                        isActive 
+                        ? 'bg-white text-[#1B3530] font-bold shadow-sm' 
+                        : 'text-gray-500 hover:text-[#112320]'
+                    }`}
+                >
+                    <TabIcon size={16} />
+                    {tab.label}
+                </button>
+            )
+        })}
+      </div>
+
+      <div className="py-4 w-full">
+        <div className={(activeTab === 'USUARIOS' || activeTab === 'RESEÑAS') ? 'w-full' : 'max-w-4xl'}>
+            {activeTab === 'DATOS' && (
+              <Card className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input name="name" label="Nombre del Complejo" placeholder="Ej. Club Central" value={basicInfo.name} onChange={(e) => setBasicInfo({...basicInfo, name: e.target.value})} />
+                  <Input name="phone" label="Teléfono" placeholder="+54 9 11..." icon={Phone} value={basicInfo.phone} onChange={(e) => setBasicInfo({...basicInfo, phone: e.target.value})} />
+                  <Input name="address" label="Dirección" placeholder="Calle, Número, Ciudad" className="md:col-span-2" value={basicInfo.address} onChange={(e) => setBasicInfo({...basicInfo, address: e.target.value})} />
+                  <Input name="coords" label="Coordenadas" placeholder="Lat, Long" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
+                  <Select name="status" label="Estado del Complejo" value={basicInfo.status} onChange={(e) => setBasicInfo({...basicInfo, status: e.target.value})}>
+                    <option value="ACTIVE">Activo</option>
+                    <option value="INACTIVE">Inactivo</option>
+                  </Select>
+                </div>
+                <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateBasicInfo}>Guardar Cambios</Button></div>
+              </Card>
+            )}
+
+            {activeTab === 'USUARIOS' && (
+                <UsersPage users={users} onAddUser={onAddUser} onEditUser={onEditUser} onDeleteUser={onDeleteUser} />
+            )}
+
+            {activeTab === 'RESEÑAS' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                     <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
+                        <div className="flex items-center gap-2">
+                            <MessageSquare className="text-gray-400" size={20} />
+                            <h3 className="text-lg font-bold text-[#112320]">Opiniones de Clientes</h3>
+                        </div>
+                     </div>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <Card className="flex items-center justify-between p-6 col-span-1 bg-[#F8F8F8] border-none">
+                            <div>
+                               <p className="text-5xl font-bold text-[#1B3530] mb-2">{averageRating}</p>
+                               <div className="flex text-yellow-400 mb-2">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} size={20} fill={i < Math.round(Number(averageRating)) ? "currentColor" : "none"} strokeWidth={i < Math.round(Number(averageRating)) ? 0 : 2} className={i >= Math.round(Number(averageRating)) ? "text-gray-300" : ""} />
+                                    ))}
+                               </div>
+                               <p className="text-sm font-medium text-gray-500">{totalReviews} reseñas totales</p>
+                            </div>
+                        </Card>
+                        <Card className="col-span-2 p-6 bg-white border-gray-100">
+                            <div className="flex flex-col justify-center h-full gap-2">
+                                {[5, 4, 3, 2, 1].map(star => (
+                                    <div key={star} className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 w-12 text-sm font-medium text-gray-500">
+                                            <span>{star}</span> <Star size={12} className="text-gray-400" fill="currentColor" strokeWidth={0}/>
+                                        </div>
+                                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-[#C7F269] rounded-full" 
+                                                style={{ width: `${totalReviews > 0 ? (distribution[star] / totalReviews) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="w-8 text-right text-xs text-gray-400">{distribution[star]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                     </div>
+
+                     <Card className="p-0 overflow-hidden w-full">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#F8F8F8] border-b border-gray-200">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Fecha</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Calificación</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider w-1/3">Comentario</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {reviews.map((review) => (
+                                    <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4 text-base text-gray-500 font-medium whitespace-nowrap align-top">{new Date(review.date).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 text-base font-bold text-[#112320] whitespace-nowrap align-top">{review.author}</td>
+                                        <td className="px-6 py-4 align-top">
+                                            <div className="flex text-yellow-400">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} size={16} fill={i < review.rating ? "currentColor" : "none"} strokeWidth={i < review.rating ? 0 : 2} className={i >= review.rating ? "text-gray-300" : ""} />
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 align-top">
+                                            <p className="text-base text-gray-600 mb-2">{review.comment}</p>
+                                            
+                                            {review.isReported && (
+                                                <div className="mt-2 inline-flex items-center px-2 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-100">
+                                                    <AlertTriangle size={12} className="mr-1"/> Reportado
+                                                </div>
+                                            )}
+
+                                            {review.reply && !review.isReported && (
+                                                <div className="mt-3 pl-3 border-l-2 border-gray-200">
+                                                    <p className="text-xs font-bold text-[#112320] mb-1">Tu respuesta:</p>
+                                                    <p className="text-sm text-gray-500 italic">"{review.reply}"</p>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right whitespace-nowrap align-top">
+                                            <div className="flex justify-end gap-2">
+                                                {!review.reply && !review.isReported && (
+                                                    <Button variant="secondary" className="px-3 h-8 text-xs rounded-full" onClick={() => onReplyReview(review.id)}>Responder</Button>
+                                                )}
+                                                {!review.isReported && (
+                                                    <Button variant="destructive" className="px-3 h-8 text-xs rounded-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100" onClick={() => onReportReview(review.id)}>
+                                                        <Flag size={14} className="mr-1"/> Reportar
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </Card>
+                </div>
+            )}
+            
+            {activeTab === 'HORARIOS' && (
+               <Card className="animate-in fade-in duration-300 space-y-6">
+                 <div className="flex justify-between items-center mb-4">
+                     <div>
+                        <h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3>
+                        <p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p>
+                     </div>
+                     <Button variant="secondary" className="h-9 text-xs rounded-full" onClick={copyMondayToAll}>Copiar Lunes a Todos</Button>
+                 </div>
+                 <div className="space-y-4">
+                    {schedule.map((day, idx) => (
+                        <div key={day.day} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
+                            <div className="w-24 font-bold text-[#112320]">{day.day}</div>
+                            <div className="flex-1 flex items-center gap-4">
+                                <Checkbox 
+                                    label="Abierto" 
+                                    checked={day.open} 
+                                    onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} 
+                                />
+                                {day.open && (
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="time" 
+                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
+                                            value={day.start} 
+                                            onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)}
+                                        />
+                                        <span className="text-gray-400">-</span>
+                                        <input 
+                                            type="time" 
+                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
+                                            value={day.end}
+                                            onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                                {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
+                            </div>
+                        </div>
+                    ))}
+                 </div>
+                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateSchedule}>Guardar Horarios</Button></div>
+               </Card>
+            )}
+
+            {activeTab === 'SERVICIOS' && (
+               <Card className="animate-in fade-in duration-300">
+                 <h3 className="text-lg font-bold mb-6 text-[#112320]">Servicios del Club</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                        'Wi-Fi', 'Vestuario', 'Gimnasio', 'Estacionamiento', 'Ayuda Médica', 
+                        'Torneos', 'Cumpleaños', 'Parrilla', 'Escuelita deportiva', 'Colegios', 
+                        'Bar / Restaurante', 'Quincho'
+                    ].map(s => {
+                        const isChecked = services.includes(s);
+                        return (
+                            <div 
+                                key={s} 
+                                className={`flex items-center justify-between p-4 border rounded-2xl transition-all cursor-pointer ${isChecked ? 'border-[#1B3530] bg-[#C7F269]/10' : 'border-gray-100 bg-[#F8F8F8]/50 hover:border-gray-300'}`}
+                                onClick={() => toggleService(s)}
+                            >
+                                <span className="font-medium text-[#112320]">{s}</span>
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${isChecked ? 'bg-[#1B3530] border-[#1B3530]' : 'border-gray-300 bg-white'}`}>
+                                    {isChecked && <Check size={14} className="text-[#C7F269]" />}
+                                </div>
+                            </div>
+                        )
+                    })}
+                 </div>
+                 <div className="flex justify-end pt-6 border-t border-gray-100 mt-6"><Button onClick={handleUpdateServices}>Actualizar Servicios</Button></div>
+               </Card>
+            )}
+
+            {activeTab === 'INTEGRACIONES' && (
+               <Card className="animate-in fade-in duration-300 space-y-6">
+                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Integraciones</h3>
+                 
+                 <div className="space-y-4">
+                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold">MP</div>
+                            <div>
+                                <h4 className="font-bold text-[#112320] text-lg">Mercado Pago</h4>
+                                <p className="text-sm text-gray-500">Procesa pagos online para señas y reservas.</p>
+                            </div>
+                        </div>
+                        <Button variant="secondary" className="rounded-full">Conectar</Button>
+                     </div>
+
+                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-[#112320] text-lg">Google Calendar</h4>
+                                <p className="text-sm text-gray-500">Sincroniza tus reservas con tu calendario personal.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1"><Check size={10}/> Conectado</span>
+                             <Button variant="ghost" className="text-gray-400">Desconectar</Button>
+                        </div>
+                     </div>
+                 </div>
+               </Card>
+            )}
+
+            {activeTab === 'APARIENCIA' && (
+               <Card className="animate-in fade-in duration-300 space-y-8">
+                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Personalización Visual</h3>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <label className="text-base font-medium text-[#112320] block">Logo del Club</label>
+                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
+                             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <ImageIcon className="text-gray-400" size={32} />
+                             </div>
+                             <p className="text-sm font-bold text-[#1B3530]">Subir Logo</p>
+                             <p className="text-xs text-gray-400">PNG, JPG (Max 2MB)</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className="text-base font-medium text-[#112320] block">Imagen de Portada</label>
+                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
+                             <div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300">
+                                <ImageIcon size={48} />
+                             </div>
+                             <p className="text-sm font-bold text-[#1B3530]">Subir Portada</p>
+                             <p className="text-xs text-gray-400">1920x1080 px recomendado</p>
+                        </div>
+                    </div>
+                 </div>
+
+                 <div className="pt-4">
+                     <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" />
+                 </div>
+
+                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button>Guardar Apariencia</Button></div>
+               </Card>
+            )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UserProfilePage = ({ user, email, onUpdateProfile }: { user: any, email?: string, onUpdateProfile: (data: any) => void }) => {
+  const [activeTab, setActiveTab] = useState('PERSONAL');
+  const [formData, setFormData] = useState({
+      full_name: '',
+      phone: ''
+  });
+
+  useEffect(() => {
+      if (user) {
+          setFormData({
+              full_name: user.full_name || '',
+              phone: '' // Ideally fetched from profile if exists
+          });
+      }
+  }, [user]);
+
+  const handleSave = (e: React.FormEvent) => {
+      e.preventDefault();
+      onUpdateProfile(formData);
+  };
+
+  const tabs = [
+    { id: 'PERSONAL', label: 'Información Personal', icon: UserIcon },
+    { id: 'NOTIFICATIONS', label: 'Notificaciones', icon: Mail },
+    { id: 'PASSWORD', label: 'Cambiar Contraseña', icon: Key },
+    { id: 'ACCESS_CODE', label: 'Código de Acceso', icon: Shield },
+  ];
+
+  return (
+    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
+      <div className="pb-2">
+           <h1 className="text-3xl font-bold text-[#112320]">Mi Perfil</h1>
+      </div>
+
+       <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
+        {tabs.map(tab => {
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
+                        isActive 
+                        ? 'bg-white text-[#1B3530] font-bold shadow-sm' 
+                        : 'text-gray-500 hover:text-[#112320]'
+                    }`}
+                >
+                    <TabIcon size={16} />
+                    {tab.label}
+                </button>
+            )
+        })}
+      </div>
+
+      <div className="max-w-4xl py-4">
+          {activeTab === 'PERSONAL' && (
+            <Card className="space-y-6 animate-in fade-in duration-300">
+               <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+                 <UserIcon className="text-gray-400" size={20} />
+                 <h3 className="text-lg font-bold text-[#112320]">Información Personal</h3>
+               </div>
+               <form onSubmit={handleSave} className="space-y-4">
+                 <Input 
+                    label="Nombre Completo" 
+                    value={formData.full_name} 
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                 />
+                 <Input label="Email" defaultValue={email} disabled className="bg-gray-50 text-gray-500 cursor-not-allowed" />
+                 <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
+                   <Button type="submit">Guardar Cambios</Button>
+               </div>
+               </form>
+            </Card>
+          )}
+          {activeTab === 'NOTIFICATIONS' && (
+            <Card className="space-y-6 animate-in fade-in duration-300">
+               <h3 className="text-lg font-bold mb-4 text-[#112320]">Preferencias de Notificación</h3>
+               <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                     <span className="text-base text-gray-700">Recibir resumen diario por email</span>
+                     <Checkbox label="" defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                     <span className="text-base text-gray-700">Notificar nuevas reservas</span>
+                     <Checkbox label="" defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                     <span className="text-base text-gray-700">Notificar cancelaciones</span>
+                     <Checkbox label="" defaultChecked />
+                  </div>
+               </div>
+            </Card>
+          )}
+          {activeTab === 'PASSWORD' && (
+             <Card className="space-y-6 animate-in fade-in duration-300">
+                <h3 className="text-lg font-bold mb-4 text-[#112320]">Seguridad</h3>
+                <div className="space-y-4">
+                  <Input label="Contraseña Actual" type="password" />
+                  <Input label="Nueva Contraseña" type="password" />
+                  <Input label="Confirmar Nueva Contraseña" type="password" />
+                </div>
+                <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
+                   <Button>Actualizar Contraseña</Button>
+               </div>
+             </Card>
+          )}
+           {activeTab === 'ACCESS_CODE' && (
+             <Card className="space-y-6 animate-in fade-in duration-300">
+                <h3 className="text-lg font-bold mb-4 text-[#112320]">Código de Acceso Rápido</h3>
+                <p className="text-gray-500 mb-4">Este código permite a los empleados fichar su ingreso.</p>
+                <div className="flex justify-center py-6">
+                   <span className="text-4xl font-mono font-bold tracking-[1em] text-[#1B3530]">8291</span>
+                </div>
+                <div className="flex justify-center">
+                   <Button variant="secondary" className="rounded-full"><RefreshCw size={16} className="mr-2"/> Generar Nuevo</Button>
+                </div>
+             </Card>
+          )}
+      </div>
+    </div>
+  );
+};
+
 // --- Main Logic & State ---
 
 const App: React.FC = () => {
@@ -1506,36 +1493,66 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
   const [inventory, setInventory] = useState<Product[]>(MOCK_INVENTORY);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [clubConfig, setClubConfig] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    const auth = localStorage.getItem('isAuthenticated');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
-  };
-
-  const handleRegister = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
-  };
+  // Mock Reviews Data - Updated to show reply and report examples
+  const [reviews, setReviews] = useState([
+    { id: 1, author: 'Carlos Pérez', date: '2023-10-25', rating: 5, comment: 'Excelente cancha y atención!', reply: '¡Gracias Carlos! Te esperamos pronto.', isReported: false },
+    { id: 2, author: 'Ana López', date: '2023-10-20', rating: 4, comment: 'Muy buena iluminación, pero los vestuarios podrían mejorar.', reply: '', isReported: false },
+    { id: 3, author: 'Marcos Diaz', date: '2023-10-15', rating: 1, comment: 'Pésimo servicio, nadie atendió el teléfono.', reply: '', isReported: true },
+  ]);
 
   const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION'>(null);
+
+  const handleLogin = (userData?: { fullName: string, email: string }) => {
+    setIsAuthenticated(true);
+    setCourts(MOCK_COURTS);
+    setReservations(MOCK_RESERVATIONS);
+    
+    if (userData) {
+      // Create profile from registration data
+      const newProfile = {
+        name: userData.fullName,
+        role: 'OWNER',
+        full_name: userData.fullName,
+        email: userData.email
+      };
+      setUserProfile(newProfile);
+
+      // Create new user in club
+      const newUser: User = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: userData.fullName,
+        email: userData.email,
+        role: 'OWNER',
+        status: 'ACTIVE'
+      };
+      setUsers(prev => [...prev, newUser]);
+    } else {
+      // Default login mock
+      setUserProfile({
+        name: 'Juan Admin',
+        role: 'OWNER',
+        full_name: 'Juan Admin',
+        email: 'admin@club.com'
+      });
+    }
+  };
 
   const handleLogout = () => {
     setActiveSheet('LOGOUT_CONFIRMATION');
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
     setActiveSheet(null);
+    setUserProfile(null);
+  };
+
+  const handleUpdateProfile = async (data: any) => {
+      setUserProfile((prev: any) => ({ ...prev, full_name: data.full_name, name: data.full_name }));
   };
 
   // App Level State for Schedule and Services
@@ -1551,12 +1568,11 @@ const App: React.FC = () => {
   
   const [clubServices, setClubServices] = useState<string[]>(['Wi-Fi', 'Estacionamiento', 'Vestuario']);
 
-  // Mock Reviews Data
-  const [reviews, setReviews] = useState([
-    { id: 1, author: 'Carlos Pérez', date: '2023-10-25', rating: 5, comment: 'Excelente cancha y atención!', reply: '', isReported: false },
-    { id: 2, author: 'Ana López', date: '2023-10-20', rating: 4, comment: 'Muy buena iluminación, pero los vestuarios podrían mejorar.', reply: '', isReported: false },
-    { id: 3, author: 'Marcos Diaz', date: '2023-10-15', rating: 2, comment: 'El césped sintético está muy gastado.', reply: '', isReported: false },
-  ]);
+  const handleUpdateClub = async (newData: any) => {
+     if (newData.schedule) setSchedule(newData.schedule);
+     if (newData.services) setClubServices(newData.services);
+     // Update other config in real app
+  };
 
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -1585,8 +1601,6 @@ const App: React.FC = () => {
 
   const closeSheet = () => {
     setActiveSheet(null);
-    setTimeout(() => {
-    }, 300);
   };
 
   const resetReservationForm = () => {
@@ -1616,7 +1630,7 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleSaveReservation = (e: React.FormEvent) => { 
+  const handleSaveReservation = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       
       const formCourtId = prefillReservation?.courtId || courts[0].id;
@@ -1625,7 +1639,10 @@ const App: React.FC = () => {
 
       const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`;
 
-      const newReservation: Reservation = {
+      // Use the robustly fetched user profile name
+      const creatorName = userProfile?.name || "Admin";
+
+      const reservationData: Reservation = {
         id: selectedReservation ? selectedReservation.id : Math.random().toString(36).substr(2, 9),
         courtId: formCourtId,
         clientName: reservationForm.clientName,
@@ -1634,14 +1651,17 @@ const App: React.FC = () => {
         price: 4500,
         status: ReservationStatus.CONFIRMED,
         isPaid: false,
-        createdBy: "Juan Admin",
-        ...({ type: reservationForm.type, notes: reservationForm.notes } as any)
+        createdBy: creatorName,
+        // @ts-ignore
+        type: reservationForm.type,
+        // @ts-ignore
+        notes: reservationForm.notes
       };
 
       if (selectedReservation) {
-          setReservations(reservations.map(r => r.id === selectedReservation.id ? newReservation : r));
+          setReservations(reservations.map(r => r.id === selectedReservation.id ? reservationData : r));
       } else {
-          setReservations([...reservations, newReservation]);
+          setReservations([...reservations, reservationData]);
       }
       resetReservationForm();
       setActiveSheet(null);
@@ -1651,7 +1671,7 @@ const App: React.FC = () => {
       setActiveSheet('DELETE_RESERVATION_CONFIRMATION');
   };
 
-  const confirmDeleteReservation = () => { 
+  const confirmDeleteReservation = async () => { 
       if (selectedReservation) {
           setReservations(reservations.filter(r => r.id !== selectedReservation.id));
       }
@@ -1659,23 +1679,24 @@ const App: React.FC = () => {
       setActiveSheet(null); 
   };
   
-  const handleSaveCourt = (e: React.FormEvent) => { 
+  const handleSaveCourt = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
-      const newCourt: Court = {
+      
+      const courtData: Court = {
           id: selectedCourt ? selectedCourt.id : Math.random().toString(36).substr(2, 9),
           name: formData.get('name') as string,
           types: courtFormTypes,
           surface: formData.get('surface') as string,
-          isIndoor: true, // simplified
-          hasLighting: true, // simplified
+          isIndoor: true,
+          hasLighting: true,
           forceStart: 'ON_HOUR'
       };
 
       if (selectedCourt) {
-          setCourts(courts.map(c => c.id === selectedCourt.id ? newCourt : c));
+          setCourts(courts.map(c => c.id === selectedCourt.id ? courtData : c));
       } else {
-          setCourts([...courts, newCourt]);
+          setCourts([...courts, courtData]);
       }
       setSelectedCourt(null);
       setActiveSheet(null); 
@@ -1706,7 +1727,7 @@ const App: React.FC = () => {
       setActiveSheet(null); 
   };
   
-  const handleSaveClient = (e: React.FormEvent) => { 
+  const handleSaveClient = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
       const newClient: Client = {
@@ -1728,7 +1749,7 @@ const App: React.FC = () => {
       setActiveSheet('RESERVATION');
   };
   
-  const handleSaveProduct = (e: React.FormEvent) => { 
+  const handleSaveProduct = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
       const newProduct: Product = {
@@ -1743,6 +1764,7 @@ const App: React.FC = () => {
           active: true,
           lastModified: new Date().toISOString()
       };
+
       if(selectedProduct) {
           setInventory(inventory.map(p => p.id === selectedProduct.id ? newProduct : p));
       } else {
@@ -1824,8 +1846,8 @@ const App: React.FC = () => {
     return (
       <HashRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-          <Route path="/register" element={<RegisterPage onRegister={handleRegister} />} />
+          <Route path="/login" element={<LoginPage onLogin={() => handleLogin()} />} />
+          <Route path="/register" element={<RegisterPage onLogin={(data) => handleLogin(data)} />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </HashRouter>
@@ -1835,498 +1857,202 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <div className="flex h-screen bg-white text-[#112320] font-sans font-normal text-base overflow-hidden">
-        <Sidebar onLogout={handleLogout} />
+        <Sidebar onLogout={handleLogout} user={userProfile} />
         <main className="flex-1 h-full overflow-hidden relative flex flex-col">
           <Routes>
             <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} onAddReservation={openNewReservation} onSelectReservation={openViewReservation} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={schedule} />} />
             <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setCourtFormTypes([]); setSelectedCourt(null); setActiveSheet('COURT'); }} onEditCourt={openEditCourt} />} />
             <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => setActiveSheet('CLIENT')} onViewClient={openViewClient} onBookClient={openBookClient} />} />
-            <Route path="/my-club" element={<MyClubPage users={users} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={openEditUser} onDeleteUser={initiateDeleteUser} reviews={reviews} schedule={schedule} setSchedule={setSchedule} services={clubServices} setServices={setClubServices} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} />} />
+            <Route path="/my-club" element={<MyClubPage users={users} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={openEditUser} onDeleteUser={initiateDeleteUser} reviews={reviews} clubConfig={{ name: 'Club Central', status: 'ACTIVE', ...(clubConfig || {}), schedule, services: clubServices }} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} />} />
             <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={openEditProduct} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
             <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT')} />} />
-            <Route path="/profile" element={<UserProfilePage />} />
+            <Route path="/profile" element={<UserProfilePage user={userProfile} email={userProfile?.email} onUpdateProfile={handleUpdateProfile} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
       
-      {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
-
+      {/* SideSheets and Modals */}
       <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
          <form onSubmit={handleSaveReservation} className="space-y-6 flex flex-col h-full">
             <div className="space-y-6 flex-1 overflow-y-auto pr-1">
                 <div className="grid grid-cols-2 gap-4">
-                    <Input 
-                        type="date" 
-                        label="Fecha"
-                        value={prefillReservation?.date || selectedDate}
-                        onChange={(e) => setPrefillReservation(prev => ({ ...prev!, date: e.target.value }))}
-                        required
-                    />
-                     <Select 
-                        label="Horario Inicio" 
-                        value={prefillReservation?.time || '10:00'}
-                        onChange={(e) => setPrefillReservation(prev => ({ ...prev!, time: e.target.value }))}
-                     >
-                        {Array.from({ length: 15 }, (_, i) => i + 9).map(h => {
-                            const t = `${h.toString().padStart(2, '0')}:00`;
-                            return <option key={t} value={t}>{t} hs</option>;
-                        })}
+                    <Input type="date" label="Fecha" value={prefillReservation?.date || selectedDate} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, date: e.target.value }))} required />
+                     <Select label="Horario Inicio" value={prefillReservation?.time || '10:00'} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, time: e.target.value }))}>
+                        {Array.from({ length: 15 }, (_, i) => i + 9).map(h => { const t = `${h.toString().padStart(2, '0')}:00`; return <option key={t} value={t}>{t} hs</option>; })}
                      </Select>
                 </div>
-
                 <div>
-                    <Select 
-                        label="Cancha" 
-                        value={prefillReservation?.courtId || courts[0]?.id}
-                        onChange={(e) => setPrefillReservation(prev => ({ ...prev!, courtId: e.target.value }))}
-                    >
+                    <Select label="Cancha" value={prefillReservation?.courtId || courts[0]?.id} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, courtId: e.target.value }))}>
                         {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </Select>
                 </div>
-
                 <div className="space-y-4">
                     <div>
-                        <Input 
-                            name="clientName" 
-                            label="Nombre del Cliente" 
-                            placeholder="Buscar cliente..." 
-                            value={reservationForm.clientName}
-                            onChange={handleClientNameChange}
-                            required 
-                            list="clients-list"
-                            autoComplete="off"
-                        />
-                        <datalist id="clients-list">
-                            {clients.map(c => <option key={c.id} value={c.name} />)}
-                        </datalist>
+                        <Input name="clientName" label="Nombre del Cliente" placeholder="Buscar cliente..." value={reservationForm.clientName} onChange={handleClientNameChange} required list="clients-list" autoComplete="off" />
+                        <datalist id="clients-list">{clients.map(c => <option key={c.id} value={c.name} />)}</datalist>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-4">
-                        <Input 
-                            name="phone" 
-                            label="Teléfono" 
-                            placeholder="+54..." 
-                            value={reservationForm.clientPhone}
-                            onChange={(e) => setReservationForm({...reservationForm, clientPhone: e.target.value})}
-                        />
-                        <Input 
-                            name="email" 
-                            label="Email (Opcional)" 
-                            placeholder="cliente@email.com" 
-                            value={reservationForm.clientEmail}
-                            onChange={(e) => setReservationForm({...reservationForm, clientEmail: e.target.value})}
-                        />
+                        <Input name="phone" label="Teléfono" placeholder="+54..." value={reservationForm.clientPhone} onChange={(e) => setReservationForm({...reservationForm, clientPhone: e.target.value})} />
+                        <Input name="email" label="Email (Opcional)" placeholder="cliente@email.com" value={reservationForm.clientEmail} onChange={(e) => setReservationForm({...reservationForm, clientEmail: e.target.value})} />
                     </div>
                 </div>
-
                 <div>
                     <label className="text-base font-medium text-[#112320] block mb-1.5">Deporte</label>
-                    <div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base text-gray-500 font-medium">
-                        {courts.find(c => c.id === prefillReservation?.courtId)?.types[0] || 'General'}
-                    </div>
+                    <div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base text-gray-500 font-medium">{courts.find(c => c.id === prefillReservation?.courtId)?.types[0] || 'General'}</div>
                 </div>
-
-                <Card className="p-4 bg-[#C7F269]/20 border-[#C7F269]/50">
-                    <Checkbox 
-                        label="Turno Fijo (Repetir todas las semanas)" 
-                        name="isRecurring" 
-                        checked={reservationForm.isRecurring}
-                        onChange={(e) => setReservationForm({...reservationForm, isRecurring: e.target.checked})}
-                    />
-                </Card>
-
+                <Card className="p-4 bg-[#C7F269]/20 border-[#C7F269]/50"><Checkbox label="Turno Fijo (Repetir todas las semanas)" name="isRecurring" checked={reservationForm.isRecurring} onChange={(e) => setReservationForm({...reservationForm, isRecurring: e.target.checked})} /></Card>
                 <div className="grid grid-cols-2 gap-4">
-                     <Select 
-                        label="Tipo de Turno" 
-                        name="type" 
-                        value={reservationForm.type}
-                        onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}
-                     >
-                        <option>Normal</option>
-                        <option>Profesor</option>
-                        <option>Torneo</option>
-                        <option>Escuela</option>
-                        <option>Cumpleaños</option>
-                        <option>Abonado</option>
-                     </Select>
-                     <Select 
-                        label="Duración" 
-                        name="duration" 
-                        value={reservationForm.duration}
-                        onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}
-                     >
-                        <option value="60">60 min</option>
-                        <option value="90">90 min</option>
-                        <option value="120">120 min</option>
-                     </Select>
+                     <Select label="Tipo de Turno" name="type" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}><option>Normal</option><option>Profesor</option><option>Torneo</option><option>Escuela</option><option>Cumpleaños</option><option>Abonado</option></Select>
+                     <Select label="Duración" name="duration" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></Select>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 items-end">
-                    <div>
-                        <label className="text-base font-medium text-[#112320] block mb-1.5">Precio Total</label>
-                        <div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base font-bold text-[#1B3530]">
-                            $4500
-                        </div>
-                    </div>
-                    <Input 
-                        label="Seña / Adelanto" 
-                        name="depositAmount" 
-                        placeholder="$0.00" 
-                        value={reservationForm.depositAmount}
-                        onChange={(e) => setReservationForm({...reservationForm, depositAmount: e.target.value})}
-                    />
+                    <div><label className="text-base font-medium text-[#112320] block mb-1.5">Precio Total</label><div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base font-bold text-[#1B3530]">$4500</div></div>
+                    <Input label="Seña / Adelanto" name="depositAmount" placeholder="$0.00" value={reservationForm.depositAmount} onChange={(e) => setReservationForm({...reservationForm, depositAmount: e.target.value})} />
                 </div>
-                
-                {reservationForm.depositAmount && (
-                    <Select 
-                        label="Medio de Pago Seña" 
-                        name="depositMethod"
-                        value={reservationForm.depositMethod}
-                        onChange={(e) => setReservationForm({...reservationForm, depositMethod: e.target.value})}
-                    >
-                        <option>Efectivo</option>
-                        <option>Débito</option>
-                        <option>Crédito</option>
-                        <option>MercadoPago</option>
-                        <option>Transferencia</option>
-                    </Select>
-                )}
-
-                <div className="space-y-1.5">
-                    <label className="text-base font-medium text-[#112320]">Notas Adicionales</label>
-                    <textarea 
-                        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-24"
-                        placeholder="Comentarios sobre la reserva..."
-                        value={reservationForm.notes}
-                        onChange={(e) => setReservationForm({...reservationForm, notes: e.target.value})}
-                    />
-                </div>
+                {reservationForm.depositAmount && (<Select label="Medio de Pago Seña" name="depositMethod" value={reservationForm.depositMethod} onChange={(e) => setReservationForm({...reservationForm, depositMethod: e.target.value})}><option>Efectivo</option><option>Débito</option><option>Crédito</option><option>MercadoPago</option><option>Transferencia</option></Select>)}
+                <div className="space-y-1.5"><label className="text-base font-medium text-[#112320]">Notas Adicionales</label><textarea className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-24" placeholder="Comentarios sobre la reserva..." value={reservationForm.notes} onChange={(e) => setReservationForm({...reservationForm, notes: e.target.value})} /></div>
             </div>
-
-            <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-auto bg-white">
-               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-               <Button type="submit">{selectedReservation ? "Guardar Cambios" : "Confirmar Reserva"}</Button>
-            </div>
+            <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-auto bg-white"><Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button><Button type="submit">{selectedReservation ? "Guardar Cambios" : "Confirmar Reserva"}</Button></div>
          </form>
       </SideSheet>
 
       <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
-          {selectedReservation && (
-              <div className="space-y-6 flex flex-col h-full">
-                  <div className="bg-[#1B3530] rounded-2xl p-6 border border-[#112320] flex justify-between items-center text-white shadow-lg">
-                    <div>
-                        <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">Cancha</p>
-                        <p className="text-xl font-bold">
-                            {courts.find(c => c.id === selectedReservation.courtId)?.name}
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">
-                             {new Date(selectedReservation.startTime).toLocaleDateString()}
-                        </p>
-                        <p className="text-xl font-bold">
-                             {selectedReservation.startTime.split('T')[1].substring(0,5)} hs
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                     <Card className="p-4 bg-[#F8F8F8]">
-                         <span className="text-xs font-bold text-gray-500 uppercase">Cliente</span>
-                         <p className="text-lg font-bold text-[#112320]">{selectedReservation.clientName}</p>
-                     </Card>
-                     <Card className="p-4 bg-[#F8F8F8]">
-                         <span className="text-xs font-bold text-gray-500 uppercase">Estado</span>
-                         <p className="text-lg font-bold text-[#112320]">{selectedReservation.status}</p>
-                     </Card>
-                </div>
-                
-                 <Card className="p-4">
-                     <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-gray-600">Creado Por</span>
-                        <span className="font-bold text-[#1B3530]">{selectedReservation.createdBy || '-'}</span>
-                     </div>
-                     <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-gray-600">Tipo</span>
-                        <Badge color="gray">{(selectedReservation as any).type || 'Normal'}</Badge>
-                     </div>
-                     <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-gray-600">Precio Total</span>
-                        <span className="font-bold text-[#1B3530]">${selectedReservation.price}</span>
-                     </div>
-                     <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-600">Pagado</span>
-                        <span className={`font-bold ${selectedReservation.isPaid ? 'text-green-600' : 'text-red-500'}`}>{selectedReservation.isPaid ? 'Si' : 'No'}</span>
-                     </div>
-                 </Card>
-
-                 { (selectedReservation as any).notes && (
-                     <div className="space-y-1">
-                         <label className="text-sm font-bold text-[#112320]">Notas</label>
-                         <p className="text-gray-600 text-sm italic">"{(selectedReservation as any).notes}"</p>
-                     </div>
-                 )}
-
-                 <div className="flex-1"></div>
-
-                 <div className="pt-6 border-t border-gray-100 flex flex-col gap-3 mt-auto">
-                    <Button variant="secondary" className="w-full justify-center" onClick={openEditReservation}>Editar Reserva</Button>
-                    <Button variant="destructive" className="w-full justify-center" onClick={initiateDeleteReservation}>Cancelar Reserva</Button>
-                 </div>
+        {selectedReservation && (
+          <div className="space-y-6 flex flex-col h-full">
+            <div className="bg-[#1B3530] rounded-2xl p-6 border border-[#112320] flex justify-between items-center text-white shadow-lg">
+              <div>
+                <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">Cancha</p>
+                <p className="text-xl font-bold">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p>
               </div>
-          )}
-      </SideSheet>
-
-      <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Nuevo Usuario"}>
-         <form onSubmit={handleSaveUser} className="space-y-6">
-            <Input name="name" label="Nombre Completo" placeholder="Ej. María González" required defaultValue={selectedUser?.name} />
-            <Input name="email" label="Email" type="email" placeholder="usuario@club.com" required defaultValue={selectedUser?.email} />
-            <Select name="role" label="Rol" defaultValue={selectedUser?.role}>
-               <option value="RECEPTIONIST">Recepcionista</option>
-               <option value="ADMIN">Administrador</option>
-               <option value="OWNER">Propietario</option>
-            </Select>
-            <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-               <Button type="submit">{selectedUser ? "Guardar Cambios" : "Crear Usuario"}</Button>
+              <div className="text-right">
+                <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">{new Date(selectedReservation.startTime).toLocaleDateString()}</p>
+                <p className="text-xl font-bold">{selectedReservation.startTime.split('T')[1].substring(0,5)} hs</p>
+              </div>
             </div>
-         </form>
-      </SideSheet>
-
-      <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
-         <form onSubmit={handleSaveProduct} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-                <Input name="code" label="Código" placeholder="COD-001" defaultValue={selectedProduct?.code} />
-                <Select name="type" label="Tipo" defaultValue={selectedProduct?.type}>
-                    <option>Bebidas</option>
-                    <option>Snacks</option>
-                    <option>Equipamiento</option>
-                    <option>Venta</option>
-                    <option>Varios</option>
-                </Select>
+              <Card className="p-4 bg-[#F8F8F8]"><span className="text-xs font-bold text-gray-500 uppercase">Cliente</span><p className="text-lg font-bold text-[#112320]">{selectedReservation.clientName}</p></Card>
+              <Card className="p-4 bg-[#F8F8F8]"><span className="text-xs font-bold text-gray-500 uppercase">Estado</span><p className="text-lg font-bold text-[#112320]">{selectedReservation.status}</p></Card>
             </div>
-            <Input name="name" label="Nombre del Producto" placeholder="Ej. Agua Mineral 500cc" required defaultValue={selectedProduct?.name} />
-            
-            <div className="grid grid-cols-2 gap-4">
-               <Input name="purchasePrice" label="Precio Compra" type="number" placeholder="0.00" required defaultValue={selectedProduct?.purchasePrice} />
-               <Input name="salePrice" label="Precio Venta" type="number" placeholder="0.00" required defaultValue={selectedProduct?.salePrice} />
-            </div>
-             <div className="grid grid-cols-2 gap-4">
-               <Input name="stock" label="Stock Inicial" type="number" placeholder="0" required defaultValue={selectedProduct?.stock} />
-               <div className="flex flex-col justify-end space-y-2 pt-2">
-                   <Checkbox label="Mostrar en Stock" defaultChecked={selectedProduct ? selectedProduct.showInStock : true} />
-                   <Checkbox label="Activo" defaultChecked={selectedProduct ? selectedProduct.active : true} />
-               </div>
-            </div>
-            <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-               <Button type="submit">{selectedProduct ? "Guardar Cambios" : "Guardar Producto"}</Button>
-            </div>
-         </form>
-      </SideSheet>
+            <Card className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-medium text-gray-600">Creado Por</span>
+                <span className="font-bold text-[#1B3530]">{selectedReservation.createdBy}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-gray-600">Precio</span>
+                <span className="font-bold text-[#1B3530]">${selectedReservation.price}</span>
+              </div>
+            </Card>
 
-      <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
-         <form onSubmit={handleSaveCourt} className="space-y-6">
-            <Input name="name" label="Nombre de la Cancha" placeholder="Ej. Cancha Central" required defaultValue={selectedCourt?.name} />
-            <MultiSelect 
-               label="Deportes Permitidos"
-               options={SPORTS_LIST}
-               selected={courtFormTypes}
-               onChange={setCourtFormTypes}
-            />
-            <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>
-               {SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-            </Select>
-            <div className="space-y-3 pt-2">
-                <Checkbox label="Techada (Indoor)" defaultChecked={selectedCourt?.isIndoor} />
-                <Checkbox label="Iluminación Artificial" defaultChecked={selectedCourt?.hasLighting} />
+            <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-auto bg-white">
+                <Button variant="secondary" onClick={openEditReservation}>Editar</Button>
+                <Button variant="destructive" onClick={initiateDeleteReservation}>Eliminar</Button>
             </div>
-            <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-               <Button type="submit">{selectedCourt ? "Guardar Cambios" : "Crear Cancha"}</Button>
-            </div>
-         </form>
-      </SideSheet>
-
-      <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title="Nuevo Cliente">
-         <form onSubmit={handleSaveClient} className="space-y-6">
-            <Input name="name" label="Nombre Completo" placeholder="Ej. Juan Pérez" required />
-            <Input name="email" label="Email" type="email" placeholder="juan@email.com" />
-            <Input name="phone" label="Teléfono" placeholder="+54 9 11..." />
-            <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-               <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-               <Button type="submit">Guardar Cliente</Button>
-            </div>
-         </form>
-      </SideSheet>
-
-      <SideSheet isOpen={activeSheet === 'VIEW_CLIENT'} onClose={closeSheet} title="Detalle Cliente">
-        {selectedClient && (
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                     <div className="w-16 h-16 rounded-full bg-[#1B3530] text-[#C7F269] flex items-center justify-center text-2xl font-bold">
-                         {selectedClient.name.substring(0, 2).toUpperCase()}
-                     </div>
-                     <div>
-                         <h3 className="text-xl font-bold text-[#112320]">{selectedClient.name}</h3>
-                         <p className="text-gray-500">{selectedClient.email}</p>
-                     </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Card className="p-4 bg-[#F8F8F8]">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Total Reservas</p>
-                        <p className="text-2xl font-bold text-[#1B3530]">{selectedClient.totalBookings}</p>
-                    </Card>
-                    <Card className="p-4 bg-[#F8F8F8]">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Total Gastado</p>
-                        <p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent.toLocaleString()}</p>
-                    </Card>
-                </div>
-                <div className="space-y-4">
-                    <h4 className="font-bold text-[#112320]">Información de Contacto</h4>
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <Phone size={18} className="text-gray-400" />
-                            <span>{selectedClient.phone}</span>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <Mail size={18} className="text-gray-400" />
-                            <span>{selectedClient.email}</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="pt-8 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-                    <Button variant="secondary" onClick={closeSheet}>Cerrar</Button>
-                    <Button onClick={() => openBookClient(selectedClient)}>Nueva Reserva</Button>
-                </div>
-            </div>
+          </div>
         )}
       </SideSheet>
 
-      <Modal isOpen={activeSheet === 'EXPORT'} onClose={closeSheet} title="Exportar Reporte">
-        <div className="space-y-6">
-            <p className="text-gray-600">Seleccione el formato en el que desea descargar el reporte actual.</p>
-            <div className="grid grid-cols-2 gap-4">
-                <button onClick={handleExport} className="p-4 border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#1B3530] hover:bg-gray-50 transition-all">
-                    <FileText size={32} className="text-red-500" />
-                    <span className="font-bold text-sm">PDF</span>
-                </button>
-                <button onClick={handleExport} className="p-4 border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#1B3530] hover:bg-gray-50 transition-all">
-                    <FileSpreadsheet size={32} className="text-green-600" />
-                    <span className="font-bold text-sm">Excel</span>
-                </button>
-            </div>
-             <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-            </div>
-        </div>
+      <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
+           <form onSubmit={handleSaveCourt} className="space-y-6">
+                <Input name="name" label="Nombre" defaultValue={selectedCourt?.name} required />
+                <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>
+                    {SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+                <div className="space-y-2">
+                    <label className="text-base font-medium text-[#112320]">Deportes</label>
+                    <div className="flex flex-wrap gap-2">
+                        {SPORTS_LIST.map(sport => (
+                            <div key={sport} onClick={() => {
+                                if (courtFormTypes.includes(sport)) setCourtFormTypes(courtFormTypes.filter(t => t !== sport));
+                                else setCourtFormTypes([...courtFormTypes, sport]);
+                            }} className={`cursor-pointer px-3 py-1 rounded-full text-sm font-medium border ${courtFormTypes.includes(sport) ? 'bg-[#1B3530] text-[#C7F269] border-[#1B3530]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                                {sport}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button type="submit">Guardar</Button>
+                </div>
+           </form>
+      </SideSheet>
+
+       <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Nuevo Usuario"}>
+           <form onSubmit={handleSaveUser} className="space-y-6">
+                <Input name="name" label="Nombre Completo" defaultValue={selectedUser?.name} required />
+                <Input name="email" label="Email" type="email" defaultValue={selectedUser?.email} required />
+                <Select name="role" label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
+                    <option value="OWNER">Propietario</option>
+                    <option value="ADMIN">Administrador</option>
+                    <option value="RECEPTIONIST">Recepcionista</option>
+                </Select>
+                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button type="submit">Guardar</Button>
+                </div>
+           </form>
+      </SideSheet>
+
+      <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title="Nuevo Cliente">
+           <form onSubmit={handleSaveClient} className="space-y-6">
+                <Input name="name" label="Nombre Completo" required />
+                <Input name="email" label="Email" type="email" required />
+                <Input name="phone" label="Teléfono" required />
+                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button type="submit">Guardar</Button>
+                </div>
+           </form>
+      </SideSheet>
+
+      <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
+           <form onSubmit={handleSaveProduct} className="space-y-6">
+                <Input name="code" label="Código" defaultValue={selectedProduct?.code} />
+                <Input name="name" label="Nombre" defaultValue={selectedProduct?.name} required />
+                <div className="grid grid-cols-2 gap-4">
+                    <Input name="purchasePrice" label="Precio Compra" type="number" defaultValue={selectedProduct?.purchasePrice} required />
+                    <Input name="salePrice" label="Precio Venta" type="number" defaultValue={selectedProduct?.salePrice} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <Input name="stock" label="Stock Actual" type="number" defaultValue={selectedProduct?.stock} required />
+                    <Select name="type" label="Categoría" defaultValue={selectedProduct?.type || 'Venta'}>
+                        <option value="Venta">Venta</option>
+                        <option value="Alquiler">Alquiler</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Equipamiento">Equipamiento</option>
+                    </Select>
+                </div>
+                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button type="submit">Guardar</Button>
+                </div>
+           </form>
+      </SideSheet>
+
+      <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="¿Cancelar Reserva?">
+          <p className="text-gray-600 mb-6">Esta acción no se puede deshacer. ¿Estás seguro?</p>
+          <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={closeSheet}>No, volver</Button>
+              <Button variant="destructive" onClick={confirmDeleteReservation}>Sí, cancelar</Button>
+          </div>
       </Modal>
 
-      <Modal isOpen={activeSheet === 'IMPORT_INVENTORY'} onClose={closeSheet} title="Importar Inventario">
-        <div className="space-y-6">
-            <div className="border-2 border-dashed border-gray-300 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer">
-                <Upload size={48} className="text-gray-400 mb-4" />
-                <p className="font-bold text-[#112320] text-lg">Arrastra tu archivo aquí</p>
-                <p className="text-sm text-gray-500 mt-2">o haz clic para seleccionar</p>
-                <p className="text-xs text-gray-400 mt-4">Soporta .CSV, .XLSX (Máx 5MB)</p>
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                <Button onClick={closeSheet}>Importar</Button>
-            </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="Eliminar Usuario">
-        <div className="space-y-6">
-            <div className="flex gap-4 items-start">
-                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500">
-                     <AlertTriangle size={24} />
-                 </div>
-                 <div>
-                     <p className="font-bold text-[#112320] mb-1">¿Estás seguro?</p>
-                     <p className="text-gray-600 text-sm">Esta acción no se puede deshacer. El usuario perderá acceso inmediato al sistema.</p>
-                 </div>
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                <Button variant="destructive" onClick={confirmDeleteUser}>Eliminar</Button>
-            </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="Cancelar Reserva">
-        <div className="space-y-6">
-            <div className="flex gap-4 items-start">
-                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500">
-                     <AlertTriangle size={24} />
-                 </div>
-                 <div>
-                     <p className="font-bold text-[#112320] mb-1">¿Estás seguro?</p>
-                     <p className="text-gray-600 text-sm">La reserva será eliminada permanentemente del calendario.</p>
-                 </div>
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={closeSheet}>Volver</Button>
-                <Button variant="destructive" onClick={confirmDeleteReservation}>Cancelar Reserva</Button>
-            </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña">
-        <form onSubmit={handleReplyReview} className="space-y-4">
-             <div className="bg-[#F8F8F8] p-4 rounded-2xl">
-                 <p className="text-sm text-gray-500 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
-             </div>
-             <div className="space-y-1.5">
-                 <label className="text-sm font-medium text-[#112320]">Tu respuesta</label>
-                 <textarea className="w-full rounded-2xl border border-gray-200 p-3 h-24 focus:outline-none focus:border-[#1B3530] text-sm" placeholder="Escribe tu respuesta aquí..."></textarea>
-             </div>
-             <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                <Button type="submit">Enviar Respuesta</Button>
-            </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña">
-         <form onSubmit={handleReportReview} className="space-y-4">
-             <p className="text-sm text-gray-600">Selecciona el motivo por el cual estás reportando este comentario:</p>
-             <div className="space-y-2">
-                 <RadioGroup 
-                    name="reportReason" 
-                    options={[
-                        { label: 'Spam o publicidad', value: 'spam' },
-                        { label: 'Lenguaje ofensivo', value: 'offensive' },
-                        { label: 'Información falsa', value: 'fake' },
-                        { label: 'Otro', value: 'other' }
-                    ]}
-                 />
-             </div>
-             <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                <Button type="submit" variant="destructive">Reportar</Button>
-            </div>
-         </form>
+      <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="¿Eliminar Usuario?">
+          <p className="text-gray-600 mb-6">Esta acción no se puede deshacer. ¿Estás seguro?</p>
+          <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={closeSheet}>No, volver</Button>
+              <Button variant="destructive" onClick={confirmDeleteUser}>Sí, eliminar</Button>
+          </div>
       </Modal>
 
       <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
-        <div className="space-y-6">
-            <div className="flex gap-4 items-start">
-                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500">
-                     <LogOut size={24} />
-                 </div>
-                 <div>
-                     <p className="font-bold text-[#112320] mb-1">¿Cerrar sesión?</p>
-                     <p className="text-gray-600 text-sm">Tendrás que volver a ingresar tus credenciales para acceder.</p>
-                 </div>
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
-            </div>
-        </div>
+          <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir?</p>
+          <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+              <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
+          </div>
       </Modal>
 
     </HashRouter>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { CalendarDays, Users, Trophy, BarChart3, ShoppingBag, Store, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -24,10 +23,21 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
 
 interface SidebarProps {
   onLogout: () => void;
+  user?: {
+    name: string;
+    role: string;
+    email?: string;
+  };
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
   const [collapsed, setCollapsed] = useState(true);
+
+  const initials = user?.name 
+    ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() 
+    : 'U';
+
+  const roleDisplay = user?.role === 'OWNER' ? 'Propietario' : user?.role === 'ADMIN' ? 'Administrador' : 'Recepcionista';
 
   return (
     <aside 
@@ -69,12 +79,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             className={`flex items-center gap-3 px-2 py-2 rounded-full hover:bg-[#F8F8F8] transition-colors group ${collapsed ? 'justify-center' : ''}`}
           >
             <div className="w-10 h-10 rounded-full bg-[#C7F269] border border-[#C7F269] flex items-center justify-center text-[#1B3530] font-bold flex-shrink-0 transition-colors">
-              JA
+              {initials}
             </div>
             {!collapsed && (
               <div className="flex flex-col overflow-hidden text-left">
-                <span className="text-sm font-bold text-[#1B3530] truncate">Juan Admin</span>
-                <span className="text-xs text-gray-500 truncate">Propietario</span>
+                <span className="text-sm font-bold text-[#1B3530] truncate">{user?.name || 'Usuario'}</span>
+                <span className="text-xs text-gray-500 truncate">{roleDisplay || 'Miembro'}</span>
               </div>
             )}
           </NavLink>
