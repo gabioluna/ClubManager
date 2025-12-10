@@ -144,12 +144,35 @@ export const Checkbox: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { 
   </label>
 );
 
+export const Switch: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }> = ({ checked, onChange, disabled }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => !disabled && onChange(!checked)}
+    className={`
+      relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3530] focus:ring-offset-2
+      ${checked ? 'bg-[#1B3530]' : 'bg-gray-200'}
+      ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+    `}
+  >
+    <span
+      className={`
+        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+        ${checked ? 'translate-x-6' : 'translate-x-1'}
+      `}
+    />
+  </button>
+);
+
 export const RadioGroup: React.FC<{ 
   label?: string, 
   name: string, 
   options: { label: string, value: string }[], 
-  defaultValue?: string 
-}> = ({ label, name, options, defaultValue }) => {
+  defaultValue?: string,
+  onChange?: (value: string) => void
+}> = ({ label, name, options, defaultValue, onChange }) => {
   return (
     <div className="space-y-2">
       {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
@@ -161,6 +184,7 @@ export const RadioGroup: React.FC<{
                name={name} 
                value={opt.value} 
                defaultChecked={defaultValue === opt.value}
+               onChange={() => onChange && onChange(opt.value)}
                className="h-4 w-4 border-gray-300 text-[#1B3530] focus:ring-[#1B3530] cursor-pointer accent-[#1B3530]"
              />
              <span className="text-base text-gray-600 group-hover:text-[#112320] font-medium">{opt.label}</span>
