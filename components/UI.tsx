@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Loader2, X, ChevronDown, Check, Search, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, X, ChevronDown, Check, Search, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'destructive', isLoading?: boolean }> = ({ 
   children, variant = 'primary', className = '', isLoading, ...props 
@@ -348,24 +349,41 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
   );
 };
 
-export const Snackbar: React.FC<{ message: string, type?: 'success' | 'error', isVisible: boolean, onClose: () => void }> = ({ message, type = 'success', isVisible, onClose }) => {
+export interface SnackbarProps {
+  message: string;
+  type?: 'success' | 'error' | 'info';
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const Snackbar: React.FC<SnackbarProps> = ({ message, type = 'success', isOpen, onClose }) => {
   useEffect(() => {
-    if (isVisible) {
+    if (isOpen) {
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 3000); // Auto close after 3 seconds
       return () => clearTimeout(timer);
     }
-  }, [isVisible, onClose]);
+  }, [isOpen, onClose]);
 
-  if (!isVisible) return null;
+  if (!isOpen) return null;
+
+  const typeStyles = {
+    success: 'bg-[#1B3530] text-[#C7F269] border-[#C7F269]/20',
+    error: 'bg-red-600 text-white border-red-700',
+    info: 'bg-blue-600 text-white border-blue-700'
+  };
+
+  const Icon = type === 'success' ? CheckCircle2 : type === 'error' ? AlertCircle : Info;
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-5 duration-300">
-      <div className={`flex items-center gap-3 px-6 py-3 rounded-full shadow-xl border ${type === 'success' ? 'bg-[#1B3530] text-white border-[#1B3530]' : 'bg-white text-red-600 border-red-100'}`}>
-        {type === 'success' ? <CheckCircle size={20} className="text-[#C7F269]" /> : <AlertCircle size={20} />}
-        <span className="font-semibold text-sm">{message}</span>
-        <button onClick={onClose} className="ml-2 hover:opacity-70"><X size={16} /></button>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-2 duration-300">
+      <div className={`flex items-center gap-3 px-6 py-3.5 rounded-full shadow-xl border ${typeStyles[type]}`}>
+        <Icon size={20} />
+        <span className="font-medium text-sm">{message}</span>
+        <button onClick={onClose} className="ml-2 hover:opacity-75">
+          <X size={16} />
+        </button>
       </div>
     </div>
   );

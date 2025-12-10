@@ -1,5 +1,4 @@
 
-
 export enum CourtType {
   BASKET_3X3 = "Básquet 3vs3",
   BASKET_5X5 = "Básquet 5vs5",
@@ -88,6 +87,7 @@ export interface User {
   role: 'ADMIN' | 'RECEPTIONIST' | 'OWNER';
   email: string;
   status: 'ACTIVE' | 'INACTIVE';
+  password?: string; // Added for mock auth persistence
 }
 
 export interface Client {
@@ -117,4 +117,10 @@ export interface FinancialMetric {
   date: string;
   revenue: number;
   category: string;
+}
+
+export interface ReservationTypeMeta {
+    label: string;
+    color: string; // Hex for charts
+    twColor: string; // Tailwind class for UI
 }
