@@ -1,27 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
-import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal } from './components/UI';
-import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY, MOCK_CLIENTS, SPORTS_LIST, SURFACE_LIST } from './constants';
-import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut } from 'lucide-react';
+import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal, AutocompleteInput, Textarea, Snackbar } from './components/UI';
+import { SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
+import { Court, Reservation, ReservationStatus, User, Product, ForceStartOption, Client } from './types';
+import { Search, Plus, Filter, DollarSign, MapPin, Edit2, Trash2, Check, Calendar, List, Ban, ChevronRight, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Key, FileSpreadsheet, ChevronLeft, Eye, Upload, ChevronDown, Star, MessageSquare, Flag, FileText, FileType, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, PackageOpen, Trophy, Shield, Palette, Star as StarIcon, Info, Plug, Power, Camera, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
+import { supabase } from './lib/supabase';
 
-// --- Auth Components (Mock) ---
+// --- Auth Components ---
 
-const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
+const LoginPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    setError(null);
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+            // Fetch additional profile info if exists
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', data.user.id)
+                .single();
+
+            onLogin({
+                id: data.user.id,
+                email: data.user.email,
+                name: profile?.name || data.user.email?.split('@')[0],
+                role: profile?.role || 'OWNER', // Default to OWNER if no profile found
+                full_name: profile?.name
+            });
+        }
+    } catch (err: any) {
+        console.error("Login error:", err);
+        setError(err.message || 'Credenciales incorrectas o error de conexión.');
+    } finally {
         setLoading(false);
-        onLogin();
-    }, 1000);
+    }
   };
 
   return (
@@ -32,14 +61,21 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
             G
           </div>
           <h1 className="text-2xl font-bold text-[#112320]">Iniciar Sesión</h1>
-          <p className="text-gray-500">Bienvenido a GestorClub</p>
+          <p className="text-gray-500">Acceso exclusivo para personal autorizado</p>
         </div>
+
+        {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                <AlertTriangle size={16} />
+                {error}
+            </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input 
             label="Email" 
             type="email" 
-            placeholder="tu@email.com" 
+            placeholder="usuario@club.com" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)}
             required 
@@ -59,119 +95,6 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
             Ingresar
           </Button>
         </form>
-
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            ¿No tienes una cuenta?{' '}
-            <Link to="/register" className="text-[#1B3530] font-bold hover:underline">
-              Regístrate aquí
-            </Link>
-          </p>
-        </div>
-      </Card>
-    </div>
-  );
-};
-
-const RegisterPage = ({ onLogin }: { onLogin: (data: {fullName: string, email: string}) => void }) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
-    
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-        setLoading(false);
-        onLogin({ fullName: formData.fullName, email: formData.email });
-    }, 1000);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl border-none">
-        <div className="flex flex-col items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#112320]">Crear Cuenta</h1>
-          <p className="text-gray-500">Únete a GestorClub</p>
-        </div>
-
-        {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
-                <AlertTriangle size={16} />
-                {error}
-            </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            name="fullName"
-            label="Nombre Completo" 
-            placeholder="Juan Pérez" 
-            value={formData.fullName} 
-            onChange={handleChange}
-            required 
-            icon={UserIcon}
-          />
-          <Input 
-            name="email"
-            label="Email" 
-            type="email" 
-            placeholder="tu@email.com" 
-            value={formData.email} 
-            onChange={handleChange}
-            required 
-            icon={Mail}
-          />
-          <Input 
-            name="password"
-            label="Contraseña" 
-            type="password" 
-            placeholder="••••••••" 
-            value={formData.password} 
-            onChange={handleChange}
-            required 
-            icon={Key}
-          />
-          <Input 
-            name="confirmPassword"
-            label="Confirmar Contraseña" 
-            type="password" 
-            placeholder="••••••••" 
-            value={formData.confirmPassword} 
-            onChange={handleChange}
-            required 
-            icon={Key}
-          />
-          
-          <Button type="submit" className="w-full py-3.5 mt-2" isLoading={loading}>
-            Registrarse
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">
-            ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-[#1B3530] font-bold hover:underline">
-              Ingresa aquí
-            </Link>
-          </p>
-        </div>
       </Card>
     </div>
   );
@@ -249,6 +172,7 @@ const ReservasPage = ({
 
   const getReservation = (courtId: string, timeString: string) => {
     return reservations.find(r => {
+      if (r.status === ReservationStatus.CANCELLED) return false;
       const [resDate, resFullTime] = r.startTime.split('T');
       const resTime = resFullTime.substring(0, 5);
       return r.courtId === courtId && resDate === selectedDate && resTime === timeString;
@@ -263,6 +187,8 @@ const ReservasPage = ({
   const currentMinute = currentTime.getMinutes();
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
+  const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+
   const isClosed = (timeString: string) => {
       const [y, m, d] = selectedDate.split('-').map(Number);
       const date = new Date(y, m - 1, d);
@@ -271,6 +197,7 @@ const ReservasPage = ({
       
       const daySchedule = schedule.find(s => s.day === dayNameCapitalized);
       
+      // Basic check for schedule existence
       if (!daySchedule || !daySchedule.open) return true;
       
       const time = parseInt(timeString.split(':')[0]);
@@ -283,24 +210,35 @@ const ReservasPage = ({
   const getReservationColor = (type: string | undefined, status: string) => {
      if (status === ReservationStatus.BLOCKED) return 'bg-gray-100 border border-gray-200 text-gray-500';
      if (status === ReservationStatus.PENDING) return 'bg-yellow-50 border border-yellow-200 text-yellow-900';
+     if (status === ReservationStatus.CANCELLED) return 'bg-red-50 border border-red-200 text-red-900';
      
-     switch(type) {
-         case 'Profesor': return 'bg-blue-600 text-white';
-         case 'Escuela': return 'bg-blue-600 text-white';
-         case 'Torneo': return 'bg-purple-600 text-white';
-         case 'Cumpleaños': return 'bg-orange-500 text-white';
-         case 'Abonado': return 'bg-yellow-500 text-white';
-         default: return 'bg-[#1B3530] text-[#C7F269] hover:bg-[#112320]'; // Normal
-     }
+     const meta = RESERVATION_META[type || 'Normal'];
+     return meta ? meta.tailwind : RESERVATION_META['Normal'].tailwind;
   };
 
   // List view state
   const filteredReservationsList = viewMode === 'CALENDAR' 
-      ? reservations.filter(r => r.startTime.startsWith(selectedDate))
+      ? reservations.filter(r => r.startTime.startsWith(selectedDate) && r.status !== ReservationStatus.CANCELLED)
       : [...reservations].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   
   const totalPages = Math.ceil(filteredReservationsList.length / itemsPerPage);
   const paginatedReservations = filteredReservationsList.slice((listPage - 1) * itemsPerPage, listPage * itemsPerPage);
+
+  if (courts.length === 0 && viewMode === 'CALENDAR') {
+      return (
+        <div className="p-8 h-full flex flex-col items-center justify-center text-center">
+            <h1 className="text-3xl font-bold text-[#112320] mb-2">Reservas</h1>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-md">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trophy className="text-gray-400" size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-[#112320] mb-2">No hay canchas configuradas</h3>
+                <p className="text-gray-500 mb-6">Para comenzar a tomar reservas, primero debes agregar canchas en la sección "Canchas".</p>
+                <Button onClick={() => window.location.hash = '#/courts'}>Ir a Canchas</Button>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="p-8 space-y-6 flex flex-col h-full overflow-hidden">
@@ -324,9 +262,11 @@ const ReservasPage = ({
                         <List size={16} /> Historial
                     </button>
                 </div>
-                <Button onClick={() => onAddReservation(selectedDate)}>
-                    <Plus className="w-4 h-4 mr-2" /> Nueva Reserva
-                </Button>
+                {courts.length > 0 && (
+                    <Button onClick={() => onAddReservation(selectedDate)}>
+                        <Plus className="w-4 h-4 mr-2" /> Nueva Reserva
+                    </Button>
+                )}
             </div>
         </div>
 
@@ -390,11 +330,13 @@ const ReservasPage = ({
                     >
                     {showTimeIndicator && (
                         <div 
-                            className="absolute left-0 right-0 border-t-2 border-[#1B3530] z-20 pointer-events-none flex items-center"
+                            className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-20 pointer-events-none flex items-center"
                             style={{ top: `${topPercentage}%` }}
                         >
-                            <div className="absolute -left-1 w-2.5 h-2.5 bg-[#1B3530] rounded-full -translate-y-1/2"></div>
-                            <div className="absolute left-0 right-0 h-full bg-[#1B3530]/5"></div>
+                            <div className="absolute left-2 -top-3 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm z-30">
+                                {currentTimeString}
+                            </div>
+                            <div className="absolute -left-1 w-2.5 h-2.5 bg-red-500 rounded-full -translate-y-1/2"></div>
                         </div>
                     )}
 
@@ -412,7 +354,7 @@ const ReservasPage = ({
                                 {res ? (
                                 <div 
                                     onClick={() => onSelectReservation(res)}
-                                    className={`w-full h-full rounded-xl p-3 text-xs flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm ${getReservationColor((res as any).type, res.status)}`}
+                                    className={`w-full h-full rounded-xl p-3 text-xs flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm ${getReservationColor(res.type, res.status)}`}
                                 >
                                     <div className="truncate font-bold text-sm">
                                     {res.status === ReservationStatus.BLOCKED ? (
@@ -447,9 +389,6 @@ const ReservasPage = ({
           <Card className="p-0 overflow-hidden flex-1 flex flex-col">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white">
                    <h2 className="font-bold text-[#112320]">Historial de Reservas</h2>
-                   <Button variant="ghost" className="text-sm h-8" onClick={() => {}}>
-                       <Download size={14} className="mr-2"/> Descargar Historial
-                   </Button>
               </div>
               <div className="overflow-auto custom-scrollbar flex-1">
                 <table className="w-full text-left">
@@ -479,12 +418,12 @@ const ReservasPage = ({
                                         <td className="px-6 py-4 text-base text-gray-600">{res.clientName}</td>
                                         <td className="px-6 py-4 text-base text-gray-500 italic">{res.createdBy || '-'}</td>
                                         <td className="px-6 py-4">
-                                            <Badge color="gray">{(res as any).type || 'Normal'}</Badge>
+                                            <Badge color="gray">{res.type || 'Normal'}</Badge>
                                         </td>
                                         <td className="px-6 py-4 text-base font-bold text-[#1B3530]">${res.price}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-sm font-semibold ${res.status === ReservationStatus.CONFIRMED ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                {res.status === ReservationStatus.CONFIRMED ? 'Confirmada' : res.status}
+                                            <span className={`text-sm font-semibold ${res.status === ReservationStatus.CONFIRMED ? 'text-green-600' : res.status === ReservationStatus.CANCELLED ? 'text-red-600' : 'text-yellow-600'}`}>
+                                                {res.status === ReservationStatus.CONFIRMED ? 'Confirmada' : res.status === ReservationStatus.CANCELLED ? 'Cancelada' : res.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -497,8 +436,8 @@ const ReservasPage = ({
                              })
                         ) : (
                             <tr>
-                                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                    No hay reservas registradas.
+                                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                                    No hay historial de reservas.
                                 </td>
                             </tr>
                         )}
@@ -518,7 +457,277 @@ const ReservasPage = ({
   );
 };
 
-// ... other components ...
+const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reservations: Reservation[] }) => {
+  const [dateRange, setDateRange] = useState('7_DAYS');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
+  // --- Real Analytics Logic ---
+  const analyticsData = useMemo(() => {
+    const now = new Date();
+    let startDate = new Date();
+    let endDate = new Date();
+
+    // Determine Date Range
+    if (dateRange === '7_DAYS') {
+        startDate.setDate(now.getDate() - 7);
+    } else if (dateRange === '30_DAYS') {
+        startDate.setDate(now.getDate() - 30);
+    } else if (dateRange === '60_DAYS') {
+        startDate.setDate(now.getDate() - 60);
+    } else if (dateRange === 'LAST_MONTH') {
+        startDate.setMonth(now.getMonth() - 1);
+        startDate.setDate(1);
+        endDate.setMonth(now.getMonth());
+        endDate.setDate(0);
+    } else if (dateRange === 'CUSTOM' && customStart && customEnd) {
+        startDate = new Date(customStart);
+        endDate = new Date(customEnd);
+        endDate.setHours(23, 59, 59, 999);
+    } else {
+        // Default to 7 days
+        startDate.setDate(now.getDate() - 7);
+    }
+
+    const filteredReservations = reservations.filter(r => {
+        const rDate = new Date(r.startTime);
+        return rDate >= startDate && rDate <= endDate && r.status !== ReservationStatus.CANCELLED;
+    });
+
+    const totalRevenue = filteredReservations.reduce((acc, curr) => acc + curr.price, 0);
+    const totalBookings = filteredReservations.length;
+    
+    const totalMinutes = filteredReservations.reduce((acc, curr) => {
+        const start = new Date(curr.startTime).getTime();
+        const end = new Date(curr.endTime).getTime();
+        return acc + ((end - start) / 60000);
+    }, 0);
+    const avgSession = totalBookings > 0 ? Math.round(totalMinutes / totalBookings) : 0;
+    
+    // Data for Graphs
+    const revenueByDayMap = new Map<string, number>();
+    const bookingsByWeekdayMap = { 'Lun': 0, 'Mar': 0, 'Mie': 0, 'Jue': 0, 'Vie': 0, 'Sab': 0, 'Dom': 0 };
+    const hourlyDistributionMap = new Array(24).fill(0);
+    
+    // Customer Segments (based on type)
+    const segmentsMap: Record<string, number> = {};
+    Object.keys(RESERVATION_META).forEach(k => segmentsMap[k] = 0);
+
+    filteredReservations.forEach(r => {
+        // Revenue Line
+        const dateKey = new Date(r.startTime).toLocaleDateString('es-ES', { weekday: 'short' });
+        revenueByDayMap.set(dateKey, (revenueByDayMap.get(dateKey) || 0) + r.price);
+
+        // Weekday Bar
+        const dayName = new Date(r.startTime).toLocaleDateString('es-ES', { weekday: 'short' });
+        // Normalize day name key
+        const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
+        // Simple mapping attempt
+        if (normalizedDay.startsWith('Lu')) bookingsByWeekdayMap['Lun']++;
+        else if (normalizedDay.startsWith('Ma')) bookingsByWeekdayMap['Mar']++;
+        else if (normalizedDay.startsWith('Mi')) bookingsByWeekdayMap['Mie']++;
+        else if (normalizedDay.startsWith('Ju')) bookingsByWeekdayMap['Jue']++;
+        else if (normalizedDay.startsWith('Vi')) bookingsByWeekdayMap['Vie']++;
+        else if (normalizedDay.startsWith('Sá') || normalizedDay.startsWith('Sa')) bookingsByWeekdayMap['Sab']++;
+        else if (normalizedDay.startsWith('Do')) bookingsByWeekdayMap['Dom']++;
+
+        // Hourly
+        const hour = new Date(r.startTime).getHours();
+        hourlyDistributionMap[hour]++;
+
+        // Segments
+        const type = r.type || 'Normal';
+        if (segmentsMap[type] !== undefined) segmentsMap[type]++;
+        else segmentsMap['Normal']++;
+    });
+
+    const revenueData = Array.from(revenueByDayMap).map(([name, value]) => ({ name, value }));
+    
+    const bookingsByWeekday = Object.keys(bookingsByWeekdayMap).map(key => ({ 
+        name: key, 
+        // @ts-ignore
+        value: bookingsByWeekdayMap[key] 
+    }));
+
+    const hourlyData = hourlyDistributionMap.map((val, idx) => ({ hour: `${idx}:00`, value: val })).slice(8, 24); 
+
+    const customerSegments = Object.keys(segmentsMap)
+        .filter(key => segmentsMap[key] > 0)
+        .map(key => ({
+            name: key,
+            value: segmentsMap[key],
+            color: RESERVATION_META[key]?.color || '#9CA3AF'
+        }));
+
+    return {
+        dateLabel: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+        kpis: [
+            { label: 'Total Revenue', value: `$ ${totalRevenue.toLocaleString()}`, change: '+0%', trend: 'up', icon: DollarSign, color: 'bg-green-100 text-green-700' },
+            { label: 'Total Bookings', value: `${totalBookings}`, change: '+0%', trend: 'up', icon: Calendar, color: 'bg-blue-100 text-blue-700' },
+            { label: 'Avg. Session', value: `${avgSession}m`, change: '0%', trend: 'down', icon: ClockIcon, color: 'bg-orange-100 text-orange-700' },
+            { label: 'Utilization', value: `${totalBookings > 0 ? 'High' : 'Low'}`, change: '0%', trend: 'up', icon: Activity, color: 'bg-purple-100 text-purple-700' },
+        ],
+        revenueData,
+        bookingsByWeekday,
+        hourlyData,
+        customerSegments
+    };
+
+  }, [reservations, dateRange, customStart, customEnd]);
+
+  return (
+    <div className="p-8 space-y-8 pb-20 h-full overflow-y-auto">
+      <div className="flex justify-between items-center">
+        <div>
+           <h1 className="text-3xl font-bold text-[#112320]">Reportes</h1>
+           <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+             <Clock size={14}/> Periodo: <span className="font-semibold text-[#112320]">{analyticsData.dateLabel}</span>
+           </p>
+        </div>
+        <div className="flex gap-3 items-center">
+            {dateRange === 'CUSTOM' && (
+                <div className="flex gap-2 animate-in fade-in">
+                    <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
+                    <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
+                </div>
+            )}
+            <div className="relative">
+                <select 
+                    value={dateRange} 
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full focus:outline-none focus:border-[#1B3530] cursor-pointer"
+                >
+                    <option value="7_DAYS">Últimos 7 días</option>
+                    <option value="30_DAYS">Últimos 30 días</option>
+                    <option value="60_DAYS">Últimos 60 días</option>
+                    <option value="CUSTOM">Seleccionar otra fecha</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <ChevronDown size={16} />
+                </div>
+            </div>
+            <Button onClick={onExport} variant="secondary"><FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {analyticsData.kpis.map((kpi, i) => (
+            <Card key={i} className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
+                <div className="flex items-start justify-between">
+                    <div>
+                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">{kpi.label}</p>
+                         <h3 className="text-3xl font-bold text-[#112320] tracking-tight">{kpi.value}</h3>
+                         <div className="mt-2 flex items-center gap-1">
+                            {kpi.trend === 'up' ? 
+                                <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                    <TrendingUp size={12} className="mr-1"/> {kpi.change}
+                                </span> :
+                                <span className="flex items-center text-xs font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                                    <TrendingUp size={12} className="mr-1 rotate-180"/> {kpi.change}
+                                </span>
+                            }
+                            <span className="text-xs text-gray-400 font-medium">vs. prev period</span>
+                         </div>
+                    </div>
+                    <div className={`p-3 rounded-2xl ${kpi.color}`}>
+                        <kpi.icon size={24} />
+                    </div>
+                </div>
+            </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="p-6 flex flex-col">
+              <h3 className="text-lg font-bold text-[#112320] mb-6">Revenue Overview (Daily)</h3>
+              <div className="h-64 w-full">
+                 {analyticsData.revenueData.length > 0 ? (
+                 <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={analyticsData.revenueData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        <Line type="monotone" dataKey="value" stroke="#1B3530" strokeWidth={3} dot={{r: 4, fill: "#1B3530"}} activeDot={{ r: 8 }} />
+                    </LineChart>
+                 </ResponsiveContainer>
+                 ) : (
+                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                         <TrendingUp size={32} className="mb-2 opacity-20"/>
+                         <p className="text-sm">Sin datos de ingresos</p>
+                     </div>
+                 )}
+              </div>
+          </Card>
+
+          <Card className="p-6 flex flex-col">
+              <h3 className="text-lg font-bold text-[#112320] mb-6">Customer Segments</h3>
+              <div className="h-64 w-full">
+                {analyticsData.customerSegments.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                    <Pie
+                        data={analyticsData.customerSegments}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                    >
+                        {analyticsData.customerSegments.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                    </PieChart>
+                </ResponsiveContainer>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <PieChartIcon size={32} className="mb-2 opacity-20"/>
+                        <p className="text-sm">Sin datos de segmentos</p>
+                    </div>
+                )}
+              </div>
+          </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="p-6 flex flex-col">
+                <h3 className="text-lg font-bold text-[#112320] mb-6">Bookings by Weekday</h3>
+                <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsData.bookingsByWeekday}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                            <YAxis axisLine={false} tickLine={false} />
+                            <Tooltip cursor={{fill: '#F8F8F8'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
+                            <Bar dataKey="value" fill="#1B3530" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </Card>
+
+            <Card className="p-6 flex flex-col">
+                <h3 className="text-lg font-bold text-[#112320] mb-6">Hourly Distribution</h3>
+                <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsData.hourlyData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="hour" axisLine={false} tickLine={false} />
+                            <YAxis axisLine={false} tickLine={false} />
+                            <Tooltip cursor={{fill: '#F8F8F8'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
+                            <Bar dataKey="value" fill="#C7F269" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </Card>
+      </div>
+    </div>
+  );
+}
+
 const CourtsPage = ({ 
   courts, 
   onAddCourt, 
@@ -528,6 +737,30 @@ const CourtsPage = ({
   onAddCourt: () => void, 
   onEditCourt: (c: Court) => void 
 }) => {
+  const [sortConfig, setSortConfig] = useState<{key: keyof Court, direction: 'asc' | 'desc'} | null>(null);
+
+  const handleSort = (key: keyof Court) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+        direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedCourts = React.useMemo(() => {
+    if (!sortConfig) return courts;
+    return [...courts].sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+  }, [courts, sortConfig]);
+
+  const renderSortIcon = (key: keyof Court) => {
+      if (sortConfig?.key !== key) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
+      return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-[#1B3530]" /> : <ArrowDown size={14} className="ml-1 text-[#1B3530]" />;
+  };
+
   return (
     <div className="p-8 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-end">
@@ -543,28 +776,43 @@ const CourtsPage = ({
         <table className="w-full text-left">
         <thead className="bg-[#F8F8F8] border-b border-gray-200">
             <tr>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Nombre</th>
+            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
+                <div className="flex items-center">Nombre {renderSortIcon('name')}</div>
+            </th>
             <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Tipo</th>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Superficie</th>
+            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('surface')}>
+                <div className="flex items-center">Superficie {renderSortIcon('surface')}</div>
+            </th>
             <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Características</th>
             <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
             </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-            {courts.map(court => (
-            <tr key={court.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{court.name}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.types.join(', ')}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.surface}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">
-                    {court.isIndoor && <span className="mr-2">Techada</span>}
-                    {court.hasLighting && <span>Iluminación</span>}
-                </td>
-                <td className="px-6 py-4 text-right">
-                    <Button variant="secondary" className="px-0 w-9 h-9 rounded-full flex items-center justify-center" onClick={() => onEditCourt(court)}><Edit2 size={16}/></Button>
-                </td>
-            </tr>
-            ))}
+            {sortedCourts.length > 0 ? (
+                sortedCourts.map(court => (
+                <tr key={court.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-base font-bold text-[#112320]">{court.name}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.types.join(', ')}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.surface}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">
+                        {court.isIndoor && <span className="mr-2">Techada</span>}
+                        {court.hasLighting && <span>Iluminación</span>}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                        <Button variant="secondary" className="px-0 w-9 h-9 rounded-full flex items-center justify-center" onClick={() => onEditCourt(court)}><Edit2 size={16}/></Button>
+                    </td>
+                </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                            <PackageOpen size={32} className="mb-2 opacity-20"/>
+                            No hay canchas configuradas.
+                        </div>
+                    </td>
+                </tr>
+            )}
         </tbody>
         </table>
     </Card>
@@ -605,29 +853,37 @@ const UsersPage = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {users.map(user => (
-              <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{user.name}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{user.email}</td>
-                <td className="px-6 py-4">
-                  <Badge color={user.role === 'OWNER' ? 'blue' : user.role === 'ADMIN' ? 'gray' : 'yellow'}>
-                    {user.role}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4">
-                   <div className="flex items-center gap-2">
-                     <div className={`w-2 h-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#C7F269]' : 'bg-red-500'}`}></div>
-                     <span className="text-base font-medium text-gray-600">{user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span>
-                   </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                   <div className="flex justify-end gap-2">
-                     <button className="p-2 flex items-center justify-center border border-gray-200 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditUser(user)}><Edit2 size={16}/></button>
-                     <button className="p-2 flex items-center justify-center border border-red-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full" onClick={() => onDeleteUser(user.id)}><Trash2 size={16}/></button>
-                   </div>
-                </td>
-              </tr>
-            ))}
+            {users.length > 0 ? (
+                users.map(user => (
+                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-base font-bold text-[#112320]">{user.name}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{user.email}</td>
+                    <td className="px-6 py-4">
+                    <Badge color={user.role === 'OWNER' ? 'blue' : user.role === 'ADMIN' ? 'gray' : 'yellow'}>
+                        {user.role === 'OWNER' ? 'Dueño' : user.role === 'ADMIN' ? 'Encargado' : 'Empleado'}
+                    </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#C7F269]' : 'bg-red-500'}`}></div>
+                        <span className="text-base font-medium text-gray-600">{user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span>
+                    </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                        <button className="p-2 flex items-center justify-center border border-gray-200 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditUser(user)}><Edit2 size={16}/></button>
+                        <button className="p-2 flex items-center justify-center border border-red-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full" onClick={() => onDeleteUser(user.id)}><Trash2 size={16}/></button>
+                    </div>
+                    </td>
+                </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                        No hay usuarios registrados.
+                    </td>
+                </tr>
+            )}
           </tbody>
         </table>
       </Card>
@@ -682,24 +938,32 @@ const ClientsPage = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredClients.map(client => (
-                  <tr key={client.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                        <div className="font-bold text-[#112320] text-base">{client.name}</div>
-                        <div className="text-base text-gray-500 font-medium">{client.email}</div>
-                    </td>
-                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{client.phone}</td>
-                    <td className="px-6 py-4 text-base text-[#112320] font-bold">{client.totalBookings}</td>
-                    <td className="px-6 py-4 text-base text-[#1B3530] font-bold">${client.totalSpent.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(client.lastBooking).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-right">
-                       <div className="flex justify-end gap-2">
-                         <Button variant="secondary" className="px-4 h-9 text-xs rounded-full" onClick={() => onViewClient(client)}>Ver</Button>
-                         <Button className="px-4 h-9 text-xs rounded-full" onClick={() => onBookClient(client)}>Reservar</Button>
-                       </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredClients.length > 0 ? (
+                    filteredClients.map(client => (
+                    <tr key={client.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                            <div className="font-bold text-[#112320] text-base">{client.name}</div>
+                            <div className="text-base text-gray-500 font-medium">{client.email}</div>
+                        </td>
+                        <td className="px-6 py-4 text-base text-gray-500 font-medium">{client.phone}</td>
+                        <td className="px-6 py-4 text-base text-[#112320] font-bold">{client.totalBookings}</td>
+                        <td className="px-6 py-4 text-base text-[#1B3530] font-bold">${client.totalSpent.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(client.lastBooking).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                            <Button variant="secondary" className="px-4 h-9 text-xs rounded-full" onClick={() => onViewClient(client)}>Ver</Button>
+                            <Button className="px-4 h-9 text-xs rounded-full" onClick={() => onBookClient(client)}>Reservar</Button>
+                        </div>
+                        </td>
+                    </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                             No hay clientes registrados.
+                        </td>
+                    </tr>
+                )}
               </tbody>
             </table>
           </Card>
@@ -709,11 +973,38 @@ const ClientsPage = ({
 
 const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onImport }: { inventory: Product[], onAddProduct: () => void, onEditProduct: (p: Product) => void, onImport: () => void }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const filteredInventory = inventory.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    item.code?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [sortConfig, setSortConfig] = useState<{key: keyof Product, direction: 'asc' | 'desc'} | null>(null);
+
+  const handleSort = (key: keyof Product) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+        direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const filteredInventory = React.useMemo(() => {
+    let data = inventory.filter(item => 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.code?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (sortConfig) {
+        data.sort((a, b) => {
+            // @ts-ignore
+            if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+            // @ts-ignore
+            if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+    return data;
+  }, [inventory, searchTerm, sortConfig]);
+
+  const renderSortIcon = (key: keyof Product) => {
+    if (sortConfig?.key !== key) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-[#1B3530]" /> : <ArrowDown size={14} className="ml-1 text-[#1B3530]" />;
+  };
 
   return (
     <div className="p-8 space-y-6 h-full overflow-y-auto">
@@ -742,47 +1033,70 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onImport }: { i
         <table className="w-full text-left">
           <thead className="bg-[#F8F8F8] border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Código</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Precio Compra</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Precio Venta</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Tipo</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Stock</th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('code')}>
+                 <div className="flex items-center">Código {renderSortIcon('code')}</div>
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
+                 <div className="flex items-center">Nombre {renderSortIcon('name')}</div>
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('purchasePrice')}>
+                 <div className="flex items-center">Precio Compra {renderSortIcon('purchasePrice')}</div>
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('salePrice')}>
+                 <div className="flex items-center">Precio Venta {renderSortIcon('salePrice')}</div>
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('type')}>
+                 <div className="flex items-center">Tipo {renderSortIcon('type')}</div>
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('stock')}>
+                 <div className="flex items-center">Stock {renderSortIcon('stock')}</div>
+              </th>
               <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Activo</th>
               <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Últ. Modif.</th>
               <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredInventory.map(item => (
-              <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.code || '-'}</td>
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{item.name}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">${item.purchasePrice}</td>
-                <td className="px-6 py-4 text-base font-bold text-[#1B3530]">${item.salePrice}</td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.type}</td>
-                <td className="px-6 py-4">
-                    <span className={`text-base font-bold ${item.stock <= 5 ? 'text-red-600' : 'text-[#112320]'}`}>
-                        {item.stock} u.
-                    </span>
-                    {item.showInStock && <span className="ml-2 text-xs text-gray-400 border border-gray-200 rounded px-1">Visible</span>}
-                </td>
-                <td className="px-6 py-4">
-                    <div className={`w-3 h-3 rounded-full ${item.active ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                </td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(item.lastModified).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-right">
-                   <div className="flex justify-end gap-2">
-                     <button 
-                       className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-[#1B3530] hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
-                       onClick={() => onEditProduct(item)}
-                     >
-                        <Edit2 size={18}/>
-                     </button>
-                   </div>
-                </td>
-              </tr>
-            ))}
+            {filteredInventory.length > 0 ? (
+                filteredInventory.map(item => (
+                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.code || '-'}</td>
+                    <td className="px-6 py-4 text-base font-bold text-[#112320]">{item.name}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">${item.purchasePrice}</td>
+                    <td className="px-6 py-4 text-base font-bold text-[#1B3530]">${item.salePrice}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.type}</td>
+                    <td className="px-6 py-4">
+                        <span className={`text-base font-bold ${item.stock <= 5 ? 'text-red-600' : 'text-[#112320]'}`}>
+                            {item.stock} u.
+                        </span>
+                        {item.showInStock && <span className="ml-2 text-xs text-gray-400 border border-gray-200 rounded px-1">Visible</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                        <div className={`w-3 h-3 rounded-full ${item.active ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    </td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(item.lastModified).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                        <button 
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-[#1B3530] hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+                        onClick={() => onEditProduct(item)}
+                        >
+                            <Edit2 size={18}/>
+                        </button>
+                    </div>
+                    </td>
+                </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                            <PackageOpen size={32} className="mb-2 opacity-20"/>
+                            Aún no hay productos en el inventario.
+                        </div>
+                    </td>
+                </tr>
+            )}
           </tbody>
         </table>
       </Card>
@@ -790,762 +1104,451 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onImport }: { i
   );
 };
 
-const ReportsPage = ({ onExport }: { onExport: () => void }) => {
-  const [dateRange, setDateRange] = useState('7_DAYS');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
+const UserProfilePage = ({ 
+    user, 
+    email, 
+    onUpdateProfile, 
+    onUpdatePassword 
+}: { 
+    user: any, 
+    email: string, 
+    onUpdateProfile: (data: any) => void, 
+    onUpdatePassword: (pass: string) => void 
+}) => {
+    const [fullName, setFullName] = useState(user?.name || '');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [activeTab, setActiveTab] = useState<'PROFILE' | 'SECURITY'>('PROFILE');
 
-  const multiplier = dateRange === 'LAST_MONTH' ? 4 : dateRange === 'CUSTOM' ? 2 : 1;
+    useEffect(() => {
+        if(user?.name) setFullName(user.name);
+    }, [user]);
 
-  const revenueData = [
-    { name: 'Lun', value: 120000 * multiplier },
-    { name: 'Mar', value: 85000 * multiplier },
-    { name: 'Mie', value: 95000 * multiplier },
-    { name: 'Jue', value: 110000 * multiplier },
-    { name: 'Vie', value: 150000 * multiplier },
-    { name: 'Sab', value: 200000 * multiplier },
-    { name: 'Dom', value: 180000 * multiplier },
-  ];
+    const handleProfileSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onUpdateProfile({ full_name: fullName });
+    };
 
-  const bookingsByWeekday = [
-    { name: 'Lun', value: 24 * multiplier },
-    { name: 'Mar', value: 18 * multiplier },
-    { name: 'Mie', value: 20 * multiplier },
-    { name: 'Jue', value: 22 * multiplier },
-    { name: 'Vie', value: 30 * multiplier },
-    { name: 'Sab', value: 45 * multiplier },
-    { name: 'Dom', value: 40 * multiplier },
-  ];
+    const handlePasswordSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (password !== confirmPassword) {
+            alert("Las contraseñas no coinciden");
+            return;
+        }
+        onUpdatePassword(password);
+        setPassword('');
+        setConfirmPassword('');
+    };
 
-  const hourlyData = Array.from({ length: 14 }, (_, i) => ({
-      hour: `${i + 9}:00`,
-      value: Math.floor(Math.random() * 100) * multiplier
-  }));
-
-  const customerSegments = [
-    { name: 'Abonados', value: 40 },
-    { name: 'Ocasionales', value: 35 },
-    { name: 'Escuela', value: 15 },
-    { name: 'Empresas', value: 10 },
-  ];
-
-  const COLORS = ['#1B3530', '#C7F269', '#112320', '#E5E7EB'];
-
-  const kpis = [
-      { label: 'Total Revenue', value: `$ ${(940000 * multiplier).toLocaleString()}`, change: '+12.5%', trend: 'up', icon: DollarSign, color: 'bg-green-100 text-green-700' },
-      { label: 'Total Bookings', value: `${199 * multiplier}`, change: '+8.2%', trend: 'up', icon: Calendar, color: 'bg-blue-100 text-blue-700' },
-      { label: 'Avg. Session', value: '78m', change: '-2.4%', trend: 'down', icon: ClockIcon, color: 'bg-orange-100 text-orange-700' },
-      { label: 'Utilization', value: '92%', change: '+5.3%', trend: 'up', icon: Activity, color: 'bg-purple-100 text-purple-700' },
-  ];
-
-  return (
-    <div className="p-8 space-y-8 pb-20 h-full overflow-y-auto">
-      <div className="flex justify-between items-center">
-        <div>
-           <h1 className="text-3xl font-bold text-[#112320]">Reportes</h1>
-        </div>
-        <div className="flex gap-3 items-center">
-            {dateRange === 'CUSTOM' && (
-                <div className="flex gap-2 animate-in fade-in">
-                    <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
-                    <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
-                </div>
-            )}
-            <div className="relative">
-                <select 
-                    value={dateRange} 
-                    onChange={(e) => setDateRange(e.target.value)}
-                    className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full focus:outline-none focus:border-[#1B3530] cursor-pointer"
-                >
-                    <option value="7_DAYS">Últimos 7 días</option>
-                    <option value="LAST_MONTH">Mes Anterior</option>
-                    <option value="CUSTOM">Rango Manual</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <ChevronDown size={16} />
-                </div>
-            </div>
-            <Button onClick={onExport} variant="secondary"><FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar</Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, i) => (
-            <Card key={i} className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
-                <div className="flex items-start justify-between">
-                    <div>
-                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">{kpi.label}</p>
-                         <h3 className="text-3xl font-bold text-[#112320] tracking-tight">{kpi.value}</h3>
-                         <div className="mt-2 flex items-center gap-1">
-                            {kpi.trend === 'up' ? 
-                                <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                                    <TrendingUp size={12} className="mr-1"/> {kpi.change}
-                                </span> :
-                                <span className="flex items-center text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                                    <TrendingUp size={12} className="mr-1 rotate-180"/> {kpi.change}
-                                </span>
-                            }
-                            <span className="text-xs text-gray-400 font-medium">vs. prev period</span>
-                         </div>
-                    </div>
-                    <div className={`p-3 rounded-2xl ${kpi.color}`}>
-                        <kpi.icon size={24} />
-                    </div>
-                </div>
-            </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Revenue Overview</h3>
-              <div className="h-64 w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={revenueData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Line type="monotone" dataKey="value" stroke="#1B3530" strokeWidth={3} dot={{r: 4, fill: "#1B3530"}} activeDot={{ r: 8 }} />
-                    </LineChart>
-                 </ResponsiveContainer>
-              </div>
-          </Card>
-
-          <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Customer Segments</h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                    <Pie
-                        data={customerSegments}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        paddingAngle={5}
-                        dataKey="value"
-                    >
-                        {customerSegments.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend verticalAlign="bottom" height={36}/>
-                    </PieChart>
-                </ResponsiveContainer>
-              </div>
-          </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Hourly Distribution</h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="hour" axisLine={false} tickLine={false} fontSize={12} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="value" fill="#C7F269" radius={[4, 4, 4, 4]} />
-                    </BarChart>
-                </ResponsiveContainer>
-              </div>
-          </Card>
-           <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Bookings by Weekday</h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={bookingsByWeekday}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="value" fill="#1B3530" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-              </div>
-          </Card>
-      </div>
-      
-    </div>
-  );
-}
-
-interface MyClubProps {
-  users: User[];
-  onAddUser: () => void;
-  onEditUser: (u: User) => void;
-  onDeleteUser: (id: string) => void;
-  reviews: any[];
-  clubConfig: any;
-  onUpdateClub: (data: any) => void;
-  onReplyReview: (id: number) => void;
-  onReportReview: (id: number) => void;
-}
-
-const MyClubPage = ({ users, onAddUser, onEditUser, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview }: MyClubProps) => {
-  const [activeTab, setActiveTab] = useState('DATOS');
-  
-  // Initialize local state with props, but allow editing
-  const [basicInfo, setBasicInfo] = useState({ name: 'Club Central', phone: '', address: '', coords: '', status: 'ACTIVE' });
-  const [schedule, setSchedule] = useState<any[]>([]);
-  const [services, setServices] = useState<string[]>([]);
-
-  useEffect(() => {
-      if (clubConfig) {
-          setBasicInfo({
-              name: clubConfig.name || '',
-              phone: clubConfig.phone || '',
-              address: clubConfig.address || '',
-              coords: clubConfig.coords || '',
-              status: clubConfig.status || 'ACTIVE'
-          });
-          setSchedule(clubConfig.schedule || []);
-          setServices(clubConfig.services || []);
-      }
-  }, [clubConfig]);
-
-  const toggleService = (service: string) => {
-    let newServices;
-    if (services.includes(service)) {
-        newServices = services.filter(s => s !== service);
-    } else {
-        newServices = [...services, service];
-    }
-    setServices(newServices);
-  };
-
-  const handleUpdateServices = () => {
-      onUpdateClub({ services });
-  };
-
-  const handleScheduleChange = (dayIndex: number, field: string, value: any) => {
-      const newSchedule = [...schedule];
-      newSchedule[dayIndex] = { ...newSchedule[dayIndex], [field]: value };
-      setSchedule(newSchedule);
-  };
-
-  const copyMondayToAll = () => {
-      const monday = schedule[0];
-      const newSchedule = schedule.map(day => ({
-          ...day,
-          open: monday.open,
-          start: monday.start,
-          end: monday.end
-      }));
-      setSchedule(newSchedule);
-  };
-
-  const handleUpdateSchedule = () => {
-      onUpdateClub({ schedule });
-  };
-
-  const handleUpdateBasicInfo = () => {
-      onUpdateClub(basicInfo);
-  };
-  
-  const TABS = [
-    { id: 'DATOS', label: 'Datos Básicos', icon: Map },
-    { id: 'HORARIOS', label: 'Horarios', icon: Clock },
-    { id: 'SERVICIOS', label: 'Servicios', icon: Check },
-    { id: 'INTEGRACIONES', label: 'Integraciones', icon: Link2 },
-    { id: 'APARIENCIA', label: 'Apariencia', icon: ImageIcon },
-    { id: 'USUARIOS', label: 'Usuarios', icon: UsersIcon },
-    { id: 'RESEÑAS', label: 'Reseñas', icon: MessageSquare },
-  ];
-
-  // Calculate review stats
-  const totalReviews = reviews.length;
-  const averageRating = totalReviews > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1) : 0;
-  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as any;
-  reviews.forEach(r => distribution[r.rating] = (distribution[r.rating] || 0) + 1);
-
-  return (
-    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
-      <div className="pb-2">
-        <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
-      </div>
-
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
-        {TABS.map(tab => {
-            const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
-                        isActive 
-                        ? 'bg-white text-[#1B3530] font-bold shadow-sm' 
-                        : 'text-gray-500 hover:text-[#112320]'
-                    }`}
-                >
-                    <TabIcon size={16} />
-                    {tab.label}
-                </button>
-            )
-        })}
-      </div>
-
-      <div className="py-4 w-full">
-        <div className={(activeTab === 'USUARIOS' || activeTab === 'RESEÑAS') ? 'w-full' : 'max-w-4xl'}>
-            {activeTab === 'DATOS' && (
-              <Card className="space-y-6 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input name="name" label="Nombre del Complejo" placeholder="Ej. Club Central" value={basicInfo.name} onChange={(e) => setBasicInfo({...basicInfo, name: e.target.value})} />
-                  <Input name="phone" label="Teléfono" placeholder="+54 9 11..." icon={Phone} value={basicInfo.phone} onChange={(e) => setBasicInfo({...basicInfo, phone: e.target.value})} />
-                  <Input name="address" label="Dirección" placeholder="Calle, Número, Ciudad" className="md:col-span-2" value={basicInfo.address} onChange={(e) => setBasicInfo({...basicInfo, address: e.target.value})} />
-                  <Input name="coords" label="Coordenadas" placeholder="Lat, Long" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
-                  <Select name="status" label="Estado del Complejo" value={basicInfo.status} onChange={(e) => setBasicInfo({...basicInfo, status: e.target.value})}>
-                    <option value="ACTIVE">Activo</option>
-                    <option value="INACTIVE">Inactivo</option>
-                  </Select>
-                </div>
-                <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateBasicInfo}>Guardar Cambios</Button></div>
-              </Card>
-            )}
-
-            {activeTab === 'USUARIOS' && (
-                <UsersPage users={users} onAddUser={onAddUser} onEditUser={onEditUser} onDeleteUser={onDeleteUser} />
-            )}
-
-            {activeTab === 'RESEÑAS' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                     <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
-                        <div className="flex items-center gap-2">
-                            <MessageSquare className="text-gray-400" size={20} />
-                            <h3 className="text-lg font-bold text-[#112320]">Opiniones de Clientes</h3>
-                        </div>
-                     </div>
-                     
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <Card className="flex items-center justify-between p-6 col-span-1 bg-[#F8F8F8] border-none">
-                            <div>
-                               <p className="text-5xl font-bold text-[#1B3530] mb-2">{averageRating}</p>
-                               <div className="flex text-yellow-400 mb-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} size={20} fill={i < Math.round(Number(averageRating)) ? "currentColor" : "none"} strokeWidth={i < Math.round(Number(averageRating)) ? 0 : 2} className={i >= Math.round(Number(averageRating)) ? "text-gray-300" : ""} />
-                                    ))}
-                               </div>
-                               <p className="text-sm font-medium text-gray-500">{totalReviews} reseñas totales</p>
-                            </div>
-                        </Card>
-                        <Card className="col-span-2 p-6 bg-white border-gray-100">
-                            <div className="flex flex-col justify-center h-full gap-2">
-                                {[5, 4, 3, 2, 1].map(star => (
-                                    <div key={star} className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1 w-12 text-sm font-medium text-gray-500">
-                                            <span>{star}</span> <Star size={12} className="text-gray-400" fill="currentColor" strokeWidth={0}/>
-                                        </div>
-                                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-[#C7F269] rounded-full" 
-                                                style={{ width: `${totalReviews > 0 ? (distribution[star] / totalReviews) * 100 : 0}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="w-8 text-right text-xs text-gray-400">{distribution[star]}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                     </div>
-
-                     <Card className="p-0 overflow-hidden w-full">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#F8F8F8] border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Fecha</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Calificación</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider w-1/3">Comentario</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {reviews.map((review) => (
-                                    <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-base text-gray-500 font-medium whitespace-nowrap align-top">{new Date(review.date).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 text-base font-bold text-[#112320] whitespace-nowrap align-top">{review.author}</td>
-                                        <td className="px-6 py-4 align-top">
-                                            <div className="flex text-yellow-400">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} size={16} fill={i < review.rating ? "currentColor" : "none"} strokeWidth={i < review.rating ? 0 : 2} className={i >= review.rating ? "text-gray-300" : ""} />
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 align-top">
-                                            <p className="text-base text-gray-600 mb-2">{review.comment}</p>
-                                            
-                                            {review.isReported && (
-                                                <div className="mt-2 inline-flex items-center px-2 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-100">
-                                                    <AlertTriangle size={12} className="mr-1"/> Reportado
-                                                </div>
-                                            )}
-
-                                            {review.reply && !review.isReported && (
-                                                <div className="mt-3 pl-3 border-l-2 border-gray-200">
-                                                    <p className="text-xs font-bold text-[#112320] mb-1">Tu respuesta:</p>
-                                                    <p className="text-sm text-gray-500 italic">"{review.reply}"</p>
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right whitespace-nowrap align-top">
-                                            <div className="flex justify-end gap-2">
-                                                {!review.reply && !review.isReported && (
-                                                    <Button variant="secondary" className="px-3 h-8 text-xs rounded-full" onClick={() => onReplyReview(review.id)}>Responder</Button>
-                                                )}
-                                                {!review.isReported && (
-                                                    <Button variant="destructive" className="px-3 h-8 text-xs rounded-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100" onClick={() => onReportReview(review.id)}>
-                                                        <Flag size={14} className="mr-1"/> Reportar
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </Card>
-                </div>
-            )}
+    return (
+        <div className="p-8 space-y-6 h-full overflow-y-auto">
+            <h1 className="text-3xl font-bold text-[#112320]">Mi Perfil</h1>
             
-            {activeTab === 'HORARIOS' && (
-               <Card className="animate-in fade-in duration-300 space-y-6">
-                 <div className="flex justify-between items-center mb-4">
-                     <div>
-                        <h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3>
-                        <p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p>
-                     </div>
-                     <Button variant="secondary" className="h-9 text-xs rounded-full" onClick={copyMondayToAll}>Copiar Lunes a Todos</Button>
-                 </div>
-                 <div className="space-y-4">
-                    {schedule.map((day, idx) => (
-                        <div key={day.day} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
-                            <div className="w-24 font-bold text-[#112320]">{day.day}</div>
-                            <div className="flex-1 flex items-center gap-4">
-                                <Checkbox 
-                                    label="Abierto" 
-                                    checked={day.open} 
-                                    onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} 
-                                />
-                                {day.open && (
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="time" 
-                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
-                                            value={day.start} 
-                                            onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)}
-                                        />
-                                        <span className="text-gray-400">-</span>
-                                        <input 
-                                            type="time" 
-                                            className="rounded-xl border-gray-200 p-2 text-sm bg-white" 
-                                            value={day.end}
-                                            onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateSchedule}>Guardar Horarios</Button></div>
-               </Card>
-            )}
-
-            {activeTab === 'SERVICIOS' && (
-               <Card className="animate-in fade-in duration-300">
-                 <h3 className="text-lg font-bold mb-6 text-[#112320]">Servicios del Club</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                        'Wi-Fi', 'Vestuario', 'Gimnasio', 'Estacionamiento', 'Ayuda Médica', 
-                        'Torneos', 'Cumpleaños', 'Parrilla', 'Escuelita deportiva', 'Colegios', 
-                        'Bar / Restaurante', 'Quincho'
-                    ].map(s => {
-                        const isChecked = services.includes(s);
-                        return (
-                            <div 
-                                key={s} 
-                                className={`flex items-center justify-between p-4 border rounded-2xl transition-all cursor-pointer ${isChecked ? 'border-[#1B3530] bg-[#C7F269]/10' : 'border-gray-100 bg-[#F8F8F8]/50 hover:border-gray-300'}`}
-                                onClick={() => toggleService(s)}
-                            >
-                                <span className="font-medium text-[#112320]">{s}</span>
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${isChecked ? 'bg-[#1B3530] border-[#1B3530]' : 'border-gray-300 bg-white'}`}>
-                                    {isChecked && <Check size={14} className="text-[#C7F269]" />}
-                                </div>
-                            </div>
-                        )
-                    })}
-                 </div>
-                 <div className="flex justify-end pt-6 border-t border-gray-100 mt-6"><Button onClick={handleUpdateServices}>Actualizar Servicios</Button></div>
-               </Card>
-            )}
-
-            {activeTab === 'INTEGRACIONES' && (
-               <Card className="animate-in fade-in duration-300 space-y-6">
-                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Integraciones</h3>
-                 
-                 <div className="space-y-4">
-                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold">MP</div>
-                            <div>
-                                <h4 className="font-bold text-[#112320] text-lg">Mercado Pago</h4>
-                                <p className="text-sm text-gray-500">Procesa pagos online para señas y reservas.</p>
-                            </div>
-                        </div>
-                        <Button variant="secondary" className="rounded-full">Conectar</Button>
-                     </div>
-
-                     <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-[#112320] text-lg">Google Calendar</h4>
-                                <p className="text-sm text-gray-500">Sincroniza tus reservas con tu calendario personal.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1"><Check size={10}/> Conectado</span>
-                             <Button variant="ghost" className="text-gray-400">Desconectar</Button>
-                        </div>
-                     </div>
-                 </div>
-               </Card>
-            )}
-
-            {activeTab === 'APARIENCIA' && (
-               <Card className="animate-in fade-in duration-300 space-y-8">
-                 <h3 className="text-lg font-bold mb-4 text-[#112320]">Personalización Visual</h3>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <label className="text-base font-medium text-[#112320] block">Logo del Club</label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
-                             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <ImageIcon className="text-gray-400" size={32} />
-                             </div>
-                             <p className="text-sm font-bold text-[#1B3530]">Subir Logo</p>
-                             <p className="text-xs text-gray-400">PNG, JPG (Max 2MB)</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <label className="text-base font-medium text-[#112320] block">Imagen de Portada</label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48">
-                             <div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300">
-                                <ImageIcon size={48} />
-                             </div>
-                             <p className="text-sm font-bold text-[#1B3530]">Subir Portada</p>
-                             <p className="text-xs text-gray-400">1920x1080 px recomendado</p>
-                        </div>
-                    </div>
-                 </div>
-
-                 <div className="pt-4">
-                     <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" />
-                 </div>
-
-                 <div className="flex justify-end pt-4 border-t border-gray-100"><Button>Guardar Apariencia</Button></div>
-               </Card>
-            )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const UserProfilePage = ({ user, email, onUpdateProfile }: { user: any, email?: string, onUpdateProfile: (data: any) => void }) => {
-  const [activeTab, setActiveTab] = useState('PERSONAL');
-  const [formData, setFormData] = useState({
-      full_name: '',
-      phone: ''
-  });
-
-  useEffect(() => {
-      if (user) {
-          setFormData({
-              full_name: user.full_name || '',
-              phone: '' // Ideally fetched from profile if exists
-          });
-      }
-  }, [user]);
-
-  const handleSave = (e: React.FormEvent) => {
-      e.preventDefault();
-      onUpdateProfile(formData);
-  };
-
-  const tabs = [
-    { id: 'PERSONAL', label: 'Información Personal', icon: UserIcon },
-    { id: 'NOTIFICATIONS', label: 'Notificaciones', icon: Mail },
-    { id: 'PASSWORD', label: 'Cambiar Contraseña', icon: Key },
-    { id: 'ACCESS_CODE', label: 'Código de Acceso', icon: Shield },
-  ];
-
-  return (
-    <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
-      <div className="pb-2">
-           <h1 className="text-3xl font-bold text-[#112320]">Mi Perfil</h1>
-      </div>
-
-       <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
-        {tabs.map(tab => {
-            const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-full w-fit">
                 <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${
-                        isActive 
-                        ? 'bg-white text-[#1B3530] font-bold shadow-sm' 
-                        : 'text-gray-500 hover:text-[#112320]'
-                    }`}
+                    onClick={() => setActiveTab('PROFILE')}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === 'PROFILE' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                    <TabIcon size={16} />
-                    {tab.label}
+                    Información Personal
                 </button>
-            )
-        })}
-      </div>
+                <button
+                    onClick={() => setActiveTab('SECURITY')}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === 'SECURITY' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    Seguridad
+                </button>
+            </div>
 
-      <div className="max-w-4xl py-4">
-          {activeTab === 'PERSONAL' && (
-            <Card className="space-y-6 animate-in fade-in duration-300">
-               <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
-                 <UserIcon className="text-gray-400" size={20} />
-                 <h3 className="text-lg font-bold text-[#112320]">Información Personal</h3>
-               </div>
-               <form onSubmit={handleSave} className="space-y-4">
-                 <Input 
-                    label="Nombre Completo" 
-                    value={formData.full_name} 
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                 />
-                 <Input label="Email" defaultValue={email} disabled className="bg-gray-50 text-gray-500 cursor-not-allowed" />
-                 <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-                   <Button type="submit">Guardar Cambios</Button>
-               </div>
-               </form>
-            </Card>
-          )}
-          {activeTab === 'NOTIFICATIONS' && (
-            <Card className="space-y-6 animate-in fade-in duration-300">
-               <h3 className="text-lg font-bold mb-4 text-[#112320]">Preferencias de Notificación</h3>
-               <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Recibir resumen diario por email</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Notificar nuevas reservas</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-base text-gray-700">Notificar cancelaciones</span>
-                     <Checkbox label="" defaultChecked />
-                  </div>
-               </div>
-            </Card>
-          )}
-          {activeTab === 'PASSWORD' && (
-             <Card className="space-y-6 animate-in fade-in duration-300">
-                <h3 className="text-lg font-bold mb-4 text-[#112320]">Seguridad</h3>
-                <div className="space-y-4">
-                  <Input label="Contraseña Actual" type="password" />
-                  <Input label="Nueva Contraseña" type="password" />
-                  <Input label="Confirmar Nueva Contraseña" type="password" />
-                </div>
-                <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-                   <Button>Actualizar Contraseña</Button>
-               </div>
-             </Card>
-          )}
-           {activeTab === 'ACCESS_CODE' && (
-             <Card className="space-y-6 animate-in fade-in duration-300">
-                <h3 className="text-lg font-bold mb-4 text-[#112320]">Código de Acceso Rápido</h3>
-                <p className="text-gray-500 mb-4">Este código permite a los empleados fichar su ingreso.</p>
-                <div className="flex justify-center py-6">
-                   <span className="text-4xl font-mono font-bold tracking-[1em] text-[#1B3530]">8291</span>
-                </div>
-                <div className="flex justify-center">
-                   <Button variant="secondary" className="rounded-full"><RefreshCw size={16} className="mr-2"/> Generar Nuevo</Button>
-                </div>
-             </Card>
-          )}
-      </div>
-    </div>
-  );
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {activeTab === 'PROFILE' && (
+                    <Card className="p-6 max-w-2xl">
+                        <h3 className="text-xl font-bold text-[#112320] mb-6 flex items-center gap-2">
+                            <UserIcon size={20}/> Editar Información
+                        </h3>
+                        <form onSubmit={handleProfileSubmit} className="space-y-6">
+                            <Input label="Email" value={email || ''} disabled icon={Mail} className="bg-gray-50 text-gray-500" />
+                            <Input label="Nombre Completo" value={fullName} onChange={(e) => setFullName(e.target.value)} icon={UserIcon} />
+                            <div className="pt-2">
+                                <Button type="submit">Actualizar Perfil</Button>
+                            </div>
+                        </form>
+                    </Card>
+                )}
+
+                {activeTab === 'SECURITY' && (
+                    <Card className="p-6 max-w-2xl">
+                        <h3 className="text-xl font-bold text-[#112320] mb-6 flex items-center gap-2">
+                            <Shield size={20}/> Cambiar Contraseña
+                        </h3>
+                        <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                            <Input label="Nueva Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} icon={Key} />
+                            <Input label="Confirmar Contraseña" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} icon={Key} />
+                            <div className="pt-2">
+                                <Button type="submit" variant="secondary" disabled={!password}>Actualizar Contraseña</Button>
+                            </div>
+                        </form>
+                    </Card>
+                )}
+            </div>
+        </div>
+    );
 };
 
-// --- Main Logic & State ---
+const MyClubPage = ({ 
+    clubConfig,
+    onUpdateClub,
+}: { 
+    clubConfig: any,
+    onUpdateClub: (data: any) => void,
+}) => {
+    const [activeTab, setActiveTab] = useState<'BASIC' | 'INTEGRATIONS' | 'SCHEDULE' | 'SERVICES' | 'APPEARANCE'>('BASIC');
+    const [schedule, setSchedule] = useState(clubConfig.schedule || []);
+    const [services, setServices] = useState<string[]>(clubConfig.services || []);
+    
+    // Basic Data
+    const [basicData, setBasicData] = useState({
+        name: clubConfig.name || 'Mi Club Deportivo',
+        address: clubConfig.address || '',
+        lat: clubConfig.lat || '',
+        lng: clubConfig.lng || '',
+        phone: clubConfig.phone || '',
+        isActive: clubConfig.isActive !== undefined ? clubConfig.isActive : true
+    });
+
+    // Appearance
+    const [description, setDescription] = useState(clubConfig.description || '');
+
+    useEffect(() => {
+        if(clubConfig.schedule) setSchedule(clubConfig.schedule);
+        if(clubConfig.services) setServices(clubConfig.services);
+        setBasicData(prev => ({
+            ...prev,
+            name: clubConfig.name || prev.name,
+            address: clubConfig.address || prev.address,
+            lat: clubConfig.lat || prev.lat,
+            lng: clubConfig.lng || prev.lng,
+            phone: clubConfig.phone || prev.phone,
+            isActive: clubConfig.isActive !== undefined ? clubConfig.isActive : prev.isActive
+        }));
+        if(clubConfig.description) setDescription(clubConfig.description);
+    }, [clubConfig]);
+
+    const handleScheduleChange = (index: number, field: string, value: any) => {
+        const newSchedule = [...schedule];
+        // @ts-ignore
+        newSchedule[index][field] = value;
+        setSchedule(newSchedule);
+    };
+
+    const saveConfig = () => {
+        onUpdateClub({ 
+            schedule, 
+            services, 
+            description,
+            ...basicData 
+        });
+    };
+
+    const amenitiesList = [
+        'Wi-Fi', 'Vestuario', 'Gimnasio', 'Estacionamiento', 'Ayuda Médica', 'Torneos', 
+        'Cumpleaños', 'Parrilla', 'Escuelita deportiva', 'Colegios', 'Bar / Restaurante', 'Quincho'
+    ];
+
+    return (
+        <div className="p-8 space-y-6 h-full overflow-y-auto pb-24">
+            <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
+
+             <div className="flex space-x-1 bg-gray-100 p-1 rounded-full w-fit overflow-x-auto max-w-full">
+                <button onClick={() => setActiveTab('BASIC')} className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeTab === 'BASIC' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Datos Básicos
+                </button>
+                <button onClick={() => setActiveTab('INTEGRATIONS')} className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeTab === 'INTEGRATIONS' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Integraciones
+                </button>
+                <button onClick={() => setActiveTab('SCHEDULE')} className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeTab === 'SCHEDULE' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Horarios
+                </button>
+                <button onClick={() => setActiveTab('SERVICES')} className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeTab === 'SERVICES' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Servicios
+                </button>
+                <button onClick={() => setActiveTab('APPEARANCE')} className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${activeTab === 'APPEARANCE' ? 'bg-white shadow-sm text-[#1B3530]' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Apariencia
+                </button>
+            </div>
+
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-4xl">
+                {activeTab === 'BASIC' && (
+                    <Card className="p-6">
+                        <h3 className="text-xl font-bold text-[#112320] mb-6 flex items-center gap-2">
+                            <Info size={20}/> Información General
+                        </h3>
+                        <div className="space-y-6">
+                            <Input label="Nombre del Club" value={basicData.name} onChange={e => setBasicData({...basicData, name: e.target.value})} />
+                            <Input label="Dirección" value={basicData.address} onChange={e => setBasicData({...basicData, address: e.target.value})} icon={MapPin} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input label="Latitud" value={basicData.lat} onChange={e => setBasicData({...basicData, lat: e.target.value})} placeholder="-34.1234" />
+                                <Input label="Longitud" value={basicData.lng} onChange={e => setBasicData({...basicData, lng: e.target.value})} placeholder="-58.1234" />
+                            </div>
+                            <Input label="Teléfono" value={basicData.phone} onChange={e => setBasicData({...basicData, phone: e.target.value})} icon={Phone} />
+                            
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <span className="font-medium text-[#112320]">Estado del Complejo</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={basicData.isActive} onChange={(e) => setBasicData({...basicData, isActive: e.target.checked})} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1B3530]"></div>
+                                    <span className="ml-3 text-sm font-medium text-gray-900">{basicData.isActive ? 'Activo' : 'Inactivo'}</span>
+                                </label>
+                            </div>
+                            
+                            <div className="flex justify-end mt-6">
+                                <Button onClick={saveConfig} className="px-8">Guardar Datos</Button>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
+                {activeTab === 'INTEGRATIONS' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="p-6 flex flex-col items-center text-center space-y-4">
+                             <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mb-2">
+                                 <DollarSign size={32} />
+                             </div>
+                             <h3 className="text-lg font-bold">MercadoPago</h3>
+                             <p className="text-sm text-gray-500">Conecta tu cuenta para recibir pagos de señas y reservas online.</p>
+                             <Button variant="secondary" className="w-full mt-auto"><Plug size={16} className="mr-2"/> Conectar</Button>
+                        </Card>
+                        <Card className="p-6 flex flex-col items-center text-center space-y-4">
+                             <div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] mb-2">
+                                 <Camera size={32} />
+                             </div>
+                             <h3 className="text-lg font-bold">Beelup</h3>
+                             <p className="text-sm text-gray-500">Sistema de grabación automática de partidos. Integra tus cámaras.</p>
+                             <Button variant="secondary" className="w-full mt-auto"><Plug size={16} className="mr-2"/> Conectar</Button>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'SCHEDULE' && (
+                    <Card className="p-6">
+                        <h3 className="text-xl font-bold text-[#112320] mb-6 flex items-center gap-2">
+                            <ClockIcon size={20}/> Horarios de Apertura
+                        </h3>
+                        <div className="space-y-4">
+                            {schedule.map((day: any, index: number) => (
+                                <div key={day.day} className="flex items-center justify-between gap-4 border-b border-gray-50 last:border-0 pb-3 last:pb-0">
+                                    <div className="w-24 font-medium text-gray-700">{day.day}</div>
+                                    <div className="flex items-center gap-2">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={day.open} onChange={(e) => handleScheduleChange(index, 'open', e.target.checked)} />
+                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1B3530]"></div>
+                                        </label>
+                                    </div>
+                                    {day.open ? (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <input type="time" value={day.start} onChange={(e) => handleScheduleChange(index, 'start', e.target.value)} className="border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-[#1B3530] outline-none" />
+                                            <span className="text-gray-400">a</span>
+                                            <input type="time" value={day.end} onChange={(e) => handleScheduleChange(index, 'end', e.target.value)} className="border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-[#1B3530] outline-none" />
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-gray-400 italic">Cerrado</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                             <Button onClick={saveConfig} className="px-8">Guardar Horarios</Button>
+                        </div>
+                    </Card>
+                )}
+
+                {activeTab === 'SERVICES' && (
+                     <Card className="p-6">
+                        <h3 className="text-xl font-bold text-[#112320] mb-6 flex items-center gap-2"><Palette size={20}/> Servicios del Club</h3>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            {amenitiesList.map(item => (
+                                <div key={item} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-[#1B3530]/30 hover:bg-gray-50 transition-all cursor-pointer" onClick={() => {
+                                    if (services.includes(item)) setServices(services.filter(s => s !== item));
+                                    else setServices([...services, item]);
+                                }}>
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${services.includes(item) ? 'bg-[#1B3530] border-[#1B3530]' : 'border-gray-300 bg-white'}`}>
+                                        {services.includes(item) && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <span className="text-sm font-medium text-[#112320]">{item}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end border-t border-gray-100 pt-4">
+                             <Button onClick={saveConfig} className="px-8">Guardar Servicios</Button>
+                        </div>
+                    </Card>
+                )}
+
+                {activeTab === 'APPEARANCE' && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <Card className="p-6">
+                                <h4 className="font-bold text-[#112320] mb-4">Logo del Club</h4>
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <ImageIcon size={40} className="text-gray-300 mb-2" />
+                                    <span className="text-sm text-gray-500">Click para subir imagen</span>
+                                </div>
+                                <div className="mt-3 text-center">
+                                    <p className="text-xs text-gray-400">Recomendado: 500x500px</p>
+                                    <p className="text-xs text-gray-400">Formato: PNG, JPG (Max 2MB)</p>
+                                </div>
+                             </Card>
+                             <Card className="p-6">
+                                <h4 className="font-bold text-[#112320] mb-4">Imagen de Portada</h4>
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <ImageIcon size={40} className="text-gray-300 mb-2" />
+                                    <span className="text-sm text-gray-500">Click para subir imagen</span>
+                                </div>
+                                <div className="mt-3 text-center">
+                                    <p className="text-xs text-gray-400">Recomendado: 1920x1080px</p>
+                                    <p className="text-xs text-gray-400">Formato: JPG, WEBP (Max 5MB)</p>
+                                </div>
+                             </Card>
+                        </div>
+
+                        <Card className="p-6">
+                            <h3 className="text-xl font-bold text-[#112320] mb-4 flex items-center gap-2"><FileText size={20}/> Descripción del complejo</h3>
+                            <Textarea 
+                                placeholder="Escribe una descripción atractiva para tus clientes..."
+                                value={description} 
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={6}
+                            />
+                            <div className="mt-4 flex justify-end">
+                                 <Button onClick={saveConfig} className="px-8">Guardar Apariencia</Button>
+                            </div>
+                        </Card>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const App: React.FC = () => {
-  const [reservations, setReservations] = useState<Reservation[]>(MOCK_RESERVATIONS);
-  const [courts, setCourts] = useState<Court[]>(MOCK_COURTS);
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
-  const [inventory, setInventory] = useState<Product[]>(MOCK_INVENTORY);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [inventory, setInventory] = useState<Product[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [clubConfig, setClubConfig] = useState<any>(null);
+  const [clubConfig, setClubConfig] = useState<any>({}); // Init as empty object
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [notification, setNotification] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
-  // Mock Reviews Data - Updated to show reply and report examples
-  const [reviews, setReviews] = useState([
-    { id: 1, author: 'Carlos Pérez', date: '2023-10-25', rating: 5, comment: 'Excelente cancha y atención!', reply: '¡Gracias Carlos! Te esperamos pronto.', isReported: false },
-    { id: 2, author: 'Ana López', date: '2023-10-20', rating: 4, comment: 'Muy buena iluminación, pero los vestuarios podrían mejorar.', reply: '', isReported: false },
-    { id: 3, author: 'Marcos Diaz', date: '2023-10-15', rating: 1, comment: 'Pésimo servicio, nadie atendió el teléfono.', reply: '', isReported: true },
+  const [reviews, setReviews] = useState<any[]>([]); // Initialize empty reviews
+
+  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT_OPTIONS' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION'>(null);
+  
+  // Default Schedule
+  const [schedule, setSchedule] = useState([
+    { day: 'Domingo', open: true, start: '10:00', end: '22:00' },
+    { day: 'Lunes', open: true, start: '09:00', end: '23:00' },
+    { day: 'Martes', open: true, start: '09:00', end: '23:00' },
+    { day: 'Miércoles', open: true, start: '09:00', end: '23:00' },
+    { day: 'Jueves', open: true, start: '09:00', end: '23:00' },
+    { day: 'Viernes', open: true, start: '09:00', end: '23:00' },
+    { day: 'Sábado', open: true, start: '09:00', end: '23:00' },
+    { day: 'Feriado', open: true, start: '10:00', end: '22:00' },
   ]);
+  
+  const [clubServices, setClubServices] = useState<string[]>(['Wi-Fi', 'Estacionamiento', 'Vestuario']);
+  const [welcomeMessage, setWelcomeMessage] = useState<string>('');
 
-  const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION'>(null);
-
-  const handleLogin = (userData?: { fullName: string, email: string }) => {
-    setIsAuthenticated(true);
-    setCourts(MOCK_COURTS);
-    setReservations(MOCK_RESERVATIONS);
-    
-    if (userData) {
-      // Create profile from registration data
-      const newProfile = {
-        name: userData.fullName,
-        role: 'OWNER',
-        full_name: userData.fullName,
-        email: userData.email
-      };
-      setUserProfile(newProfile);
-
-      // Create new user in club
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: userData.fullName,
-        email: userData.email,
-        role: 'OWNER',
-        status: 'ACTIVE'
-      };
-      setUsers(prev => [...prev, newUser]);
-    } else {
-      // Default login mock
-      setUserProfile({
-        name: 'Juan Admin',
-        role: 'OWNER',
-        full_name: 'Juan Admin',
-        email: 'admin@club.com'
-      });
-    }
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ show: true, message, type });
   };
 
+  // --- Initialize & Data Fetching ---
+  useEffect(() => {
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+          setIsAuthenticated(true);
+          setUserProfile({
+             email: session.user.email,
+             name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+             id: session.user.id
+          });
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+         setIsAuthenticated(true);
+      } else {
+         setIsAuthenticated(false);
+      }
+    });
+
+    const fetchData = async () => {
+        try {
+            const { data: courtsData } = await supabase.from('courts').select('*');
+            if (courtsData) setCourts(courtsData);
+
+            const { data: reservationsData } = await supabase.from('reservations').select('*');
+            if (reservationsData) setReservations(reservationsData);
+
+            const { data: clientsData } = await supabase.from('clients').select('*');
+            if (clientsData) setClients(clientsData);
+
+            const { data: productsData } = await supabase.from('products').select('*');
+            if (productsData) setInventory(productsData);
+
+            const { data: profilesData } = await supabase.from('profiles').select('*');
+            if (profilesData) {
+                 const mappedUsers = profilesData.map((p: any) => ({
+                     id: p.id,
+                     name: p.name,
+                     email: p.email,
+                     role: p.role,
+                     status: p.status || 'ACTIVE'
+                 }));
+                 setUsers(mappedUsers);
+            }
+            
+            // Fetch Club Settings
+            const { data: clubData } = await supabase.from('club_settings').select('*').single();
+            if (clubData) {
+                setClubConfig(clubData);
+                if (clubData.schedule) setSchedule(clubData.schedule);
+                if (clubData.services) setClubServices(clubData.services);
+                if (clubData.welcomeMessage) setWelcomeMessage(clubData.welcomeMessage);
+            }
+
+        } catch (error) {
+            console.error("Error fetching data from Supabase:", error);
+        }
+    };
+    
+    if (isAuthenticated) {
+        fetchData();
+    }
+
+    return () => subscription.unsubscribe();
+  }, [isAuthenticated]);
+
+  const handleLogin = (userData: any) => {
+    setIsAuthenticated(true);
+    setUserProfile(userData);
+    showFeedback(`Bienvenido, ${userData.name}`);
+  };
+  
   const handleLogout = () => {
     setActiveSheet('LOGOUT_CONFIRMATION');
   };
 
   const confirmLogout = async () => {
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
     setActiveSheet(null);
     setUserProfile(null);
@@ -1553,25 +1556,60 @@ const App: React.FC = () => {
 
   const handleUpdateProfile = async (data: any) => {
       setUserProfile((prev: any) => ({ ...prev, full_name: data.full_name, name: data.full_name }));
+      if (userProfile?.id) {
+          await supabase.from('profiles').upsert({ id: userProfile.id, name: data.full_name });
+      }
+      showFeedback("Perfil actualizado correctamente");
   };
-
-  // App Level State for Schedule and Services
-  const [schedule, setSchedule] = useState([
-    { day: 'Lunes', open: true, start: '09:00', end: '23:00' },
-    { day: 'Martes', open: true, start: '09:00', end: '23:00' },
-    { day: 'Miércoles', open: true, start: '09:00', end: '23:00' },
-    { day: 'Jueves', open: true, start: '09:00', end: '23:00' },
-    { day: 'Viernes', open: true, start: '09:00', end: '23:00' },
-    { day: 'Sábado', open: true, start: '09:00', end: '23:00' },
-    { day: 'Domingo', open: true, start: '10:00', end: '22:00' },
-  ]);
   
-  const [clubServices, setClubServices] = useState<string[]>(['Wi-Fi', 'Estacionamiento', 'Vestuario']);
+  const handleUpdatePassword = async (newPass: string) => {
+      const { error } = await supabase.auth.updateUser({ password: newPass });
+      if (error) {
+          showFeedback("Error al actualizar contraseña: " + error.message, 'error');
+      } else {
+          showFeedback("Contraseña actualizada correctamente");
+      }
+  }
 
   const handleUpdateClub = async (newData: any) => {
+     // Local state update
      if (newData.schedule) setSchedule(newData.schedule);
      if (newData.services) setClubServices(newData.services);
-     // Update other config in real app
+     if (newData.welcomeMessage !== undefined) setWelcomeMessage(newData.welcomeMessage);
+     
+     const updatedConfig = { ...clubConfig, ...newData };
+     setClubConfig(updatedConfig);
+
+     // Persist to Supabase
+     try {
+         const upsertData = {
+             id: clubConfig?.id, // If exists, update; else create new UUID (handled by DB default if undefined, but logic usually requires ID for update)
+             name: newData.name,
+             address: newData.address,
+             phone: newData.phone,
+             lat: newData.lat,
+             lng: newData.lng,
+             description: newData.description,
+             isActive: newData.isActive,
+             services: newData.services,
+             schedule: newData.schedule,
+             welcomeMessage: newData.welcomeMessage
+         };
+         
+         // Using upsert. If clubConfig.id is undefined, Supabase will generate a new one if we don't send 'id'.
+         // However, since we want a singleton row logic usually, let's check if we have an ID.
+         // If we fetched data, we have an ID.
+         
+         const { data, error } = await supabase.from('club_settings').upsert(upsertData).select().single();
+         
+         if (error) throw error;
+         if (data) setClubConfig(data);
+
+         showFeedback("Configuración del club actualizada y guardada");
+     } catch (error: any) {
+         console.error("Error updating club settings:", error);
+         showFeedback("Error al guardar en base de datos", 'error');
+     }
   };
 
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -1590,11 +1628,16 @@ const App: React.FC = () => {
       clientEmail: '',
       depositAmount: '',
       depositMethod: 'Efectivo',
+      paymentMethod: 'Efectivo',
       notes: '',
       type: 'Normal',
       duration: '60',
-      isRecurring: false
+      isRecurring: false,
+      price: '4500'
   });
+  
+  const [cancellationReason, setCancellationReason] = useState('OTHER');
+  const [cancellationOtherText, setCancellationOtherText] = useState('');
 
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [reviewActionId, setReviewActionId] = useState<number | null>(null);
@@ -1610,23 +1653,27 @@ const App: React.FC = () => {
         clientEmail: '',
         depositAmount: '',
         depositMethod: 'Efectivo',
+        paymentMethod: 'Efectivo',
         notes: '',
         type: 'Normal',
         duration: '60',
-        isRecurring: false
+        isRecurring: false,
+        price: '4500'
     });
     setPrefillReservation(null);
     setSelectedReservation(null);
   };
 
-  const handleClientNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    const match = clients.find(c => c.name.toLowerCase() === val.toLowerCase());
-    setReservationForm(prev => ({
+  const handleClientNameChange = (val: string) => {
+    setReservationForm(prev => ({ ...prev, clientName: val }));
+  };
+
+  const handleClientSelect = (client: any) => {
+     setReservationForm(prev => ({
         ...prev, 
-        clientName: val,
-        clientPhone: match ? match.phone : prev.clientPhone,
-        clientEmail: match ? match.email : prev.clientEmail
+        clientName: client.name,
+        clientPhone: client.phone,
+        clientEmail: client.email
     }));
   };
 
@@ -1638,42 +1685,61 @@ const App: React.FC = () => {
       const formTime = prefillReservation?.time || '10:00';
 
       const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`;
-
-      // Use the robustly fetched user profile name
       const creatorName = userProfile?.name || "Admin";
 
-      const reservationData: Reservation = {
-        id: selectedReservation ? selectedReservation.id : Math.random().toString(36).substr(2, 9),
+      const baseReservationData = {
         courtId: formCourtId,
         clientName: reservationForm.clientName,
         startTime: `${formDate}T${formTime}`,
         endTime: endTime,
-        price: 4500,
+        price: Number(reservationForm.price) || 4500,
         status: ReservationStatus.CONFIRMED,
         isPaid: false,
         createdBy: creatorName,
-        // @ts-ignore
+        paymentMethod: reservationForm.paymentMethod,
         type: reservationForm.type,
-        // @ts-ignore
         notes: reservationForm.notes
       };
 
-      if (selectedReservation) {
-          setReservations(reservations.map(r => r.id === selectedReservation.id ? reservationData : r));
-      } else {
-          setReservations([...reservations, reservationData]);
+      try {
+        if (selectedReservation) {
+            const { error } = await supabase.from('reservations').update(baseReservationData).eq('id', selectedReservation.id);
+            if (error) throw error;
+            setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, ...baseReservationData } : r));
+            showFeedback("Reserva actualizada con éxito");
+        } else {
+            const { data, error } = await supabase.from('reservations').insert(baseReservationData).select();
+             if (error) throw error;
+            if (data) setReservations([...reservations, data[0]]);
+            showFeedback("Reserva creada con éxito");
+        }
+      } catch (err) {
+          console.error("Error saving reservation:", err);
+          showFeedback("Error al guardar reserva", 'error');
       }
       resetReservationForm();
       setActiveSheet(null);
   };
   
   const initiateDeleteReservation = () => {
+      setCancellationReason('OTHER');
+      setCancellationOtherText('');
       setActiveSheet('DELETE_RESERVATION_CONFIRMATION');
   };
 
   const confirmDeleteReservation = async () => { 
       if (selectedReservation) {
-          setReservations(reservations.filter(r => r.id !== selectedReservation.id));
+          const reason = cancellationReason === 'OTHER' ? cancellationOtherText : 
+                         cancellationReason === 'CLIENT_CANCEL' ? 'Cancelado por el cliente' :
+                         cancellationReason === 'WEATHER' ? 'Clima' : 'Mantenimiento';
+
+          const updatedReservation = { ...selectedReservation, status: ReservationStatus.CANCELLED, cancellationReason: reason };
+
+          try {
+             await supabase.from('reservations').update({ status: ReservationStatus.CANCELLED, cancellationReason: reason }).eq('id', selectedReservation.id);
+             setReservations(reservations.map(r => r.id === selectedReservation.id ? updatedReservation : r));
+             showFeedback("Reserva cancelada correctamente");
+          } catch(err) { console.error(err); }
       }
       resetReservationForm();
       setActiveSheet(null); 
@@ -1683,55 +1749,61 @@ const App: React.FC = () => {
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
       
-      const courtData: Court = {
-          id: selectedCourt ? selectedCourt.id : Math.random().toString(36).substr(2, 9),
+      const baseCourtData = {
           name: formData.get('name') as string,
           types: courtFormTypes,
           surface: formData.get('surface') as string,
-          isIndoor: true,
-          hasLighting: true,
-          forceStart: 'ON_HOUR'
+          isIndoor: formData.get('isIndoor') === 'on',
+          hasLighting: formData.get('hasLighting') === 'on',
+          forceStart: (formData.get('forceStart') as ForceStartOption) || 'NO_ROUNDING'
       };
 
-      if (selectedCourt) {
-          setCourts(courts.map(c => c.id === selectedCourt.id ? courtData : c));
-      } else {
-          setCourts([...courts, courtData]);
+      try {
+        if (selectedCourt) {
+            const { error } = await supabase.from('courts').update(baseCourtData).eq('id', selectedCourt.id);
+            if (error) throw error;
+            setCourts(courts.map(c => c.id === selectedCourt.id ? { ...baseCourtData, id: selectedCourt.id } : c));
+            showFeedback("Cancha actualizada");
+        } else {
+            const { data, error } = await supabase.from('courts').insert(baseCourtData).select();
+            if (error) throw error;
+            if (data) setCourts([...courts, data[0]]);
+            showFeedback("Cancha agregada exitosamente");
+        }
+      } catch (err) {
+          console.error(err);
+          showFeedback("Error al guardar cancha: " + (err as any).message, 'error');
       }
+
       setSelectedCourt(null);
       setActiveSheet(null); 
   };
   
-  const handleSaveUser = (e: React.FormEvent) => { 
+  const handleSaveUser = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
-      const newUser: User = {
-          id: selectedUser ? selectedUser.id : Math.random().toString(36).substr(2, 9),
-          name: formData.get('name') as string,
-          email: formData.get('email') as string,
-          role: formData.get('role') as any,
-          status: 'ACTIVE'
-      };
-      if (selectedUser) {
-          setUsers(users.map(u => u.id === selectedUser.id ? newUser : u));
-      } else {
-          setUsers([...users, newUser]);
-      }
+      // Logic for adding users in Supabase would typically involve an admin function or invitation
+      // Here we simulate updating the profiles table for management view
+      showFeedback("Funcionalidad de gestión de usuarios requiere privilegios administrativos en Supabase", 'error');
       setSelectedUser(null);
       setActiveSheet(null); 
   };
   
   const initiateDeleteUser = (id: string) => { setDeleteUserId(id); setActiveSheet('DELETE_USER_CONFIRMATION'); };
-  const confirmDeleteUser = () => { 
-      if (deleteUserId) setUsers(users.filter(u => u.id !== deleteUserId)); 
+  const confirmDeleteUser = async () => { 
+      if (deleteUserId) {
+          // Supabase Auth deletion requires admin API
+          await supabase.from('profiles').delete().eq('id', deleteUserId);
+          setUsers(users.filter(u => u.id !== deleteUserId)); 
+          showFeedback("Usuario eliminado de la lista");
+      }
       setActiveSheet(null); 
   };
   
   const handleSaveClient = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
-      const newClient: Client = {
-          id: Math.random().toString(36).substr(2, 9),
+      const newClient = {
           name: formData.get('name') as string,
           email: formData.get('email') as string,
           phone: formData.get('phone') as string,
@@ -1739,12 +1811,16 @@ const App: React.FC = () => {
           totalSpent: 0,
           lastBooking: new Date().toISOString()
       };
-      setClients([...clients, newClient]);
+      
+      const { data } = await supabase.from('clients').insert(newClient).select();
+      if (data) setClients([...clients, data[0]]);
+      
+      showFeedback("Cliente registrado");
       setActiveSheet(null); 
   };
   
   const openBookClient = (client: Client) => { 
-      setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts[0].id, clientName: client.name });
+      setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts.length > 0 ? courts[0].id : '', clientName: client.name });
       setReservationForm(prev => ({...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email}));
       setActiveSheet('RESERVATION');
   };
@@ -1753,7 +1829,7 @@ const App: React.FC = () => {
       e.preventDefault(); 
       const formData = new FormData(e.target as HTMLFormElement);
       const newProduct: Product = {
-          id: selectedProduct ? selectedProduct.id : Math.random().toString(36).substr(2, 9),
+          id: selectedProduct ? selectedProduct.id : '',
           code: formData.get('code') as string,
           name: formData.get('name') as string,
           purchasePrice: Number(formData.get('purchasePrice')),
@@ -1766,295 +1842,561 @@ const App: React.FC = () => {
       };
 
       if(selectedProduct) {
+          await supabase.from('products').update(newProduct).eq('id', selectedProduct.id);
           setInventory(inventory.map(p => p.id === selectedProduct.id ? newProduct : p));
+          showFeedback("Producto actualizado");
       } else {
-          setInventory([...inventory, newProduct]);
+          // Remove ID to let DB generate UUID
+          const { id, ...insertData } = newProduct;
+          const { data } = await supabase.from('products').insert(insertData).select();
+          if (data) setInventory([...inventory, data[0]]);
+          showFeedback("Producto agregado al inventario");
       }
       setSelectedProduct(null);
       setActiveSheet(null); 
   };
 
-  const handleExport = () => {
+  const handleExport = (format: string) => {
+    showFeedback(`Exportando reporte en formato ${format}...`);
     setActiveSheet(null);
-  }
-
-  const handleReplyReview = (e: React.FormEvent) => {
-      e.preventDefault();
-      setActiveSheet(null);
   };
 
-  const handleReportReview = (e: React.FormEvent) => {
-      e.preventDefault();
-      setActiveSheet(null);
-  };
-  
-  const openEditUser = (user: User) => { setSelectedUser(user); setActiveSheet('USER'); };
-  const openEditCourt = (court: Court) => { setSelectedCourt(court); setCourtFormTypes(court.types); setActiveSheet('COURT'); };
-  const openEditProduct = (product: Product) => { setSelectedProduct(product); setActiveSheet('PRODUCT'); };
-  const openViewReservation = (res: Reservation) => { setSelectedReservation(res); setActiveSheet('VIEW_RESERVATION'); };
-  const openViewClient = (client: Client) => { setSelectedClient(client); setActiveSheet('VIEW_CLIENT'); };
-  
-  const openNewReservation = (date?: string, time?: string, courtId?: string, clientName?: string) => {
-      // Default values if parameters are missing
-      const d = date || selectedDate;
-      const t = time || '10:00';
-      const cId = courtId || courts[0]?.id;
+  const handleSaveReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const replyText = formData.get('replyText') as string;
 
-      setPrefillReservation({ date: d, time: t, courtId: cId, clientName });
-      
-      setReservationForm(prev => ({
-          ...prev, 
-          clientName: clientName || '',
-          clientPhone: '',
-          clientEmail: '',
-          type: 'Normal',
-          notes: ''
-      }));
-      setSelectedReservation(null); // Ensure we are in create mode
-      setActiveSheet('RESERVATION');
+    setReviews(prev => prev.map(r => r.id === reviewActionId ? { ...r, reply: replyText } : r));
+    showFeedback("Respuesta enviada");
+    setActiveSheet(null);
+    setReviewActionId(null);
   };
 
-  const openEditReservation = () => {
+  const handleSaveReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const reason = formData.get('reportReason') as string;
+
+    setReviews(prev => prev.map(r => r.id === reviewActionId ? { ...r, isReported: true, reportReason: reason } : r));
+    showFeedback("Reseña reportada");
+    setActiveSheet(null);
+    setReviewActionId(null);
+  };
+
+  const handleEditReservation = () => {
       if (!selectedReservation) return;
-      
-      const [date, timePart] = selectedReservation.startTime.split('T');
-      const time = timePart.substring(0, 5);
-      
+      const startDate = new Date(selectedReservation.startTime);
+      const endDate = new Date(selectedReservation.endTime);
+      const duration = (endDate.getTime() - startDate.getTime()) / 60000;
+
       setPrefillReservation({
-          date,
-          time,
+          date: selectedReservation.startTime.split('T')[0],
+          time: selectedReservation.startTime.split('T')[1].substring(0, 5),
           courtId: selectedReservation.courtId,
           clientName: selectedReservation.clientName
       });
-
       setReservationForm({
           clientName: selectedReservation.clientName,
-          clientPhone: '', // In a real app, fetch from client relation
+          clientPhone: '',
           clientEmail: '',
           depositAmount: '',
           depositMethod: 'Efectivo',
-          notes: (selectedReservation as any).notes || '',
-          type: (selectedReservation as any).type || 'Normal',
-          duration: '60', // Simplified logic for duration
-          isRecurring: false
+          paymentMethod: selectedReservation.paymentMethod || 'Efectivo',
+          notes: selectedReservation.notes || '',
+          type: selectedReservation.type || 'Normal',
+          duration: duration.toString(),
+          isRecurring: false,
+          price: selectedReservation.price.toString()
       });
-      
       setActiveSheet('RESERVATION');
   };
 
-  if (!isAuthenticated) {
-    return (
-      <HashRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage onLogin={() => handleLogin()} />} />
-          <Route path="/register" element={<RegisterPage onLogin={(data) => handleLogin(data)} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </HashRouter>
-    );
-  }
+  const canAccessFullApp = userProfile?.role === 'OWNER' || userProfile?.role === 'ADMIN';
 
   return (
     <HashRouter>
-      <div className="flex h-screen bg-white text-[#112320] font-sans font-normal text-base overflow-hidden">
-        <Sidebar onLogout={handleLogout} user={userProfile} />
-        <main className="flex-1 h-full overflow-hidden relative flex flex-col">
-          <Routes>
-            <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} onAddReservation={openNewReservation} onSelectReservation={openViewReservation} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={schedule} />} />
-            <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setCourtFormTypes([]); setSelectedCourt(null); setActiveSheet('COURT'); }} onEditCourt={openEditCourt} />} />
-            <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => setActiveSheet('CLIENT')} onViewClient={openViewClient} onBookClient={openBookClient} />} />
-            <Route path="/my-club" element={<MyClubPage users={users} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={openEditUser} onDeleteUser={initiateDeleteUser} reviews={reviews} clubConfig={{ name: 'Club Central', status: 'ACTIVE', ...(clubConfig || {}), schedule, services: clubServices }} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} />} />
-            <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={openEditProduct} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
-            <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT')} />} />
-            <Route path="/profile" element={<UserProfilePage user={userProfile} email={userProfile?.email} onUpdateProfile={handleUpdateProfile} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
-      
-      {/* SideSheets and Modals */}
-      <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
-         <form onSubmit={handleSaveReservation} className="space-y-6 flex flex-col h-full">
-            <div className="space-y-6 flex-1 overflow-y-auto pr-1">
-                <div className="grid grid-cols-2 gap-4">
-                    <Input type="date" label="Fecha" value={prefillReservation?.date || selectedDate} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, date: e.target.value }))} required />
-                     <Select label="Horario Inicio" value={prefillReservation?.time || '10:00'} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, time: e.target.value }))}>
-                        {Array.from({ length: 15 }, (_, i) => i + 9).map(h => { const t = `${h.toString().padStart(2, '0')}:00`; return <option key={t} value={t}>{t} hs</option>; })}
-                     </Select>
-                </div>
-                <div>
-                    <Select label="Cancha" value={prefillReservation?.courtId || courts[0]?.id} onChange={(e) => setPrefillReservation(prev => ({ ...prev!, courtId: e.target.value }))}>
-                        {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </Select>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <Input name="clientName" label="Nombre del Cliente" placeholder="Buscar cliente..." value={reservationForm.clientName} onChange={handleClientNameChange} required list="clients-list" autoComplete="off" />
-                        <datalist id="clients-list">{clients.map(c => <option key={c.id} value={c.name} />)}</datalist>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input name="phone" label="Teléfono" placeholder="+54..." value={reservationForm.clientPhone} onChange={(e) => setReservationForm({...reservationForm, clientPhone: e.target.value})} />
-                        <Input name="email" label="Email (Opcional)" placeholder="cliente@email.com" value={reservationForm.clientEmail} onChange={(e) => setReservationForm({...reservationForm, clientEmail: e.target.value})} />
-                    </div>
-                </div>
-                <div>
-                    <label className="text-base font-medium text-[#112320] block mb-1.5">Deporte</label>
-                    <div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base text-gray-500 font-medium">{courts.find(c => c.id === prefillReservation?.courtId)?.types[0] || 'General'}</div>
-                </div>
-                <Card className="p-4 bg-[#C7F269]/20 border-[#C7F269]/50"><Checkbox label="Turno Fijo (Repetir todas las semanas)" name="isRecurring" checked={reservationForm.isRecurring} onChange={(e) => setReservationForm({...reservationForm, isRecurring: e.target.checked})} /></Card>
-                <div className="grid grid-cols-2 gap-4">
-                     <Select label="Tipo de Turno" name="type" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}><option>Normal</option><option>Profesor</option><option>Torneo</option><option>Escuela</option><option>Cumpleaños</option><option>Abonado</option></Select>
-                     <Select label="Duración" name="duration" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4 items-end">
-                    <div><label className="text-base font-medium text-[#112320] block mb-1.5">Precio Total</label><div className="w-full rounded-2xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-base font-bold text-[#1B3530]">$4500</div></div>
-                    <Input label="Seña / Adelanto" name="depositAmount" placeholder="$0.00" value={reservationForm.depositAmount} onChange={(e) => setReservationForm({...reservationForm, depositAmount: e.target.value})} />
-                </div>
-                {reservationForm.depositAmount && (<Select label="Medio de Pago Seña" name="depositMethod" value={reservationForm.depositMethod} onChange={(e) => setReservationForm({...reservationForm, depositMethod: e.target.value})}><option>Efectivo</option><option>Débito</option><option>Crédito</option><option>MercadoPago</option><option>Transferencia</option></Select>)}
-                <div className="space-y-1.5"><label className="text-base font-medium text-[#112320]">Notas Adicionales</label><textarea className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-24" placeholder="Comentarios sobre la reserva..." value={reservationForm.notes} onChange={(e) => setReservationForm({...reservationForm, notes: e.target.value})} /></div>
-            </div>
-            <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-auto bg-white"><Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button><Button type="submit">{selectedReservation ? "Guardar Cambios" : "Confirmar Reserva"}</Button></div>
-         </form>
-      </SideSheet>
+      <Routes>
+        <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" />} />
+        <Route path="*" element={isAuthenticated ? (
+          <div className="flex bg-[#F8F8F8] min-h-screen">
+            <Sidebar onLogout={handleLogout} user={userProfile} />
+            <main className="flex-1 h-screen overflow-hidden">
+                <Routes>
+                  <Route path="/" element={
+                      <ReservasPage 
+                          courts={courts} 
+                          reservations={reservations} 
+                          selectedDate={selectedDate}
+                          onDateChange={setSelectedDate}
+                          schedule={schedule}
+                          onAddReservation={(date, time, courtId) => {
+                              resetReservationForm();
+                              setPrefillReservation({ date: date || selectedDate, time: time || '09:00', courtId: courtId || courts[0].id });
+                              setActiveSheet('RESERVATION');
+                          }}
+                          onSelectReservation={(res) => {
+                              setSelectedReservation(res);
+                              setActiveSheet('VIEW_RESERVATION');
+                          }}
+                      />
+                  } />
+                  
+                  <Route path="/profile" element={<UserProfilePage user={userProfile} email={userProfile?.email} onUpdateProfile={handleUpdateProfile} onUpdatePassword={handleUpdatePassword} />} />
 
-      <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
-        {selectedReservation && (
-          <div className="space-y-6 flex flex-col h-full">
-            <div className="bg-[#1B3530] rounded-2xl p-6 border border-[#112320] flex justify-between items-center text-white shadow-lg">
-              <div>
-                <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">Cancha</p>
-                <p className="text-xl font-bold">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-[#C7F269] uppercase tracking-wide opacity-80 mb-1">{new Date(selectedReservation.startTime).toLocaleDateString()}</p>
-                <p className="text-xl font-bold">{selectedReservation.startTime.split('T')[1].substring(0,5)} hs</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="p-4 bg-[#F8F8F8]"><span className="text-xs font-bold text-gray-500 uppercase">Cliente</span><p className="text-lg font-bold text-[#112320]">{selectedReservation.clientName}</p></Card>
-              <Card className="p-4 bg-[#F8F8F8]"><span className="text-xs font-bold text-gray-500 uppercase">Estado</span><p className="text-lg font-bold text-[#112320]">{selectedReservation.status}</p></Card>
-            </div>
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-gray-600">Creado Por</span>
-                <span className="font-bold text-[#1B3530]">{selectedReservation.createdBy}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-600">Precio</span>
-                <span className="font-bold text-[#1B3530]">${selectedReservation.price}</span>
-              </div>
-            </Card>
+                  {/* Restricted Routes */}
+                  {canAccessFullApp ? (
+                    <>
+                        <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} />} />
+                        <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => setActiveSheet('CLIENT')} onViewClient={(c) => { setSelectedClient(c); setActiveSheet('VIEW_CLIENT'); }} onBookClient={openBookClient} />} />
+                        <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
+                        <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} />} />
+                        <Route path="/my-club" element={<MyClubPage clubConfig={{...clubConfig, schedule, services: clubServices, welcomeMessage }} onUpdateClub={handleUpdateClub} />} />
+                    </>
+                  ) : (
+                    // Redirect employees to home
+                    <Route path="*" element={<Navigate to="/" />} />
+                  )}
 
-            <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-auto bg-white">
-                <Button variant="secondary" onClick={openEditReservation}>Editar</Button>
-                <Button variant="destructive" onClick={initiateDeleteReservation}>Eliminar</Button>
-            </div>
-          </div>
-        )}
-      </SideSheet>
+                </Routes>
+            </main>
 
-      <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
-           <form onSubmit={handleSaveCourt} className="space-y-6">
-                <Input name="name" label="Nombre" defaultValue={selectedCourt?.name} required />
-                <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>
-                    {SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                </Select>
-                <div className="space-y-2">
-                    <label className="text-base font-medium text-[#112320]">Deportes</label>
-                    <div className="flex flex-wrap gap-2">
-                        {SPORTS_LIST.map(sport => (
-                            <div key={sport} onClick={() => {
-                                if (courtFormTypes.includes(sport)) setCourtFormTypes(courtFormTypes.filter(t => t !== sport));
-                                else setCourtFormTypes([...courtFormTypes, sport]);
-                            }} className={`cursor-pointer px-3 py-1 rounded-full text-sm font-medium border ${courtFormTypes.includes(sport) ? 'bg-[#1B3530] text-[#C7F269] border-[#1B3530]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                                {sport}
+            <Snackbar 
+                message={notification.message} 
+                type={notification.type} 
+                isVisible={notification.show} 
+                onClose={() => setNotification(prev => ({ ...prev, show: false }))} 
+            />
+
+            {/* --- SIDE SHEETS --- */}
+            
+            <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
+                <form className="space-y-6" onSubmit={handleSaveReservation}>
+                   <div className="space-y-4">
+                       <AutocompleteInput 
+                           label="Nombre del Cliente"
+                           placeholder="Buscar o escribir nombre..."
+                           value={reservationForm.clientName}
+                           onChange={handleClientNameChange}
+                           suggestions={clients}
+                           onSelect={handleClientSelect}
+                           required
+                       />
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <Input label="Teléfono" placeholder="+54..." value={reservationForm.clientPhone} onChange={e => setReservationForm({...reservationForm, clientPhone: e.target.value})} />
+                          <Input label="Email" placeholder="cliente@email.com" value={reservationForm.clientEmail} onChange={e => setReservationForm({...reservationForm, clientEmail: e.target.value})} />
+                       </div>
+                   </div>
+
+                   <div className="space-y-4 pt-4 border-t border-gray-100">
+                       <Select label="Cancha" defaultValue={prefillReservation?.courtId} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, courtId: e.target.value} : null)}>
+                           {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                       </Select>
+                       <div className="grid grid-cols-2 gap-4">
+                           <Input type="date" label="Fecha" value={prefillReservation?.date} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, date: e.target.value} : null)} />
+                           <Input type="time" label="Hora" value={prefillReservation?.time} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, time: e.target.value} : null)} />
+                       </div>
+                       <Select label="Duración" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}>
+                           <option value="60">1 Hora</option>
+                           <option value="90">1 Hora 30 min</option>
+                           <option value="120">2 Horas</option>
+                       </Select>
+                       <Select label="Tipo de Reserva" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}>
+                           {Object.entries(RESERVATION_META).map(([key, meta]) => (
+                               <option key={key} value={key}>{meta.label}</option>
+                           ))}
+                       </Select>
+                   </div>
+                   
+                   <div className="space-y-4 pt-4 border-t border-gray-100">
+                        <Input 
+                            label="Precio" 
+                            type="number" 
+                            icon={DollarSign} 
+                            value={reservationForm.price} 
+                            onChange={e => setReservationForm({...reservationForm, price: e.target.value})} 
+                            required
+                            disabled
+                        />
+                        <Select label="Método de Pago" value={reservationForm.paymentMethod} onChange={(e) => setReservationForm({...reservationForm, paymentMethod: e.target.value})}>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Mercado Pago">Mercado Pago</option>
+                            <option value="Tarjeta Débito">Tarjeta Débito</option>
+                            <option value="Tarjeta Crédito">Tarjeta Crédito</option>
+                        </Select>
+                        <Input label="Seña (Opcional)" placeholder="$ 0.00" icon={DollarSign} value={reservationForm.depositAmount} onChange={e => setReservationForm({...reservationForm, depositAmount: e.target.value})} />
+                        <Textarea label="Notas" placeholder="Comentarios adicionales..." value={reservationForm.notes} onChange={e => setReservationForm({...reservationForm, notes: e.target.value})} />
+                   </div>
+
+                   <div className="pt-6 flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">Confirmar Reserva</Button>
+                   </div>
+                </form>
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
+                {selectedReservation && (
+                    <div className="space-y-6">
+                         <div className="bg-[#F8F8F8] p-4 rounded-2xl flex items-center justify-between">
+                             <div>
+                                <p className="text-xs text-gray-500 font-bold uppercase">Estado</p>
+                                <Badge color={selectedReservation.status === 'Confirmed' ? 'green' : selectedReservation.status === 'Cancelled' ? 'red' : 'yellow'}>
+                                    {selectedReservation.status === 'Cancelled' ? 'Cancelada' : selectedReservation.status}
+                                </Badge>
+                             </div>
+                             <div className="text-right">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Precio Total</p>
+                                <p className="text-2xl font-bold text-[#1B3530]">${selectedReservation.price}</p>
+                             </div>
+                         </div>
+
+                         <div className="space-y-4">
+                             <div className="grid grid-cols-2 gap-4">
+                                 <div>
+                                     <p className="text-sm text-gray-500">Fecha</p>
+                                     <p className="font-bold text-[#112320]">{new Date(selectedReservation.startTime).toLocaleDateString()}</p>
+                                 </div>
+                                 <div>
+                                     <p className="text-sm text-gray-500">Horario</p>
+                                     <p className="font-bold text-[#112320]">
+                                         {selectedReservation.startTime.split('T')[1].substring(0, 5)} - {selectedReservation.endTime.split('T')[1].substring(0, 5)}
+                                     </p>
+                                 </div>
+                             </div>
+                             <div>
+                                 <p className="text-sm text-gray-500">Cancha</p>
+                                 <p className="font-bold text-[#112320]">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p>
+                             </div>
+                             <div>
+                                 <p className="text-sm text-gray-500">Cliente</p>
+                                 <p className="font-bold text-[#112320]">{selectedReservation.clientName}</p>
+                             </div>
+                             <div>
+                                <p className="text-sm text-gray-500">Creado Por</p>
+                                <p className="font-bold text-[#112320]">{selectedReservation.createdBy || 'Sistema'}</p>
+                             </div>
+                             <div>
+                                <p className="text-sm text-gray-500">Método de Pago</p>
+                                <p className="font-bold text-[#112320]">{selectedReservation.paymentMethod || 'No especificado'}</p>
+                             </div>
+                             {selectedReservation.notes && (
+                                <div>
+                                    <p className="text-sm text-gray-500">Notas</p>
+                                    <p className="text-[#112320] italic">{selectedReservation.notes}</p>
+                                </div>
+                             )}
+                             {selectedReservation.status === ReservationStatus.CANCELLED && selectedReservation.cancellationReason && (
+                                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                    <p className="text-xs font-bold text-red-600 uppercase mb-1">Motivo Cancelación</p>
+                                    <p className="text-sm text-gray-700">{selectedReservation.cancellationReason}</p>
+                                </div>
+                             )}
+                         </div>
+
+                         {selectedReservation.status !== ReservationStatus.CANCELLED && (
+                            <div className="pt-6 flex flex-col gap-3">
+                                <Button onClick={handleEditReservation}>Editar Reserva</Button>
+                                <Button variant="destructive" onClick={initiateDeleteReservation}>Cancelar Reserva</Button>
                             </div>
-                        ))}
+                         )}
+                    </div>
+                )}
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
+                <form className="space-y-6" onSubmit={handleSaveCourt}>
+                    <Input name="name" label="Nombre de la Cancha" placeholder="Ej. Cancha 1" defaultValue={selectedCourt?.name} required />
+                    
+                    <div className="space-y-2">
+                        <MultiSelect 
+                            label="Deportes" 
+                            options={SPORTS_LIST} 
+                            selected={courtFormTypes} 
+                            onChange={setCourtFormTypes} 
+                        />
+                    </div>
+
+                    <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>
+                        {SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+
+                    <RadioGroup 
+                        label="Forzar Inicio de Turnos"
+                        name="forceStart"
+                        defaultValue={selectedCourt?.forceStart || 'NO_ROUNDING'}
+                        options={[
+                            { label: 'No redondear (Cualquier horario)', value: 'NO_ROUNDING' },
+                            { label: 'En punto (XX:00)', value: 'ON_HOUR' },
+                            { label: 'Y media (XX:30)', value: 'HALF_HOUR' }
+                        ]}
+                    />
+
+                    <div className="space-y-3">
+                        <label className="text-base font-medium text-[#112320]">Atributos</label>
+                        <div className="flex flex-col gap-3">
+                            <Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} />
+                            <Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} />
+                        </div>
+                    </div>
+                    
+                    <div className="pt-6 flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">Guardar</Button>
+                   </div>
+                </form>
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Nuevo Usuario"}>
+                <form className="space-y-6" onSubmit={handleSaveUser}>
+                    <Input name="name" label="Nombre Completo" placeholder="Ej. Juan Pérez" defaultValue={selectedUser?.name} required />
+                    <Input name="email" label="Email" type="email" placeholder="juan@club.com" defaultValue={selectedUser?.email} required />
+                    <Select name="role" label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
+                        <option value="OWNER">Dueño (Acceso Total)</option>
+                        <option value="ADMIN">Encargado (Acceso Total)</option>
+                        <option value="RECEPTIONIST">Empleado (Solo Reservas)</option>
+                    </Select>
+                    <div className="pt-6 flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">Guardar Usuario</Button>
+                   </div>
+                </form>
+            </SideSheet>
+            
+            <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title="Nuevo Cliente">
+                <form className="space-y-6" onSubmit={handleSaveClient}>
+                    <Input name="name" label="Nombre Completo" placeholder="Ej. Maria Gomez" required />
+                    <Input name="phone" label="Teléfono" placeholder="+54 9 11..." required />
+                    <Input name="email" label="Email" type="email" placeholder="maria@email.com" />
+                    <div className="pt-6 flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">Guardar Cliente</Button>
+                   </div>
+                </form>
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'VIEW_CLIENT'} onClose={closeSheet} title="Detalle del Cliente">
+                {selectedClient && (
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] text-2xl font-bold">
+                                {selectedClient.name.substring(0,2).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-[#112320]">{selectedClient.name}</h3>
+                                <p className="text-gray-500">{selectedClient.email}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Card className="p-4 bg-[#F8F8F8] border-none">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Reservas</p>
+                                <p className="text-2xl font-bold text-[#112320]">{selectedClient.totalBookings}</p>
+                            </Card>
+                            <Card className="p-4 bg-[#F8F8F8] border-none">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Gastado</p>
+                                <p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent}</p>
+                            </Card>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm text-gray-500">Teléfono</p>
+                                <p className="font-bold text-[#112320]">{selectedClient.phone}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Última Visita</p>
+                                <p className="font-bold text-[#112320]">{new Date(selectedClient.lastBooking).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-6">
+                            <Button className="w-full" onClick={() => { openBookClient(selectedClient); }}>Nueva Reserva</Button>
+                        </div>
+                    </div>
+                )}
+            </SideSheet>
+            
+            <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
+                 <form className="space-y-6" onSubmit={handleSaveProduct}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5 w-full">
+                            <Input name="code" label="Código" placeholder="ABC-001" defaultValue={selectedProduct?.code} />
+                        </div>
+                        <div className="space-y-1.5 w-full">
+                             <Input name="name" label="Nombre del Producto" placeholder="Ej. Gatorade" defaultValue={selectedProduct?.name} required />
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input name="purchasePrice" type="number" label="Precio Costo" icon={DollarSign} defaultValue={selectedProduct?.purchasePrice} required />
+                        <Input name="salePrice" type="number" label="Precio Venta" icon={DollarSign} defaultValue={selectedProduct?.salePrice} required />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Select name="type" label="Categoría" defaultValue={selectedProduct?.type || 'Bebidas'}>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Equipamiento">Equipamiento</option>
+                            <option value="Indumentaria">Indumentaria</option>
+                            <option value="Venta">Venta</option>
+                        </Select>
+                        <Input name="stock" type="number" label="Stock Inicial" defaultValue={selectedProduct?.stock} required />
+                    </div>
+
+                    <div className="pt-6 flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">Guardar Producto</Button>
+                   </div>
+                </form>
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña">
+                <form className="space-y-6" onSubmit={handleSaveReply}>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p>
+                        <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-base font-medium text-[#112320]">Tu Respuesta</label>
+                        <textarea 
+                            name="replyText"
+                            className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32"
+                            placeholder="Escribe una respuesta amable..."
+                            required
+                        ></textarea>
+                    </div>
+                    <div className="pt-4 flex gap-3">
+                        <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                        <Button type="submit" className="flex-1">Enviar Respuesta</Button>
+                    </div>
+                </form>
+            </SideSheet>
+
+            <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña">
+                <form className="space-y-6" onSubmit={handleSaveReport}>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p>
+                        <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+                    </div>
+                    <div className="space-y-2">
+                        <RadioGroup 
+                            label="Motivo del Reporte"
+                            name="reportReason"
+                            options={[
+                                { label: 'Contenido Ofensivo', value: 'OFFENSIVE' },
+                                { label: 'Es Spam', value: 'SPAM' },
+                                { label: 'Reseña Falsa', value: 'FAKE' },
+                                { label: 'Otro', value: 'OTHER' }
+                            ]}
+                            defaultValue="OFFENSIVE"
+                        />
+                    </div>
+                    <div className="pt-4 flex gap-3">
+                        <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                        <Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button>
+                    </div>
+                </form>
+            </SideSheet>
+
+            <Modal isOpen={activeSheet === 'EXPORT_OPTIONS'} onClose={closeSheet} title="Exportar Reporte">
+                 <div className="space-y-4">
+                     <p className="text-gray-600 mb-4">Selecciona el formato de exportación:</p>
+                     <div className="grid grid-cols-1 gap-3">
+                        <button 
+                            className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group"
+                            onClick={() => handleExport('EXCEL')}
+                        >
+                            <span className="font-bold text-[#112320]">Excel (.xlsx)</span>
+                            <FileSpreadsheet className="text-green-600" />
+                        </button>
+                        <button 
+                            className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group"
+                            onClick={() => handleExport('CSV')}
+                        >
+                            <span className="font-bold text-[#112320]">CSV (.csv)</span>
+                            <FileText className="text-blue-600" />
+                        </button>
+                        <button 
+                            className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group"
+                            onClick={() => handleExport('PDF')}
+                        >
+                            <span className="font-bold text-[#112320]">PDF (.pdf)</span>
+                            <FileType className="text-red-600" />
+                        </button>
+                     </div>
+                 </div>
+            </Modal>
+            
+            <Modal isOpen={activeSheet === 'IMPORT_INVENTORY'} onClose={closeSheet} title="Importar Inventario">
+                <div className="space-y-4">
+                    <p className="text-gray-600">Sube un archivo CSV con la lista de productos para importar masivamente.</p>
+                    <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                        <Upload size={32} className="text-gray-400 mb-2"/>
+                        <p className="text-sm font-medium text-gray-600">Click para seleccionar archivo</p>
+                        <input type="file" accept=".csv" className="opacity-0 absolute inset-0 cursor-pointer" onChange={() => { setActiveSheet(null); showFeedback("Inventario importado"); }} />
+                    </div>
+                    <div className="flex gap-3 justify-end pt-2">
+                        <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
                     </div>
                 </div>
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
-                </div>
-           </form>
-      </SideSheet>
+            </Modal>
 
-       <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Nuevo Usuario"}>
-           <form onSubmit={handleSaveUser} className="space-y-6">
-                <Input name="name" label="Nombre Completo" defaultValue={selectedUser?.name} required />
-                <Input name="email" label="Email" type="email" defaultValue={selectedUser?.email} required />
-                <Select name="role" label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
-                    <option value="OWNER">Propietario</option>
-                    <option value="ADMIN">Administrador</option>
-                    <option value="RECEPTIONIST">Recepcionista</option>
-                </Select>
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
+            <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="Eliminar Usuario">
+                <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+                <div className="flex gap-3 justify-end">
+                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button variant="destructive" onClick={confirmDeleteUser}>Eliminar</Button>
                 </div>
-           </form>
-      </SideSheet>
+            </Modal>
 
-      <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title="Nuevo Cliente">
-           <form onSubmit={handleSaveClient} className="space-y-6">
-                <Input name="name" label="Nombre Completo" required />
-                <Input name="email" label="Email" type="email" required />
-                <Input name="phone" label="Teléfono" required />
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
+            <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="Cancelar Reserva">
+                <div className="space-y-4 mb-6">
+                    <p className="text-gray-600">Por favor indica el motivo de la cancelación:</p>
+                     <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                             <input type="radio" name="cancelReason" value="CLIENT_CANCEL" checked={cancellationReason === 'CLIENT_CANCEL'} onChange={() => setCancellationReason('CLIENT_CANCEL')} className="accent-[#1B3530]"/>
+                             <span>Cancelado por el cliente</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                             <input type="radio" name="cancelReason" value="WEATHER" checked={cancellationReason === 'WEATHER'} onChange={() => setCancellationReason('WEATHER')} className="accent-[#1B3530]"/>
+                             <span>Condiciones climáticas</span>
+                        </label>
+                         <label className="flex items-center gap-3 cursor-pointer">
+                             <input type="radio" name="cancelReason" value="MAINTENANCE" checked={cancellationReason === 'MAINTENANCE'} onChange={() => setCancellationReason('MAINTENANCE')} className="accent-[#1B3530]"/>
+                             <span>Mantenimiento de cancha</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                             <input type="radio" name="cancelReason" value="OTHER" checked={cancellationReason === 'OTHER'} onChange={() => setCancellationReason('OTHER')} className="accent-[#1B3530]"/>
+                             <span>Otro motivo</span>
+                        </label>
+                     </div>
+                     {cancellationReason === 'OTHER' && (
+                         <textarea 
+                            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#1B3530]"
+                            placeholder="Especificar motivo..."
+                            value={cancellationOtherText}
+                            onChange={(e) => setCancellationOtherText(e.target.value)}
+                         ></textarea>
+                     )}
                 </div>
-           </form>
-      </SideSheet>
+                <div className="flex gap-3 justify-end">
+                    <Button variant="ghost" onClick={closeSheet}>Volver</Button>
+                    <Button variant="destructive" onClick={confirmDeleteReservation}>Confirmar Cancelación</Button>
+                </div>
+            </Modal>
 
-      <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
-           <form onSubmit={handleSaveProduct} className="space-y-6">
-                <Input name="code" label="Código" defaultValue={selectedProduct?.code} />
-                <Input name="name" label="Nombre" defaultValue={selectedProduct?.name} required />
-                <div className="grid grid-cols-2 gap-4">
-                    <Input name="purchasePrice" label="Precio Compra" type="number" defaultValue={selectedProduct?.purchasePrice} required />
-                    <Input name="salePrice" label="Precio Venta" type="number" defaultValue={selectedProduct?.salePrice} required />
+            <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
+                <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir de la aplicación?</p>
+                <div className="flex gap-3 justify-end">
+                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                    <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input name="stock" label="Stock Actual" type="number" defaultValue={selectedProduct?.stock} required />
-                    <Select name="type" label="Categoría" defaultValue={selectedProduct?.type || 'Venta'}>
-                        <option value="Venta">Venta</option>
-                        <option value="Alquiler">Alquiler</option>
-                        <option value="Bebidas">Bebidas</option>
-                        <option value="Equipamiento">Equipamiento</option>
-                    </Select>
-                </div>
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
-                </div>
-           </form>
-      </SideSheet>
+            </Modal>
 
-      <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="¿Cancelar Reserva?">
-          <p className="text-gray-600 mb-6">Esta acción no se puede deshacer. ¿Estás seguro?</p>
-          <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={closeSheet}>No, volver</Button>
-              <Button variant="destructive" onClick={confirmDeleteReservation}>Sí, cancelar</Button>
           </div>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="¿Eliminar Usuario?">
-          <p className="text-gray-600 mb-6">Esta acción no se puede deshacer. ¿Estás seguro?</p>
-          <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={closeSheet}>No, volver</Button>
-              <Button variant="destructive" onClick={confirmDeleteUser}>Sí, eliminar</Button>
-          </div>
-      </Modal>
-
-      <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
-          <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir?</p>
-          <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-              <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
-          </div>
-      </Modal>
-
+        ) : <Navigate to="/login" />} />
+      </Routes>
     </HashRouter>
   );
 };

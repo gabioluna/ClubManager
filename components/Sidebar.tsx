@@ -37,7 +37,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() 
     : 'U';
 
-  const roleDisplay = user?.role === 'OWNER' ? 'Propietario' : user?.role === 'ADMIN' ? 'Administrador' : 'Recepcionista';
+  const roleDisplay = user?.role === 'OWNER' ? 'Dueño' : user?.role === 'ADMIN' ? 'Encargado' : 'Empleado';
+  
+  // Empleado (RECEPTIONIST) solo ve Reservas y Mi Perfil (Mi Perfil está en el footer del sidebar)
+  const isRestricted = user?.role === 'RECEPTIONIST';
 
   return (
     <aside 
@@ -65,11 +68,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
 
       <nav className="space-y-2 flex-1">
         <NavItem to="/" icon={CalendarDays} label="Reservas" collapsed={collapsed} />
-        <NavItem to="/clients" icon={Users} label="Clientes" collapsed={collapsed} />
-        <NavItem to="/my-club" icon={Store} label="Mi Club" collapsed={collapsed} />
-        <NavItem to="/courts" icon={Trophy} label="Canchas" collapsed={collapsed} />
-        <NavItem to="/inventory" icon={ShoppingBag} label="Inventario" collapsed={collapsed} />
-        <NavItem to="/reports" icon={BarChart3} label="Reportes" collapsed={collapsed} />
+        
+        {!isRestricted && (
+          <>
+            <NavItem to="/clients" icon={Users} label="Clientes" collapsed={collapsed} />
+            <NavItem to="/my-club" icon={Store} label="Mi Club" collapsed={collapsed} />
+            <NavItem to="/courts" icon={Trophy} label="Canchas" collapsed={collapsed} />
+            <NavItem to="/inventory" icon={ShoppingBag} label="Inventario" collapsed={collapsed} />
+            <NavItem to="/reports" icon={BarChart3} label="Reportes" collapsed={collapsed} />
+          </>
+        )}
       </nav>
 
       <div className="pt-6 border-t border-gray-200 mt-4 space-y-2">
@@ -84,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
             {!collapsed && (
               <div className="flex flex-col overflow-hidden text-left">
                 <span className="text-sm font-bold text-[#1B3530] truncate">{user?.name || 'Usuario'}</span>
-                <span className="text-xs text-gray-500 truncate">{roleDisplay || 'Miembro'}</span>
+                <span className="text-xs text-gray-500 truncate">{roleDisplay}</span>
               </div>
             )}
           </NavLink>

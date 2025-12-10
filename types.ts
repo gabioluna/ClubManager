@@ -1,4 +1,5 @@
 
+
 export enum CourtType {
   BASKET_3X3 = "Básquet 3vs3",
   BASKET_5X5 = "Básquet 5vs5",
@@ -75,6 +76,10 @@ export interface Reservation {
   status: ReservationStatus;
   isPaid: boolean;
   createdBy?: string;
+  paymentMethod?: string;
+  cancellationReason?: string;
+  type?: string;
+  notes?: string;
 }
 
 export interface User {

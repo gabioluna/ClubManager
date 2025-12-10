@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Loader2, X, ChevronDown, Check } from 'lucide-react';
+import { Loader2, X, ChevronDown, Check, Search, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'destructive', isLoading?: boolean }> = ({ 
   children, variant = 'primary', className = '', isLoading, ...props 
@@ -37,6 +37,16 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
   </div>
 );
 
+export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }> = ({ label, className = '', ...props }) => (
+  <div className="space-y-1.5 w-full">
+    {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+    <textarea
+      className={`w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none ${className}`}
+      {...props}
+    />
+  </div>
+);
+
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, className = '', children, ...props }) => (
   <div className="space-y-1.5 w-full">
     {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
@@ -53,6 +63,72 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { 
     </div>
   </div>
 );
+
+export const AutocompleteInput: React.FC<{
+  label?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: { id: string; name: string; [key: string]: any }[];
+  onSelect: (item: any) => void;
+  required?: boolean;
+}> = ({ label, placeholder, value, onChange, suggestions, onSelect, required }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filteredSuggestions = suggestions.filter(item => 
+    item.name.toLowerCase().includes(value.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="space-y-1.5 w-full" ref={containerRef}>
+      {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <Search size={18} />
+        </div>
+        <input
+          type="text"
+          className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          required={required}
+        />
+        {isOpen && filteredSuggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 shadow-xl rounded-2xl max-h-60 overflow-y-auto z-50">
+            {filteredSuggestions.map((item) => (
+              <div
+                key={item.id}
+                className="px-4 py-3 cursor-pointer hover:bg-[#F8F8F8] transition-colors text-base text-[#112320]"
+                onClick={() => {
+                  onSelect(item);
+                  setIsOpen(false);
+                }}
+              >
+                {item.name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const Checkbox: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, className = '', ...props }) => (
   <label className="flex items-center gap-3 cursor-pointer group">
@@ -267,6 +343,29 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
          <div>
             {children}
          </div>
+      </div>
+    </div>
+  );
+};
+
+export const Snackbar: React.FC<{ message: string, type?: 'success' | 'error', isVisible: boolean, onClose: () => void }> = ({ message, type = 'success', isVisible, onClose }) => {
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-5 duration-300">
+      <div className={`flex items-center gap-3 px-6 py-3 rounded-full shadow-xl border ${type === 'success' ? 'bg-[#1B3530] text-white border-[#1B3530]' : 'bg-white text-red-600 border-red-100'}`}>
+        {type === 'success' ? <CheckCircle size={20} className="text-[#C7F269]" /> : <AlertCircle size={20} />}
+        <span className="font-semibold text-sm">{message}</span>
+        <button onClick={onClose} className="ml-2 hover:opacity-70"><X size={16} /></button>
       </div>
     </div>
   );
