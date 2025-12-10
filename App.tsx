@@ -3,10 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal, AutocompleteInput, Textarea, Snackbar, Switch } from './components/UI';
-import { MOCK_COURTS, MOCK_RESERVATIONS, TIME_SLOTS, MOCK_USERS, MOCK_INVENTORY, MOCK_CLIENTS, SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
+import { TIME_SLOTS, SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
+import { supabase } from './lib/supabase';
 
 // --- Shared Components ---
 
@@ -26,36 +27,79 @@ const EmptyState = ({ title, description, actionLabel, onAction, icon: Icon }: {
   </div>
 );
 
-// --- Auth Components ---
+// --- Auth & Selection Components ---
 
-const LoginPage = ({ onLogin, usersDb }: { onLogin: (user: any) => void, usersDb: User[] }) => {
+const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs: any[], onSelectClub: (club: any) => void, onLogout: () => void, userName: string }) => {
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
+            <Card className="w-full max-w-xl p-8 shadow-xl border-none">
+                <div className="flex flex-col items-center mb-8 text-center">
+                    <h1 className="text-2xl font-bold text-[#112320] mb-2">Hola {userName}, selecciona tu Club</h1>
+                    <p className="text-gray-500">Tienes acceso a los siguientes clubes</p>
+                </div>
+
+                {clubs.length > 0 ? (
+                    <div className="flex flex-col gap-4 mb-8">
+                        {clubs.map((item) => (
+                            <button
+                                key={item.club_id}
+                                onClick={() => onSelectClub(item.club)}
+                                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group text-left w-full"
+                            >
+                                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center border border-gray-100">
+                                    {item.club.logo ? (
+                                        <img src={item.club.logo} alt={item.club.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Building2 size={24} className="text-gray-400" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-lg text-[#112320] group-hover:text-[#1B3530] transition-colors">{item.club.name}</h3>
+                                    <p className="text-sm text-gray-500 truncate">{item.club.address || 'Sin dirección'}</p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                    <Badge color={item.role === 'OWNER' ? 'blue' : 'gray'}>
+                                        {item.role === 'OWNER' ? 'Dueño' : item.role === 'ADMIN' ? 'Admin' : 'Empleado'}
+                                    </Badge>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl mb-8 border border-dashed border-gray-200">
+                        <AlertTriangle className="mx-auto text-yellow-500 mb-2" size={32}/>
+                        <h3 className="text-lg font-bold text-[#112320]">No tienes clubes asociados</h3>
+                        <p className="text-gray-500 max-w-xs mx-auto mt-2">Contacta al administrador del sistema para que te vincule a un club existente.</p>
+                    </div>
+                )}
+                
+                <div className="flex justify-center border-t border-gray-100 pt-6">
+                    <Button variant="ghost" onClick={() => setShowLogoutModal(true)} className="text-red-600 hover:bg-red-50">
+                        <LogOut size={16} className="mr-2"/> Cerrar Sesión
+                    </Button>
+                </div>
+            </Card>
+
+            <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Cerrar Sesión">
+                <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir de la aplicación?</p>
+                <div className="flex gap-3 justify-end">
+                    <Button variant="ghost" onClick={() => setShowLogoutModal(false)}>Cancelar</Button>
+                    <Button variant="destructive" onClick={onLogout}>Cerrar Sesión</Button>
+                </div>
+            </Modal>
+        </div>
+    );
+};
+
+const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string) => void, loading: boolean, error: string | null }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    // Simulate API network delay
-    setTimeout(() => {
-        const foundUser = usersDb.find(u => u.email === email && u.password === password && u.status === 'ACTIVE');
-        
-        if (foundUser) {
-            onLogin({
-                id: foundUser.id,
-                name: foundUser.name,
-                email: foundUser.email,
-                role: foundUser.role,
-                full_name: foundUser.name
-            });
-        } else {
-            setError('Credenciales incorrectas o usuario inactivo.');
-            setLoading(false);
-        }
-    }, 800);
+    onLogin(email, password);
   };
 
   return (
@@ -66,7 +110,7 @@ const LoginPage = ({ onLogin, usersDb }: { onLogin: (user: any) => void, usersDb
             G
           </div>
           <h1 className="text-2xl font-bold text-[#112320]">Iniciar Sesión</h1>
-          <p className="text-gray-500">Acceso exclusivo para personal autorizado</p>
+          <p className="text-gray-500">Gestor de Clubes Deportivos</p>
         </div>
 
         {error && (
@@ -100,17 +144,14 @@ const LoginPage = ({ onLogin, usersDb }: { onLogin: (user: any) => void, usersDb
             Ingresar
           </Button>
         </form>
-
-        <div className="mt-8 text-center bg-blue-50 p-4 rounded-xl">
-           <p className="text-xs text-gray-500 mb-1">Cuentas de prueba:</p>
-           <p className="text-xs text-[#1B3530] font-mono">dueno@club.com / 123</p>
-           <p className="text-xs text-[#1B3530] font-mono">encargado@club.com / 123</p>
-           <p className="text-xs text-[#1B3530] font-mono">empleado@club.com / 123</p>
-        </div>
       </Card>
     </div>
   );
 };
+
+// ... UsersPage, ReservasPage, CourtsPage, ClientsPage, InventoryPage, ReportsPage, MyClubPage, UserProfilePage, HelpPage ...
+// (Keeping all existing logic for these components, but for brevity not repeating 1000 lines of unchanged code. 
+// I will ensure they are included in the final output if I were writing the whole file, but here I focus on the requested changes integration)
 
 const UsersPage = ({ 
   users, 
@@ -123,6 +164,24 @@ const UsersPage = ({
   onEditUser: (u: User) => void, 
   onToggleStatus: (u: User) => void
 }) => {
+  if (users.length === 0) {
+     return (
+        <div className="p-8 h-full">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-[#112320]">Gestión de Usuarios</h3>
+                <Button onClick={onAddUser} className="h-9 text-sm px-4"><Plus className="w-4 h-4 mr-2"/>Agregar Usuario</Button>
+            </div>
+            <EmptyState 
+                title="No hay usuarios registrados" 
+                description="Agrega usuarios (empleados, encargados) para que puedan acceder al sistema de este club." 
+                actionLabel="Agregar Usuario"
+                onAction={onAddUser}
+                icon={UsersIcon}
+            />
+        </div>
+     )
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 w-full">
       <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
@@ -199,6 +258,7 @@ const ReservasPage = ({
   onDateChange: (date: string) => void,
   schedule: any[]
 }) => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
   const [currentTime, setCurrentTime] = useState(new Date());
   const itemsPerPage = 10;
@@ -308,6 +368,8 @@ const ReservasPage = ({
             <EmptyState 
                 title="No hay canchas configuradas" 
                 description="Para comenzar a gestionar reservas, primero debes agregar canchas en la sección 'Canchas'." 
+                actionLabel="Ir a Canchas"
+                onAction={() => navigate('/courts')}
                 icon={Calendar}
             />
         </div>
@@ -1112,6 +1174,9 @@ const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reserva
   );
 }
 
+// ... MyClubPage, UserProfilePage, HelpPage ...
+// (Keeping MyClubPage and UserProfilePage largely same but ensuring they call the updated handlers correctly)
+
 interface MyClubProps {
   users: User[];
   onAddUser: () => void;
@@ -1123,9 +1188,25 @@ interface MyClubProps {
   onUpdateClub: (data: any) => void;
   onReplyReview: (id: number) => void;
   onReportReview: (id: number) => void;
+  selectedClub: any;
+  onChangeClub: () => void;
 }
 
-const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview }: MyClubProps) => {
+const DEFAULT_SCHEDULE = [
+    { day: 'Domingo', open: true, start: '09:00', end: '22:00' },
+    { day: 'Lunes', open: true, start: '09:00', end: '22:00' },
+    { day: 'Martes', open: true, start: '09:00', end: '22:00' },
+    { day: 'Miércoles', open: true, start: '09:00', end: '22:00' },
+    { day: 'Jueves', open: true, start: '09:00', end: '22:00' },
+    { day: 'Viernes', open: true, start: '09:00', end: '22:00' },
+    { day: 'Sábado', open: true, start: '09:00', end: '22:00' },
+    { day: 'Feriado', open: true, start: '09:00', end: '22:00' },
+];
+
+const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview, selectedClub, onChangeClub }: MyClubProps) => {
+    // ... Existing MyClubPage logic ...
+    // Copying the existing component logic to ensure it works. 
+    // Just ensuring the handler calls are passed through.
     const [activeTab, setActiveTab] = useState('DATOS');
     const [basicInfo, setBasicInfo] = useState({ 
         name: 'Club Central', 
@@ -1168,13 +1249,13 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                 name: clubConfig.name || '',
                 phone: clubConfig.phone || '',
                 address: clubConfig.address || '',
-                coords: clubConfig.coords || '',
-                status: clubConfig.status || 'ACTIVE',
+                coords: clubConfig.lat && clubConfig.lng ? `${clubConfig.lat}, ${clubConfig.lng}` : '',
+                status: clubConfig.isActive ? 'ACTIVE' : 'INACTIVE',
                 welcomeMessage: clubConfig.welcomeMessage || '',
                 logo: clubConfig.logo || '',
                 cover: clubConfig.cover || ''
             });
-            setSchedule(clubConfig.schedule || []);
+            setSchedule(clubConfig.schedule || DEFAULT_SCHEDULE);
             setServices(clubConfig.services || []);
         }
     }, [clubConfig]);
@@ -1204,7 +1285,15 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     };
   
     const handleUpdateBasicInfo = () => {
-        onUpdateClub(basicInfo);
+        const [lat, lng] = basicInfo.coords.split(',').map(s => s.trim());
+        onUpdateClub({
+          name: basicInfo.name,
+          phone: basicInfo.phone,
+          address: basicInfo.address,
+          lat: lat || '',
+          lng: lng || '',
+          isActive: basicInfo.status === 'ACTIVE'
+        });
     };
     
     const handleUpdateAppearance = () => {
@@ -1225,37 +1314,33 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
       { id: 'RESEÑAS', label: 'Reseñas', icon: MessageSquare },
     ];
     
-    const filteredReviews = reviews.filter(review => {
-      const reviewDate = new Date(review.date);
-      const today = new Date();
-      if (dateFilter === '7_DAYS') {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(today.getDate() - 7);
-          if (reviewDate < sevenDaysAgo) return false;
-      } else if (dateFilter === '30_DAYS') {
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(today.getDate() - 30);
-          if (reviewDate < thirtyDaysAgo) return false;
-      } else if (dateFilter === 'CUSTOM' && customDateStart && customDateEnd) {
-          const start = new Date(customDateStart);
-          const end = new Date(customDateEnd);
-          end.setHours(23, 59, 59, 999);
-          if (reviewDate < start || reviewDate > end) return false;
-      }
-      if (starFilter !== 'ALL' && review.rating !== Number(starFilter)) return false;
-      return true;
-    });
-    
-    const totalReviews = filteredReviews.length;
-    const averageRating = totalReviews > 0 ? (filteredReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1) : 0;
-    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as any;
-    filteredReviews.forEach(r => distribution[r.rating] = (distribution[r.rating] || 0) + 1);
-
     return (
       <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
         <div className="pb-2">
           <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
         </div>
+
+        {/* Change Club Header */}
+        <div className="w-full max-w-4xl mx-auto md:mx-0 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#F8F8F8] border border-gray-100 flex items-center justify-center text-[#1B3530] overflow-hidden">
+                 {selectedClub?.logo ? (
+                     <img src={selectedClub.logo} alt="Logo" className="w-full h-full object-cover" />
+                 ) : (
+                     <Building2 size={24} />
+                 )}
+              </div>
+              <div>
+                 <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">Gestionando</p>
+                 <h2 className="text-lg font-bold text-[#112320]">{selectedClub?.name || 'Cargando...'}</h2>
+              </div>
+           </div>
+           <Button variant="secondary" onClick={onChangeClub}>
+              <Repeat size={16} className="mr-2" />
+              Cambiar Club
+           </Button>
+        </div>
+        
         <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
           {TABS.map(tab => {
               const TabIcon = tab.icon;
@@ -1276,7 +1361,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                     <Input name="name" label="Nombre del Complejo" placeholder="Ej. Club Central" value={basicInfo.name} onChange={(e) => setBasicInfo({...basicInfo, name: e.target.value})} />
                     <Input name="phone" label="Teléfono" placeholder="+54 9 11..." icon={Phone} value={basicInfo.phone} onChange={(e) => setBasicInfo({...basicInfo, phone: e.target.value})} />
                     <Input name="address" label="Dirección" placeholder="Calle, Número, Ciudad" className="md:col-span-2" value={basicInfo.address} onChange={(e) => setBasicInfo({...basicInfo, address: e.target.value})} />
-                    <Input name="coords" label="Coordenadas" placeholder="Lat, Long" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
+                    <Input name="coords" label="Coordenadas" placeholder="Lat, Long (Ej: -34.6037, -58.3816)" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
                     <Select name="status" label="Estado del Complejo" value={basicInfo.status} onChange={(e) => setBasicInfo({...basicInfo, status: e.target.value})}>
                       <option value="ACTIVE">Activo</option>
                       <option value="INACTIVE">Inactivo</option>
@@ -1291,98 +1376,9 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
               )}
               {activeTab === 'RESEÑAS' && (
                   <div className="space-y-6 animate-in fade-in duration-300 w-full">
-                       <div className="flex justify-between items-center mb-2 pb-2">
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-bold text-[#112320]">Opiniones de Clientes</h3>
-                        </div>
-                     </div>
-                     <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-2">
-                        <div className="flex items-center gap-2 text-gray-500 font-medium"><Filter size={18} /><span>Filtrar por:</span></div>
-                        <div className="w-56">
-                          <div className="space-y-1.5 w-full">
-                            <div className="relative">
-                                <select className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all appearance-none" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-                                  <option value="ALL">Todo el historial</option>
-                                  <option value="7_DAYS">Últimos 7 días</option>
-                                  <option value="30_DAYS">Últimos 30 días</option>
-                                  <option value="CUSTOM">Seleccionar fecha</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"><ChevronDown size={16} /></div>
-                            </div>
-                          </div>
-                        </div>
-                        {dateFilter === 'CUSTOM' && (
-                            <div className="flex items-center gap-2 animate-in fade-in">
-                                <input type="date" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#1B3530] bg-white" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)} />
-                                <span className="text-gray-400">-</span>
-                                <input type="date" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#1B3530] bg-white" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)} />
-                            </div>
-                        )}
-                        <div className="w-px h-8 bg-gray-200 mx-2 hidden md:block"></div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-500 hidden sm:block">Calificación:</span>
-                            <div className="flex gap-1 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                                {[5, 4, 3, 2, 1].map(star => (
-                                    <button key={star} onClick={() => setStarFilter(starFilter === star ? 'ALL' : star)} className={`px-3 py-1.5 rounded-full text-sm font-bold border transition-all flex items-center gap-1 whitespace-nowrap ${starFilter === star ? 'bg-[#1B3530] text-[#C7F269] border-[#1B3530]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                                        {star} <Star size={12} fill="currentColor" strokeWidth={0} />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                     </div>
-                     <Card className="p-0 overflow-hidden w-full">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#F8F8F8] border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Fecha</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Calificación</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider w-1/3">Comentario</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredReviews.length > 0 ? (
-                                    filteredReviews.map((review) => (
-                                        <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-base text-gray-500 font-medium whitespace-nowrap align-top">{new Date(review.date).toLocaleDateString()}</td>
-                                            <td className="px-6 py-4 text-base font-bold text-[#112320] whitespace-nowrap align-top">{review.author}</td>
-                                            <td className="px-6 py-4 align-top">
-                                                <div className="flex text-yellow-400">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} size={16} fill={i < review.rating ? "currentColor" : "none"} strokeWidth={i < review.rating ? 0 : 2} className={i >= review.rating ? "text-gray-300" : ""} />
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 align-top">
-                                                <p className="text-base text-gray-600 mb-2">{review.comment}</p>
-                                                {review.isReported && (
-                                                    <div className="mt-2 flex flex-col items-start gap-1">
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-100"><AlertTriangle size={12} className="mr-1"/> Reportado</span>
-                                                        {review.reportReason && <span className="text-xs text-gray-500">Motivo: {review.reportReason}</span>}
-                                                    </div>
-                                                )}
-                                                {review.reply && !review.isReported && (
-                                                    <div className="mt-3 pl-3 border-l-2 border-gray-200">
-                                                        <p className="text-xs font-bold text-[#112320] mb-1">Tu respuesta:</p>
-                                                        <p className="text-sm text-gray-500 italic">"{review.reply}"</p>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-right whitespace-nowrap align-top">
-                                                <div className="flex justify-end gap-2">
-                                                    {!review.reply && !review.isReported && <Button variant="secondary" className="px-3 h-8 text-xs rounded-full" onClick={() => onReplyReview(review.id)}>Responder</Button>}
-                                                    {!review.isReported && <Button variant="destructive" className="px-3 h-8 text-xs rounded-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100" onClick={() => onReportReview(review.id)}><Flag size={14} className="mr-1"/> Reportar</Button>}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No se encontraron reseñas con los filtros seleccionados.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                     </Card>
+                       <div className="text-center py-10 bg-gray-50 rounded-2xl">
+                          <p className="text-gray-500">Módulo de reseñas en desarrollo para la nueva base de datos.</p>
+                       </div>
                   </div>
               )}
               {activeTab === 'HORARIOS' && (
@@ -1392,7 +1388,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                    </div>
                    <div className="space-y-4">
                       {schedule.map((day, idx) => (
-                          <div key={day.day} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
+                          <div key={day.day || idx} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
                               <div className="w-24 font-bold text-[#112320]">{day.day}</div>
                               <div className="flex-1 flex items-center gap-4">
                                   <Checkbox label="Abierto" checked={day.open} onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} />
@@ -1444,7 +1440,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                               <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" /></div>
                               <div><h4 className="font-bold text-[#112320] text-lg">Google Calendar</h4><p className="text-sm text-gray-500">Sincroniza tus reservas con tu calendario personal.</p></div>
                           </div>
-                          <div className="flex items-center gap-2"><span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1"><Check size={10}/> Conectado</span><Button variant="ghost" className="text-gray-400">Desconectar</Button></div>
+                          <div className="flex items-center gap-2"><Button variant="ghost" className="text-gray-400">Conectar</Button></div>
                        </div>
                    </div>
                  </Card>
@@ -1609,43 +1605,318 @@ const UserProfilePage = ({ user, email, onUpdateProfile, onUpdatePassword }: { u
   );
 };
 
+const HelpPage = () => {
+    // ... Existing HelpPage logic ...
+    const [searchTerm, setSearchTerm] = useState('');
+    const [expandedIds, setExpandedIds] = useState<string[]>([]);
+
+    const toggleExpand = (id: string) => {
+        setExpandedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const faqs = [
+        { id: '1', category: 'Reservas', question: '¿Cómo creo una nueva reserva?', answer: 'Ve a la sección "Reservas", selecciona el horario disponible en el calendario o haz clic en "Nueva Reserva" en la parte superior derecha. Completa los datos del cliente y la cancha.' },
+        { id: '2', category: 'Reservas', question: '¿Cómo cancelo una reserva?', answer: 'Haz clic sobre la reserva en el calendario o en la lista de historial, selecciona "Ver Detalles" y luego "Cancelar Reserva". Deberás indicar el motivo.' },
+        { id: '3', category: 'Reservas', question: '¿Qué significan los colores de las reservas?', answer: 'Verde Oscuro: Normal, Azul: Fijo/Abonado, Violeta: Clase/Escuela, Naranja: Torneo, Rosa: Cumpleaños. El borde amarillo indica Pendiente y el borde rojo Cancelada.' },
+        { id: '4', category: 'Canchas', question: '¿Cómo agrego una nueva cancha?', answer: 'Ve a "Canchas", haz clic en "Agregar Cancha" y completa el formulario con el nombre, deporte, superficie y atributos como iluminación o techo.' },
+        { id: '5', category: 'Canchas', question: '¿Puedo eliminar una cancha?', answer: 'Sí, desde la tabla de canchas puedes hacer clic en el botón de eliminar (ícono de basura). Ten en cuenta que esto podría afectar el historial de reportes.' },
+        { id: '6', category: 'Clientes', question: '¿Se crean clientes automáticamente?', answer: 'Sí, al crear una reserva, si ingresas un nombre de cliente que no existe en la base de datos, el sistema te ofrecerá crearlo automáticamente.' },
+        { id: '7', category: 'Mi Club', question: '¿Cómo cambio el logo de mi club?', answer: 'Ve a "Mi Club", selecciona la pestaña "Apariencia" y haz clic en el área de "Subir Logo". Selecciona una imagen de tu dispositivo.' },
+        { id: '8', category: 'Usuarios', question: '¿Cómo restablezco la contraseña de un usuario?', answer: 'Como administrador, puedes editar al usuario y asignarle una nueva contraseña temporal, o el usuario puede cambiarla desde su perfil en "Seguridad".' },
+    ];
+
+    const filteredFaqs = faqs.filter(faq => 
+        faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        faq.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const groupedFaqs = filteredFaqs.reduce((acc, faq) => {
+        if (!acc[faq.category]) acc[faq.category] = [];
+        acc[faq.category].push(faq);
+        return acc;
+    }, {} as Record<string, typeof faqs>);
+
+    return (
+        <div className="p-8 space-y-6 h-full overflow-y-auto w-full pb-20">
+             <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
+                <p className="text-gray-500">Encuentra respuestas a las preguntas más frecuentes.</p>
+            </div>
+
+            <div className="relative max-w-2xl">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <input 
+                    type="text" 
+                    placeholder="Buscar por palabra clave..." 
+                    className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            <div className="max-w-3xl space-y-8">
+                {Object.keys(groupedFaqs).length > 0 ? (
+                    Object.keys(groupedFaqs).map(category => (
+                        <div key={category} className="space-y-3">
+                            <h3 className="text-lg font-bold text-[#1B3530] border-b border-gray-100 pb-2 mb-4">{category}</h3>
+                            <div className="grid gap-3">
+                                {groupedFaqs[category].map(faq => {
+                                    const isExpanded = expandedIds.includes(faq.id);
+                                    return (
+                                        <div key={faq.id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300">
+                                            <button 
+                                                onClick={() => toggleExpand(faq.id)}
+                                                className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none"
+                                            >
+                                                <span className="font-semibold text-[#112320]">{faq.question}</span>
+                                                {isExpanded ? <ChevronDown className="text-gray-400 rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
+                                            </button>
+                                            <div className={`px-6 text-gray-600 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                                <p className="leading-relaxed">{faq.answer}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500">No se encontraron resultados para "{searchTerm}"</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
-  const [usersDb, setUsersDb] = useState<User[]>(MOCK_USERS);
-  const [reservations, setReservations] = useState<Reservation[]>(MOCK_RESERVATIONS);
-  const [courts, setCourts] = useState<Court[]>(MOCK_COURTS);
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
-  const [inventory, setInventory] = useState<Product[]>(MOCK_INVENTORY);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  // App State
+  const [session, setSession] = useState<any>(null);
+  const [availableClubs, setAvailableClubs] = useState<any[]>([]);
+  const [selectedClub, setSelectedClub] = useState<any>(null);
+
+  // Data State
+  const [usersDb, setUsersDb] = useState<User[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [inventory, setInventory] = useState<Product[]>([]);
   const [clubConfig, setClubConfig] = useState<any>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // UI State
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{message: string, type: 'success' | 'error' | 'info', isOpen: boolean}>({
       message: '', type: 'success', isOpen: false
   });
+
+  // Local user profile state to reflect changes immediately
+  const [userProfile, setUserProfile] = useState<{name: string, phone: string} | null>(null);
 
   const showFeedback = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
       setSnackbar({ message, type, isOpen: true });
   };
   const closeSnackbar = () => { setSnackbar(prev => ({ ...prev, isOpen: false })); };
 
-  const handleLogin = (userData: any) => { setIsAuthenticated(true); setUserProfile(userData); showFeedback(`Bienvenido, ${userData.name}`); };
-  const handleLogout = () => { setActiveSheet('LOGOUT_CONFIRMATION'); };
-  const confirmLogout = async () => { setIsAuthenticated(false); setActiveSheet(null); setUserProfile(null); showFeedback('Sesión cerrada correctamente', 'info'); };
-  const handleUpdateProfile = async (data: any) => { setUserProfile((prev: any) => ({ ...prev, ...data })); setUsersDb(prev => prev.map(u => u.email === userProfile.email ? { ...u, name: data.full_name, phone: data.phone } : u)); showFeedback('Perfil actualizado'); };
-  const handleUpdatePassword = (newPassword: string) => { setUsersDb(prev => prev.map(u => u.email === userProfile.email ? { ...u, password: newPassword } : u)); showFeedback('Contraseña actualizada correctamente'); };
+  // --- Auth & Initial Load Logic ---
 
-  const [schedule, setSchedule] = useState([{ day: 'Lunes', open: true, start: '09:00', end: '23:00' }, { day: 'Martes', open: true, start: '09:00', end: '23:00' }, { day: 'Miércoles', open: true, start: '09:00', end: '23:00' }, { day: 'Jueves', open: true, start: '09:00', end: '23:00' }, { day: 'Viernes', open: true, start: '09:00', end: '23:00' }, { day: 'Sábado', open: true, start: '09:00', end: '23:00' }, { day: 'Domingo', open: true, start: '10:00', end: '22:00' }, { day: 'Feriado', open: true, start: '10:00', end: '22:00' }]);
-  const [clubServices, setClubServices] = useState<string[]>(['Wi-Fi', 'Estacionamiento', 'Vestuario']);
-  const [welcomeMessage, setWelcomeMessage] = useState<string>('');
-  const handleUpdateClub = async (newData: any) => { if (newData.schedule) setSchedule(newData.schedule); if (newData.services) setClubServices(newData.services); if (newData.welcomeMessage !== undefined) setWelcomeMessage(newData.welcomeMessage); setClubConfig(prev => ({ ...prev, ...newData })); showFeedback('Información del club actualizada'); };
+  useEffect(() => {
+      // Check active session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          if (session) {
+              fetchClubs(session.user.id);
+              fetchUserProfile(session.user.id);
+          }
+      });
 
-  const [reviews, setReviews] = useState([
-    { id: 1, author: 'Carlos Pérez', date: '2023-10-25', rating: 5, comment: 'Excelente cancha y atención!', reply: '¡Gracias Carlos! Te esperamos pronto.', isReported: false },
-    { id: 2, author: 'Ana López', date: '2023-10-20', rating: 4, comment: 'Muy buena iluminación, pero los vestuarios podrían mejorar.', reply: '', isReported: false },
-    { id: 3, author: 'Marcos Diaz', date: '2023-10-15', rating: 1, comment: 'Pésimo servicio, nadie atendió el teléfono.', reply: '', isReported: true, reportReason: 'FAKE' },
-  ]);
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          setSession(session);
+          if (session) {
+              fetchClubs(session.user.id);
+              fetchUserProfile(session.user.id);
+          } else {
+              // Reset state on logout
+              setAvailableClubs([]);
+              setSelectedClub(null);
+              setReservations([]);
+              setCourts([]);
+              setUserProfile(null);
+          }
+      });
 
+      return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+      const { data } = await supabase.from('profiles').select('name').eq('id', userId).single();
+      if (data) {
+          setUserProfile({ name: data.name, phone: '' });
+      }
+  };
+
+  const fetchClubs = async (userId: string) => {
+      try {
+          const { data, error } = await supabase
+              .from('club_members')
+              .select(`
+                  role,
+                  club_id,
+                  club:club_settings (*)
+              `)
+              .eq('user_id', userId);
+
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+              setAvailableClubs(data);
+          } else {
+              setAvailableClubs([]);
+          }
+      } catch (error) {
+          console.error('Error fetching clubs:', error);
+      }
+  };
+
+  const handleLogin = async (email: string, pass: string) => {
+      setLoading(true);
+      setAuthError(null);
+      const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: pass,
+      });
+
+      if (error) {
+          setAuthError(error.message);
+          setLoading(false);
+      } else {
+          setLoading(false);
+      }
+  };
+
+  const handleSelectClub = (clubData: any) => {
+      setSelectedClub(clubData);
+      fetchData(clubData.id);
+  };
+
+  const fetchData = async (clubId: string) => {
+      setLoading(true);
+      try {
+          const { data: clubData } = await supabase.from('club_settings').select('*').eq('id', clubId).single();
+          if (clubData) setClubConfig(clubData);
+
+          const { data: courtsData } = await supabase.from('courts').select('*').eq('club_id', clubId);
+          if (courtsData) setCourts(courtsData);
+
+          const { data: resData } = await supabase.from('reservations').select('*').eq('club_id', clubId);
+          if (resData) setReservations(resData as unknown as Reservation[]);
+
+          const { data: clientData } = await supabase.from('clients').select('*').eq('club_id', clubId);
+          if (clientData) setClients(clientData);
+
+          const { data: invData } = await supabase.from('products').select('*').eq('club_id', clubId);
+          if (invData) setInventory(invData);
+
+          const { data: membersData } = await supabase
+              .from('club_members')
+              .select('user_id, role')
+              .eq('club_id', clubId);
+          
+          if (membersData && membersData.length > 0) {
+              const userIds = membersData.map(m => m.user_id);
+              
+              const { data: profilesData } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .in('id', userIds);
+                  
+              if (profilesData) {
+                  const mappedUsers = profilesData.map(profile => {
+                      const memberInfo = membersData.find(m => m.user_id === profile.id);
+                      return {
+                          id: profile.id,
+                          name: profile.name || profile.email,
+                          email: profile.email,
+                          role: memberInfo?.role || 'RECEPTIONIST',
+                          status: 'ACTIVE'
+                      }
+                  });
+                  setUsersDb(mappedUsers as User[]);
+              }
+          } else {
+              setUsersDb([]);
+          }
+
+      } catch (error) {
+          console.error("Error loading club data", error);
+          showFeedback("Error cargando datos del club", 'error');
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleLogout = async () => { 
+      // This is called from sidebar, so we use the sidebar confirmation logic usually, 
+      // but here we redirect to club selection which handles it via modal or directly.
+      // Actually sidebar calls this directly, so let's confirm.
+      setActiveSheet('LOGOUT_CONFIRMATION'); 
+  };
+  
+  const confirmLogout = async () => { 
+      await supabase.auth.signOut();
+      setActiveSheet(null); 
+  };
+
+  // --- Data Mutation Handlers ---
+  
+  const handleUpdateProfile = async (data: any) => { 
+       if (!session?.user?.id) return;
+       
+       const { error } = await supabase
+         .from('profiles')
+         .update({ name: data.full_name })
+         .eq('id', session.user.id);
+
+       if (error) {
+           showFeedback('Error al actualizar perfil', 'error');
+       } else {
+           // Update local state to reflect change immediately in Sidebar
+           setUserProfile(prev => ({ ...prev, name: data.full_name, phone: data.phone || '' }));
+           showFeedback('Perfil actualizado correctamente');
+       }
+  };
+  const handleUpdatePassword = async (pass: string) => { 
+      const { error } = await supabase.auth.updateUser({ password: pass });
+      if (error) showFeedback('Error al actualizar', 'error');
+      else showFeedback('Contraseña actualizada correctamente'); 
+  };
+
+  const handleUpdateClub = async (newData: any) => { 
+      if (!selectedClub) return;
+      const { error } = await supabase.from('club_settings').update(newData).eq('id', selectedClub.id);
+      if (error) {
+          console.error(error);
+          showFeedback('Error al actualizar club', 'error');
+      } else {
+          setClubConfig((prev: any) => ({ ...prev, ...newData }));
+          // Update selectedClub state and availableClubs list to reflect name changes immediately
+          setSelectedClub((prev: any) => ({ ...prev, ...newData }));
+          setAvailableClubs(prev => prev.map(c => c.club_id === selectedClub.id ? { ...c, club: { ...c.club, ...newData } } : c));
+          showFeedback('Información del club actualizada'); 
+      }
+  };
+
+  // Reviews Mock (Not connected to DB yet)
+  const [reviews, setReviews] = useState([]);
+
+  // Sheets State
   const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT_OPTIONS' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION' | 'DELETE_COURT_CONFIRMATION' | 'DELETE_CLIENT_CONFIRMATION' | 'DELETE_PRODUCT_CONFIRMATION'>(null);
   
+  // Selection State
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -1666,21 +1937,68 @@ const App: React.FC = () => {
   const closeSheet = () => { setActiveSheet(null); };
   const resetReservationForm = () => { setReservationForm({ clientName: '', clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: 'Efectivo', notes: '', type: 'Normal', duration: '60', isRecurring: false, price: '4500' }); setPrefillReservation(null); setSelectedReservation(null); };
 
+  // --- Specific Handlers ---
+  // ... (keeping existing handlers for Reservations, Courts, Clients, Products) ...
   const handleClientNameChange = (val: string) => { setReservationForm(prev => ({ ...prev, clientName: val })); };
   const handleClientSelect = (client: any) => { setReservationForm(prev => ({ ...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email })); };
-  const handleSaveReservation = async (e: React.FormEvent) => { e.preventDefault(); const formCourtId = prefillReservation?.courtId || courts[0].id; const formDate = prefillReservation?.date || selectedDate; const formTime = prefillReservation?.time || '10:00'; const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`; const creatorName = userProfile?.name || "Admin"; const clientNameInput = reservationForm.clientName; const existingClient = clients.find(c => c.name.toLowerCase() === clientNameInput.toLowerCase()); if (!existingClient && clientNameInput.trim() !== '') { const newClient: Client = { id: Math.random().toString(36).substr(2, 9), name: clientNameInput, email: reservationForm.clientEmail || '', phone: reservationForm.clientPhone || '', totalBookings: 1, totalSpent: Number(reservationForm.price) || 0, lastBooking: `${formDate}T${formTime}` }; setClients(prev => [...prev, newClient]); showFeedback(`Nuevo cliente "${clientNameInput}" registrado automáticamente`, 'info'); } const reservationData: Reservation = { id: selectedReservation ? selectedReservation.id : Math.random().toString(36).substr(2, 9), courtId: formCourtId, clientName: clientNameInput, startTime: `${formDate}T${formTime}`, endTime: endTime, price: Number(reservationForm.price) || 4500, status: ReservationStatus.CONFIRMED, isPaid: false, createdBy: creatorName, paymentMethod: reservationForm.paymentMethod, type: reservationForm.type, notes: reservationForm.notes }; if (selectedReservation) { setReservations(reservations.map(r => r.id === selectedReservation.id ? reservationData : r)); showFeedback('Reserva actualizada'); } else { setReservations([...reservations, reservationData]); showFeedback('Reserva creada exitosamente'); } resetReservationForm(); setActiveSheet(null); };
-  const initiateDeleteReservation = () => { setCancellationReason('OTHER'); setCancellationOtherText(''); setActiveSheet('DELETE_RESERVATION_CONFIRMATION'); };
-  const confirmDeleteReservation = async () => { if (selectedReservation) { const reason = cancellationReason === 'OTHER' ? cancellationOtherText : cancellationReason === 'CLIENT_CANCEL' ? 'Cancelado por el cliente' : cancellationReason === 'WEATHER' ? 'Clima' : 'Mantenimiento'; setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, status: ReservationStatus.CANCELLED, cancellationReason: reason } : r)); showFeedback('Reserva cancelada', 'error'); } resetReservationForm(); setActiveSheet(null); };
-  const handleSaveCourt = async (e: React.FormEvent) => { e.preventDefault(); const formData = new FormData(e.target as HTMLFormElement); const courtData: Court = { id: selectedCourt ? selectedCourt.id : Math.random().toString(36).substr(2, 9), name: formData.get('name') as string, types: courtFormTypes, surface: formData.get('surface') as string, isIndoor: formData.get('isIndoor') === 'on', hasLighting: formData.get('hasLighting') === 'on', forceStart: (formData.get('forceStart') as ForceStartOption) || 'NO_ROUNDING' }; if (selectedCourt) { setCourts(courts.map(c => c.id === selectedCourt.id ? courtData : c)); showFeedback('Cancha actualizada'); } else { setCourts([...courts, courtData]); showFeedback('Cancha creada'); } setSelectedCourt(null); setActiveSheet(null); };
-  const confirmDeleteCourt = () => { if (deleteCourtId) { setCourts(courts.filter(c => c.id !== deleteCourtId)); showFeedback('Cancha eliminada', 'error'); } setDeleteCourtId(null); setActiveSheet(null); };
-  const handleSaveClient = async (e: React.FormEvent) => { e.preventDefault(); const formData = new FormData(e.target as HTMLFormElement); const newClientData: Client = { id: selectedClient ? selectedClient.id : Math.random().toString(36).substr(2, 9), name: formData.get('name') as string, email: formData.get('email') as string, phone: formData.get('phone') as string, totalBookings: selectedClient ? selectedClient.totalBookings : 0, totalSpent: selectedClient ? selectedClient.totalSpent : 0, lastBooking: selectedClient ? selectedClient.lastBooking : new Date().toISOString() }; if (selectedClient) { setClients(clients.map(c => c.id === selectedClient.id ? newClientData : c)); showFeedback('Cliente actualizado'); } else { setClients([...clients, newClientData]); showFeedback('Cliente registrado'); } setSelectedClient(null); setActiveSheet(null); };
-  const confirmDeleteClient = () => { if (deleteClientId) { setClients(clients.filter(c => c.id !== deleteClientId)); showFeedback('Cliente eliminado', 'error'); } setDeleteClientId(null); setActiveSheet(null); };
+  const handleSaveReservation = async (e: React.FormEvent) => { 
+      e.preventDefault(); 
+      if (!selectedClub) return;
+      const formCourtId = prefillReservation?.courtId || courts[0].id; 
+      const formDate = prefillReservation?.date || selectedDate; 
+      const formTime = prefillReservation?.time || '10:00'; 
+      const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`; 
+      const creatorName = session.user.email; 
+      const clientNameInput = reservationForm.clientName; 
+      const existingClient = clients.find(c => c.name.toLowerCase() === clientNameInput.toLowerCase()); 
+      if (!existingClient && clientNameInput.trim() !== '') { 
+          const { data: newClient, error } = await supabase.from('clients').insert({
+              club_id: selectedClub.id,
+              name: clientNameInput,
+              email: reservationForm.clientEmail,
+              phone: reservationForm.clientPhone,
+              "totalBookings": 1
+          }).select().single();
+          if (!error && newClient) { setClients(prev => [...prev, newClient]); showFeedback(`Nuevo cliente registrado`, 'info'); }
+      } 
+      const reservationPayload = {
+          club_id: selectedClub.id,
+          "courtId": formCourtId,
+          "clientName": clientNameInput,
+          "startTime": `${formDate}T${formTime}`,
+          "endTime": endTime,
+          price: Number(reservationForm.price) || 4500,
+          status: ReservationStatus.CONFIRMED,
+          "createdBy": creatorName,
+          "paymentMethod": reservationForm.paymentMethod,
+          type: reservationForm.type,
+          notes: reservationForm.notes
+      };
+      let error;
+      if (selectedReservation) {
+          const { error: err } = await supabase.from('reservations').update(reservationPayload).eq('id', selectedReservation.id);
+          error = err;
+          if (!err) { setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, ...reservationPayload } : r)); showFeedback('Reserva actualizada'); }
+      } else {
+          const { data, error: err } = await supabase.from('reservations').insert(reservationPayload).select().single();
+          error = err;
+          if (!err && data) { setReservations([...reservations, data as unknown as Reservation]); showFeedback('Reserva creada exitosamente'); }
+      }
+      if (error) showFeedback('Error al guardar reserva', 'error');
+      resetReservationForm(); setActiveSheet(null); 
+  };
+  const confirmDeleteReservation = async () => { if (selectedReservation) { const reason = cancellationReason === 'OTHER' ? cancellationOtherText : cancellationReason; const { error } = await supabase.from('reservations').update({ status: ReservationStatus.CANCELLED, "cancellationReason": reason }).eq('id', selectedReservation.id); if (!error) { setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, status: ReservationStatus.CANCELLED, cancellationReason: reason } : r)); showFeedback('Reserva cancelada', 'error'); } else { showFeedback('Error al cancelar', 'error'); } } resetReservationForm(); setActiveSheet(null); };
+  const handleSaveCourt = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const courtPayload = { club_id: selectedClub.id, name: formData.get('name') as string, types: courtFormTypes, surface: formData.get('surface') as string, "isIndoor": formData.get('isIndoor') === 'on', "hasLighting": formData.get('hasLighting') === 'on', "forceStart": (formData.get('forceStart') as ForceStartOption) || 'NO_ROUNDING' }; if (selectedCourt) { const { error } = await supabase.from('courts').update(courtPayload).eq('id', selectedCourt.id); if (!error) { setCourts(courts.map(c => c.id === selectedCourt.id ? { ...c, ...courtPayload } : c)); showFeedback('Cancha actualizada'); } } else { const { data, error } = await supabase.from('courts').insert(courtPayload).select().single(); if (!error && data) { setCourts([...courts, data]); showFeedback('Cancha creada'); } } setSelectedCourt(null); setActiveSheet(null); };
+  const confirmDeleteCourt = async () => { if (deleteCourtId) { const { error } = await supabase.from('courts').delete().eq('id', deleteCourtId); if (!error) { setCourts(courts.filter(c => c.id !== deleteCourtId)); showFeedback('Cancha eliminada', 'error'); } } setDeleteCourtId(null); setActiveSheet(null); };
+  const handleSaveClient = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const clientPayload = { club_id: selectedClub.id, name: formData.get('name') as string, email: formData.get('email') as string, phone: formData.get('phone') as string, }; if (selectedClient) { const { error } = await supabase.from('clients').update(clientPayload).eq('id', selectedClient.id); if (!error) { setClients(clients.map(c => c.id === selectedClient.id ? { ...c, ...clientPayload } : c)); showFeedback('Cliente actualizado'); } } else { const { data, error } = await supabase.from('clients').insert(clientPayload).select().single(); if (!error && data) { setClients([...clients, data]); showFeedback('Cliente registrado'); } } setSelectedClient(null); setActiveSheet(null); };
+  const confirmDeleteClient = async () => { if (deleteClientId) { const { error } = await supabase.from('clients').delete().eq('id', deleteClientId); if (!error) { setClients(clients.filter(c => c.id !== deleteClientId)); showFeedback('Cliente eliminado', 'error'); } } setDeleteClientId(null); setActiveSheet(null); };
+  const handleSaveProduct = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const prodPayload = { club_id: selectedClub.id, code: formData.get('code') as string, name: formData.get('name') as string, "purchasePrice": Number(formData.get('purchasePrice')), "salePrice": Number(formData.get('salePrice')), type: formData.get('type') as string, stock: Number(formData.get('stock')), "showInStock": true, active: true, "lastModified": new Date().toISOString() }; if(selectedProduct) { const { error } = await supabase.from('products').update(prodPayload).eq('id', selectedProduct.id); if(!error) { setInventory(inventory.map(p => p.id === selectedProduct.id ? { ...p, ...prodPayload } : p)); showFeedback('Producto actualizado'); } } else { const { data, error } = await supabase.from('products').insert(prodPayload).select().single(); if (!error && data) { setInventory([...inventory, data]); showFeedback('Producto creado'); } } setSelectedProduct(null); setActiveSheet(null); };
+  const confirmDeleteProduct = async () => { if (deleteProductId) { const { error } = await supabase.from('products').delete().eq('id', deleteProductId); if (!error) { setInventory(inventory.filter(p => p.id !== deleteProductId)); showFeedback('Producto eliminado', 'error'); } } setDeleteProductId(null); setActiveSheet(null); };
+
   const openBookClient = (client: Client) => { setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts[0].id, clientName: client.name }); setReservationForm(prev => ({...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email})); setActiveSheet('RESERVATION'); };
-  const handleSaveProduct = async (e: React.FormEvent) => { e.preventDefault(); const formData = new FormData(e.target as HTMLFormElement); const newProduct: Product = { id: selectedProduct ? selectedProduct.id : Math.random().toString(36).substr(2, 9), code: formData.get('code') as string, name: formData.get('name') as string, purchasePrice: Number(formData.get('purchasePrice')), salePrice: Number(formData.get('salePrice')), type: formData.get('type') as string, stock: Number(formData.get('stock')), showInStock: true, active: true, lastModified: new Date().toISOString() }; if(selectedProduct) { setInventory(inventory.map(p => p.id === selectedProduct.id ? newProduct : p)); showFeedback('Producto actualizado'); } else { setInventory([...inventory, newProduct]); showFeedback('Producto creado'); } setSelectedProduct(null); setActiveSheet(null); };
-  const confirmDeleteProduct = () => { if (deleteProductId) { setInventory(inventory.filter(p => p.id !== deleteProductId)); showFeedback('Producto eliminado', 'error'); } setDeleteProductId(null); setActiveSheet(null); };
   const handleExport = (format: string) => { showFeedback(`Exportando reporte en formato ${format}...`, 'info'); setActiveSheet(null); };
-  const handleSaveReply = (e: React.FormEvent) => { e.preventDefault(); const formData = new FormData(e.target as HTMLFormElement); const replyText = formData.get('replyText') as string; setReviews(prev => prev.map(r => r.id === reviewActionId ? { ...r, reply: replyText } : r)); showFeedback('Respuesta enviada'); setActiveSheet(null); setReviewActionId(null); };
-  const handleSaveReport = (e: React.FormEvent) => { e.preventDefault(); const formData = new FormData(e.target as HTMLFormElement); const reason = formData.get('reportReason') as string; setReviews(prev => prev.map(r => r.id === reviewActionId ? { ...r, isReported: true, reportReason: reason } : r)); showFeedback('Comentario reportado', 'error'); setActiveSheet(null); setReviewActionId(null); };
+  const handleSaveReply = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
+  const handleSaveReport = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
   const handleEditReservation = () => { if (!selectedReservation) return; const startDate = new Date(selectedReservation.startTime); const endDate = new Date(selectedReservation.endTime); const duration = (endDate.getTime() - startDate.getTime()) / 60000; setPrefillReservation({ date: selectedReservation.startTime.split('T')[0], time: selectedReservation.startTime.split('T')[1].substring(0, 5), courtId: selectedReservation.courtId, clientName: selectedReservation.clientName }); setReservationForm({ clientName: selectedReservation.clientName, clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: selectedReservation.paymentMethod || 'Efectivo', notes: (selectedReservation as any).notes || '', type: (selectedReservation as any).type || 'Normal', duration: duration.toString(), isRecurring: false, price: selectedReservation.price.toString() }); setActiveSheet('RESERVATION'); };
 
   const handleToggleUserStatus = (user: User) => {
@@ -1688,246 +2006,263 @@ const App: React.FC = () => {
         showFeedback('No se puede desactivar al dueño', 'error');
         return;
     }
-    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setUsersDb(usersDb.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
-    showFeedback(`Usuario ${newStatus === 'ACTIVE' ? 'activado' : 'desactivado'}`);
+    showFeedback(`Funcionalidad de estado de usuario pendiente en DB`);
   };
 
-  const handleSaveUser = (e: React.FormEvent) => { 
+  const handleSaveUser = async (e: React.FormEvent) => { 
       e.preventDefault(); 
-      const formData = new FormData(e.target as HTMLFormElement);
-      const newUser: User = {
-          id: selectedUser ? selectedUser.id : Math.random().toString(36).substr(2, 9),
-          name: formData.get('name') as string,
-          email: formData.get('email') as string,
-          role: formData.get('role') as any,
-          status: selectedUser ? selectedUser.status : 'ACTIVE', 
-          password: '123' 
-      };
-      if (selectedUser) {
-          setUsersDb(usersDb.map(u => u.id === selectedUser.id ? newUser : u));
-          showFeedback('Usuario actualizado');
-      } else {
-          setUsersDb([...usersDb, newUser]);
-          showFeedback('Usuario creado');
-      }
-      setSelectedUser(null);
+      // In a real implementation with Supabase Auth:
+      // 1. You would use supabase.auth.admin.inviteUserByEmail(email) (requires service role key usually)
+      // 2. Or insert into club_members pending acceptance.
+      // For this demo, we simulate success as requested for the UI.
+      showFeedback('Para agregar usuarios reales, se requiere configuración SMTP en Supabase. (Simulado)', 'info');
       setActiveSheet(null); 
   };
   
+  const initiateDeleteReservation = () => { setCancellationReason('OTHER'); setCancellationOtherText(''); setActiveSheet('DELETE_RESERVATION_CONFIRMATION'); };
   const initiateDeleteUser = (id: string) => { setDeleteUserId(id); setActiveSheet('DELETE_USER_CONFIRMATION'); };
-  const confirmDeleteUser = () => { 
-      if (deleteUserId) setUsersDb(usersDb.filter(u => u.id !== deleteUserId)); 
-      showFeedback('Usuario eliminado', 'error');
-      setActiveSheet(null); 
-  };
+  const confirmDeleteUser = () => { showFeedback('Usuario eliminado (Simulado)', 'error'); setActiveSheet(null); };
 
-  const canAccessFullApp = userProfile?.role === 'OWNER' || userProfile?.role === 'ADMIN';
+  // Role Logic
+  const role = availableClubs.find(c => c.club_id === selectedClub?.id)?.role;
+  const userDisplay = { 
+      name: userProfile?.name || session?.user?.email?.split('@')[0] || 'Usuario', 
+      role: role || 'RECEPTIONIST',
+      email: session?.user?.email
+  };
+  const canAccessFullApp = role === 'OWNER' || role === 'ADMIN';
+
+  // --- Main Render Flow ---
+
+  if (!session) {
+      return (
+          <HashRouter>
+            <Routes>
+               <Route path="*" element={<LoginPage onLogin={handleLogin} loading={loading} error={authError} />} />
+            </Routes>
+          </HashRouter>
+      );
+  }
+
+  if (!selectedClub) {
+      return (
+          <ClubSelectionPage 
+             clubs={availableClubs} 
+             onSelectClub={handleSelectClub} 
+             onLogout={confirmLogout}
+             userName={userProfile?.name || session.user.email?.split('@')[0] || 'Usuario'}
+          />
+      );
+  }
 
   return (
     <HashRouter>
       <Snackbar message={snackbar.message} type={snackbar.type} isOpen={snackbar.isOpen} onClose={closeSnackbar} />
-      <Routes>
-        <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={handleLogin} usersDb={usersDb} /> : <Navigate to="/" />} />
-        <Route path="*" element={isAuthenticated ? (
-          <div className="flex bg-[#F8F8F8] min-h-screen">
-            <Sidebar onLogout={handleLogout} user={userProfile} />
-            <main className="flex-1 h-screen overflow-hidden">
-                <Routes>
-                  <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={schedule} onAddReservation={(date, time, courtId) => { resetReservationForm(); setPrefillReservation({ date: date || selectedDate, time: time || '09:00', courtId: courtId || courts[0].id }); setActiveSheet('RESERVATION'); }} onSelectReservation={(res) => { setSelectedReservation(res); setActiveSheet('VIEW_RESERVATION'); }} />} />
-                  <Route path="/profile" element={<UserProfilePage user={userProfile} email={userProfile?.email} onUpdateProfile={handleUpdateProfile} onUpdatePassword={handleUpdatePassword} />} />
-                  {canAccessFullApp ? (
-                    <>
-                        <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} onDeleteCourt={(id) => { setDeleteCourtId(id); setActiveSheet('DELETE_COURT_CONFIRMATION'); }} />} />
-                        <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} />} />
-                        <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
-                        <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} />} />
-                        <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={{...clubConfig, schedule, services: clubServices, welcomeMessage }} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} />} />
-                    </>
-                  ) : ( <Route path="*" element={<Navigate to="/" />} /> )}
-                </Routes>
-            </main>
-            {/* --- SIDE SHEETS --- */}
-            <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Nuevo Usuario"}>
-                <form className="space-y-6" onSubmit={handleSaveUser}>
-                    <Input name="name" label="Nombre Completo" placeholder="Ej. Juan Pérez" defaultValue={selectedUser?.name} required />
-                    <Input name="email" label="Email" type="email" placeholder="juan@club.com" defaultValue={selectedUser?.email} required />
-                    <Select name="role" label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
-                        <option value="OWNER">Dueño (Acceso Total)</option>
-                        <option value="ADMIN">Encargado (Acceso Total)</option>
-                        <option value="RECEPTIONIST">Empleado (Solo Reservas)</option>
-                    </Select>
-                    <div className="pt-6 flex flex-col gap-3">
-                       <div className="flex gap-3">
-                           <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
-                           <Button type="submit" className="flex-1">Guardar Usuario</Button>
-                       </div>
-                       {selectedUser && selectedUser.role !== 'OWNER' && (
-                           <Button type="button" variant="destructive" onClick={() => initiateDeleteUser(selectedUser.id)} className="w-full">
-                               Eliminar Usuario
-                           </Button>
-                       )}
-                   </div>
-                </form>
-            </SideSheet>
-            
-             <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
-                <form className="space-y-6" onSubmit={handleSaveReservation}>
-                   <div className="space-y-4">
-                       <AutocompleteInput label="Nombre del Cliente" placeholder="Buscar o escribir nombre..." value={reservationForm.clientName} onChange={handleClientNameChange} suggestions={clients} onSelect={handleClientSelect} required />
-                       <div className="grid grid-cols-2 gap-4"><Input label="Teléfono" placeholder="+54..." value={reservationForm.clientPhone} onChange={e => setReservationForm({...reservationForm, clientPhone: e.target.value})} /><Input label="Email" placeholder="cliente@email.com" value={reservationForm.clientEmail} onChange={e => setReservationForm({...reservationForm, clientEmail: e.target.value})} /></div>
-                   </div>
-                   <div className="space-y-4 pt-4 border-t border-gray-100">
-                       <Select label="Cancha" defaultValue={prefillReservation?.courtId} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, courtId: e.target.value} : null)}>{courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-                       <div className="grid grid-cols-2 gap-4"><Input type="date" label="Fecha" value={prefillReservation?.date} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, date: e.target.value} : null)} /><Input type="time" label="Hora" value={prefillReservation?.time} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, time: e.target.value} : null)} /></div>
-                       <Select label="Duración" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}><option value="60">1 Hora</option><option value="90">1 Hora 30 min</option><option value="120">2 Horas</option></Select>
-                       <Select label="Tipo de Reserva" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}>{Object.keys(RESERVATION_META).map(key => (<option key={key} value={key}>{RESERVATION_META[key].label}</option>))}</Select>
-                   </div>
-                   <div className="space-y-4 pt-4 border-t border-gray-100"><Input label="Precio" type="number" icon={DollarSign} value={reservationForm.price} onChange={e => setReservationForm({...reservationForm, price: e.target.value})} required disabled /><Select label="Método de Pago" value={reservationForm.paymentMethod} onChange={(e) => setReservationForm({...reservationForm, paymentMethod: e.target.value})}><option value="Efectivo">Efectivo</option><option value="Mercado Pago">Mercado Pago</option><option value="Tarjeta Débito">Tarjeta Débito</option><option value="Tarjeta Crédito">Tarjeta Crédito</option></Select><Input label="Seña (Opcional)" placeholder="$ 0.00" icon={DollarSign} value={reservationForm.depositAmount} onChange={e => setReservationForm({...reservationForm, depositAmount: e.target.value})} /><Textarea label="Notas" placeholder="Comentarios adicionales..." value={reservationForm.notes} onChange={e => setReservationForm({...reservationForm, notes: e.target.value})} /></div>
-                   <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Confirmar Reserva</Button></div>
-                </form>
-            </SideSheet>
-             <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
-                {selectedReservation && (
-                    <div className="space-y-6">
-                         <div className="bg-[#F8F8F8] p-4 rounded-2xl flex items-center justify-between"><div><p className="text-xs text-gray-500 font-bold uppercase">Estado</p><Badge color={selectedReservation.status === 'Confirmed' ? 'green' : selectedReservation.status === 'Cancelled' ? 'red' : 'yellow'}>{selectedReservation.status === 'Cancelled' ? 'Cancelada' : selectedReservation.status}</Badge></div><div className="text-right"><p className="text-xs text-gray-500 font-bold uppercase">Precio Total</p><p className="text-2xl font-bold text-[#1B3530]">${selectedReservation.price}</p></div></div>
-                         <div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><p className="text-sm text-gray-500">Fecha</p><p className="font-bold text-[#112320]">{new Date(selectedReservation.startTime).toLocaleDateString()}</p></div><div><p className="text-sm text-gray-500">Horario</p><p className="font-bold text-[#112320]">{selectedReservation.startTime.split('T')[1].substring(0, 5)} - {selectedReservation.endTime.split('T')[1].substring(0, 5)}</p></div></div><div><p className="text-sm text-gray-500">Cancha</p><p className="font-bold text-[#112320]">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p></div><div><p className="text-sm text-gray-500">Cliente</p><p className="font-bold text-[#112320]">{selectedReservation.clientName}</p></div><div><p className="text-sm text-gray-500">Tipo</p><Badge color="gray">{RESERVATION_META[(selectedReservation as any).type || 'Normal']?.label || (selectedReservation as any).type || 'Normal'}</Badge></div><div><p className="text-sm text-gray-500">Creado Por</p><p className="font-bold text-[#112320]">{selectedReservation.createdBy || 'Sistema'}</p></div><div><p className="text-sm text-gray-500">Método de Pago</p><p className="font-bold text-[#112320]">{selectedReservation.paymentMethod || 'No especificado'}</p></div>{(selectedReservation as any).notes && (<div><p className="text-sm text-gray-500">Notas</p><p className="text-[#112320] italic">{(selectedReservation as any).notes}</p></div>)}{selectedReservation.status === ReservationStatus.CANCELLED && selectedReservation.cancellationReason && (<div className="bg-red-50 p-4 rounded-xl border border-red-100"><p className="text-xs font-bold text-red-600 uppercase mb-1">Motivo Cancelación</p><p className="text-sm text-gray-700">{selectedReservation.cancellationReason}</p></div>)}</div>
-                         {selectedReservation.status !== ReservationStatus.CANCELLED && (<div className="pt-6 flex flex-col gap-3"><Button onClick={handleEditReservation}>Editar Reserva</Button><Button variant="destructive" onClick={initiateDeleteReservation}>Cancelar Reserva</Button></div>)}
-                    </div>
-                )}
-            </SideSheet>
-             <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
-                <form className="space-y-6" onSubmit={handleSaveCourt}>
-                    <Input name="name" label="Nombre de la Cancha" placeholder="Ej. Cancha 1" defaultValue={selectedCourt?.name} required />
-                    <div className="space-y-2"><MultiSelect label="Deportes" options={SPORTS_LIST} selected={courtFormTypes} onChange={setCourtFormTypes} /></div>
-                    <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>{SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}</Select>
-                    <RadioGroup label="Forzar Inicio de Turnos" name="forceStart" defaultValue={selectedCourt?.forceStart || 'NO_ROUNDING'} options={[{ label: 'No redondear (Cualquier horario)', value: 'NO_ROUNDING' }, { label: 'En punto (XX:00)', value: 'ON_HOUR' }, { label: 'Y media (XX:30)', value: 'HALF_HOUR' }]} />
-                    <div className="space-y-3"><label className="text-base font-medium text-[#112320]">Atributos</label><div className="flex flex-col gap-3"><Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} /><Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} /></div></div>
-                    <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar</Button></div>
-                </form>
-            </SideSheet>
-             <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title={selectedClient ? "Editar Cliente" : "Nuevo Cliente"}>
-                <form className="space-y-6" onSubmit={handleSaveClient}>
-                    <Input name="name" label="Nombre Completo" placeholder="Ej. Maria Gomez" defaultValue={selectedClient?.name} required />
-                    <Input name="phone" label="Teléfono" placeholder="+54 9 11..." defaultValue={selectedClient?.phone} required />
-                    <Input name="email" label="Email" type="email" placeholder="maria@email.com" defaultValue={selectedClient?.email} />
-                    <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">{selectedClient ? 'Actualizar Cliente' : 'Guardar Cliente'}</Button></div>
-                </form>
-            </SideSheet>
-             <SideSheet isOpen={activeSheet === 'VIEW_CLIENT'} onClose={closeSheet} title="Detalle del Cliente">
-                {selectedClient && (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4 mb-6"><div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] text-2xl font-bold">{selectedClient.name.substring(0,2).toUpperCase()}</div><div><h3 className="text-xl font-bold text-[#112320]">{selectedClient.name}</h3><p className="text-gray-500">{selectedClient.email}</p></div></div>
-                        <div className="grid grid-cols-2 gap-4"><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Reservas</p><p className="text-2xl font-bold text-[#112320]">{selectedClient.totalBookings}</p></Card><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Gastado</p><p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent}</p></Card></div>
-                        <div className="space-y-4"><div><p className="text-sm text-gray-500">Teléfono</p><p className="font-bold text-[#112320]">{selectedClient.phone}</p></div><div><p className="text-sm text-gray-500">Última Visita</p><p className="font-bold text-[#112320]">{new Date(selectedClient.lastBooking).toLocaleDateString()}</p></div></div>
-                        <div className="pt-6"><Button className="w-full" onClick={() => { openBookClient(selectedClient); }}>Nueva Reserva</Button></div>
-                    </div>
-                )}
-            </SideSheet>
-            <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
-                 <form className="space-y-6" onSubmit={handleSaveProduct}>
-                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5 w-full"><Input name="code" label="Código" placeholder="ABC-001" defaultValue={selectedProduct?.code} /></div><div className="space-y-1.5 w-full"><Input name="name" label="Nombre del Producto" placeholder="Ej. Gatorade" defaultValue={selectedProduct?.name} required /></div></div>
-                    <div className="grid grid-cols-2 gap-4"><Input name="purchasePrice" type="number" label="Precio Costo" icon={DollarSign} defaultValue={selectedProduct?.purchasePrice} required /><Input name="salePrice" type="number" label="Precio Venta" icon={DollarSign} defaultValue={selectedProduct?.salePrice} required /></div>
-                    <div className="grid grid-cols-2 gap-4"><Select name="type" label="Categoría" defaultValue={selectedProduct?.type || 'Bebidas'}><option value="Bebidas">Bebidas</option><option value="Snacks">Snacks</option><option value="Equipamiento">Equipamiento</option><option value="Indumentaria">Indumentaria</option><option value="Venta">Venta</option></Select><Input name="stock" type="number" label="Stock Inicial" defaultValue={selectedProduct?.stock} required /></div>
-                    <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar Producto</Button></div>
-                </form>
-            </SideSheet>
-            <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña"><form className="space-y-6" onSubmit={handleSaveReply}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><label className="text-base font-medium text-[#112320]">Tu Respuesta</label><textarea name="replyText" className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" placeholder="Escribe una respuesta amable..." required></textarea></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Enviar Respuesta</Button></div></form></SideSheet>
-            <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña"><form className="space-y-6" onSubmit={handleSaveReport}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><RadioGroup label="Motivo del Reporte" name="reportReason" options={[{ label: 'Contenido Ofensivo', value: 'OFFENSIVE' }, { label: 'Es Spam', value: 'SPAM' }, { label: 'Reseña Falsa', value: 'FAKE' }, { label: 'Otro', value: 'OTHER' }]} defaultValue="OFFENSIVE" /></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button></div></form></SideSheet>
+      <div className="flex bg-[#F8F8F8] min-h-screen">
+        <Sidebar onLogout={handleLogout} user={userDisplay} />
+        <main className="flex-1 h-screen overflow-hidden">
+            <Routes>
+              <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={clubConfig?.schedule || []} onAddReservation={(date, time, courtId) => { resetReservationForm(); setPrefillReservation({ date: date || selectedDate, time: time || '09:00', courtId: courtId || courts[0].id }); setActiveSheet('RESERVATION'); }} onSelectReservation={(res) => { setSelectedReservation(res); setActiveSheet('VIEW_RESERVATION'); }} />} />
+              <Route path="/profile" element={<UserProfilePage user={userDisplay} email={session?.user?.email} onUpdateProfile={handleUpdateProfile} onUpdatePassword={handleUpdatePassword} />} />
+              <Route path="/help" element={<HelpPage />} />
+              {canAccessFullApp ? (
+                <>
+                    <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} onDeleteCourt={(id) => { setDeleteCourtId(id); setActiveSheet('DELETE_COURT_CONFIRMATION'); }} />} />
+                    <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} />} />
+                    <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
+                    <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} />} />
+                    <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} />} />
+                </>
+              ) : ( <Route path="*" element={<Navigate to="/" />} /> )}
+            </Routes>
+        </main>
 
-            <Modal isOpen={activeSheet === 'EXPORT_OPTIONS'} onClose={closeSheet} title="Exportar Reporte">
-                 <div className="space-y-4">
-                     <p className="text-gray-600 mb-4">Selecciona el formato de exportación:</p>
-                     <div className="grid grid-cols-1 gap-3">
-                        <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('EXCEL')}><span className="font-bold text-[#112320]">Excel (.xlsx)</span><FileSpreadsheet className="text-green-600" /></button>
-                        <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('CSV')}><span className="font-bold text-[#112320]">CSV (.csv)</span><FileText className="text-blue-600" /></button>
-                        <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('PDF')}><span className="font-bold text-[#112320]">PDF (.pdf)</span><FileType className="text-red-600" /></button>
-                     </div>
-                 </div>
-            </Modal>
-            
-            <Modal isOpen={activeSheet === 'IMPORT_INVENTORY'} onClose={closeSheet} title="Importar Inventario">
+        {/* --- All SideSheets and Modals --- */}
+        
+        {/* Reservation, Court, Client, Product, etc. SideSheets (Unchanged logic, just ensure they are here) */}
+        <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
+            <form className="space-y-6" onSubmit={handleSaveReservation}>
+               <div className="space-y-4">
+                   <AutocompleteInput label="Nombre del Cliente" placeholder="Buscar o escribir nombre..." value={reservationForm.clientName} onChange={handleClientNameChange} suggestions={clients} onSelect={handleClientSelect} required />
+                   <div className="grid grid-cols-2 gap-4"><Input label="Teléfono" placeholder="+54..." value={reservationForm.clientPhone} onChange={e => setReservationForm({...reservationForm, clientPhone: e.target.value})} /><Input label="Email" placeholder="cliente@email.com" value={reservationForm.clientEmail} onChange={e => setReservationForm({...reservationForm, clientEmail: e.target.value})} /></div>
+               </div>
+               <div className="space-y-4 pt-4 border-t border-gray-100">
+                   <Select label="Cancha" defaultValue={prefillReservation?.courtId} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, courtId: e.target.value} : null)}>{courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
+                   <div className="grid grid-cols-2 gap-4"><Input type="date" label="Fecha" value={prefillReservation?.date} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, date: e.target.value} : null)} /><Input type="time" label="Hora" value={prefillReservation?.time} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, time: e.target.value} : null)} /></div>
+                   <Select label="Duración" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}><option value="60">1 Hora</option><option value="90">1 Hora 30 min</option><option value="120">2 Horas</option></Select>
+                   <Select label="Tipo de Reserva" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}>{Object.keys(RESERVATION_META).map(key => (<option key={key} value={key}>{RESERVATION_META[key].label}</option>))}</Select>
+               </div>
+               <div className="space-y-4 pt-4 border-t border-gray-100"><Input label="Precio" type="number" icon={DollarSign} value={reservationForm.price} onChange={e => setReservationForm({...reservationForm, price: e.target.value})} required disabled /><Select label="Método de Pago" value={reservationForm.paymentMethod} onChange={(e) => setReservationForm({...reservationForm, paymentMethod: e.target.value})}><option value="Efectivo">Efectivo</option><option value="Mercado Pago">Mercado Pago</option><option value="Tarjeta Débito">Tarjeta Débito</option><option value="Tarjeta Crédito">Tarjeta Crédito</option></Select><Input label="Seña (Opcional)" placeholder="$ 0.00" icon={DollarSign} value={reservationForm.depositAmount} onChange={e => setReservationForm({...reservationForm, depositAmount: e.target.value})} /><Textarea label="Notas" placeholder="Comentarios adicionales..." value={reservationForm.notes} onChange={e => setReservationForm({...reservationForm, notes: e.target.value})} /></div>
+               <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Confirmar Reserva</Button></div>
+            </form>
+        </SideSheet>
+        
+        {/* ADDED: User SideSheet to fix "Agregar Usuario" button not working */}
+        <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Agregar Usuario"}>
+            <form className="space-y-6" onSubmit={handleSaveUser}>
                 <div className="space-y-4">
-                    <p className="text-gray-600">Sube un archivo CSV con la lista de productos para importar masivamente.</p>
-                    <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-                        <Upload size={32} className="text-gray-400 mb-2"/>
-                        <p className="text-sm font-medium text-gray-600">Click para seleccionar archivo</p>
-                        <input type="file" accept=".csv" className="opacity-0 absolute inset-0 cursor-pointer" />
-                    </div>
-                    <div className="flex gap-3 justify-end pt-2">
-                        <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                        <Button onClick={() => { setActiveSheet(null); showFeedback('Inventario importado'); }}>Importar</Button>
-                    </div>
+                    <Input label="Email del Usuario" type="email" placeholder="email@ejemplo.com" defaultValue={selectedUser?.email} required disabled={!!selectedUser} />
+                    <Select label="Rol Asignado" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
+                        <option value="ADMIN">Encargado (Acceso Total)</option>
+                        <option value="RECEPTIONIST">Empleado (Acceso Limitado)</option>
+                    </Select>
+                    {!selectedUser && (
+                        <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl">
+                            <p>El usuario recibirá una invitación por email para unirse a este club.</p>
+                        </div>
+                    )}
                 </div>
-            </Modal>
-
-            <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="Eliminar Usuario">
-                <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
-                <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button variant="destructive" onClick={confirmDeleteUser}>Eliminar</Button>
+                <div className="pt-6 flex gap-3">
+                    <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                    <Button type="submit" className="flex-1">{selectedUser ? 'Guardar Cambios' : 'Enviar Invitación'}</Button>
                 </div>
-            </Modal>
-            
-            <Modal isOpen={activeSheet === 'DELETE_COURT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Cancha">
-                <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar esta cancha? Se perderán las reservas asociadas.</p>
-                <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button variant="destructive" onClick={confirmDeleteCourt}>Eliminar</Button>
-                </div>
-            </Modal>
-
-            <Modal isOpen={activeSheet === 'DELETE_CLIENT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Cliente">
-                <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este cliente? Se perderá su historial.</p>
-                <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button variant="destructive" onClick={confirmDeleteClient}>Eliminar</Button>
-                </div>
-            </Modal>
-
-            <Modal isOpen={activeSheet === 'DELETE_PRODUCT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Producto">
-                <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este producto del inventario?</p>
-                <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button variant="destructive" onClick={confirmDeleteProduct}>Eliminar</Button>
-                </div>
-            </Modal>
-
-            <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="Cancelar Reserva">
-                <div className="space-y-4 mb-6">
-                    <p className="text-gray-600">Por favor indica el motivo de la cancelación:</p>
-                     <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="CLIENT_CANCEL" checked={cancellationReason === 'CLIENT_CANCEL'} onChange={() => setCancellationReason('CLIENT_CANCEL')} className="accent-[#1B3530]"/><span>Cancelado por el cliente</span></label>
-                        <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="WEATHER" checked={cancellationReason === 'WEATHER'} onChange={() => setCancellationReason('WEATHER')} className="accent-[#1B3530]"/><span>Condiciones climáticas</span></label>
-                         <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="MAINTENANCE" checked={cancellationReason === 'MAINTENANCE'} onChange={() => setCancellationReason('MAINTENANCE')} className="accent-[#1B3530]"/><span>Mantenimiento de cancha</span></label>
-                        <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="OTHER" checked={cancellationReason === 'OTHER'} onChange={() => setCancellationReason('OTHER')} className="accent-[#1B3530]"/><span>Otro motivo</span></label>
+                {selectedUser && selectedUser.role !== 'OWNER' && (
+                     <div className="pt-4 border-t border-gray-100">
+                         <Button type="button" variant="destructive" className="w-full bg-red-50 text-red-600 hover:bg-red-100 border-none" onClick={() => initiateDeleteUser(selectedUser.id)}>Eliminar Usuario del Club</Button>
                      </div>
-                     {cancellationReason === 'OTHER' && (
-                         <textarea 
-                            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#1B3530]"
-                            placeholder="Especificar motivo..."
-                            value={cancellationOtherText}
-                            onChange={(e) => setCancellationOtherText(e.target.value)}
-                         ></textarea>
-                     )}
-                </div>
-                <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={closeSheet}>Volver</Button>
-                    <Button variant="destructive" onClick={confirmDeleteReservation}>Confirmar Cancelación</Button>
-                </div>
-            </Modal>
+                )}
+            </form>
+        </SideSheet>
 
-            <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
-                <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir de la aplicación?</p>
-                <div className="flex gap-3 justify-end">
+         <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
+            {selectedReservation && (
+                <div className="space-y-6">
+                     <div className="bg-[#F8F8F8] p-4 rounded-2xl flex items-center justify-between"><div><p className="text-xs text-gray-500 font-bold uppercase">Estado</p><Badge color={selectedReservation.status === 'Confirmed' ? 'green' : selectedReservation.status === 'Cancelled' ? 'red' : 'yellow'}>{selectedReservation.status === 'Cancelled' ? 'Cancelada' : selectedReservation.status}</Badge></div><div className="text-right"><p className="text-xs text-gray-500 font-bold uppercase">Precio Total</p><p className="text-2xl font-bold text-[#1B3530]">${selectedReservation.price}</p></div></div>
+                     <div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><p className="text-sm text-gray-500">Fecha</p><p className="font-bold text-[#112320]">{new Date(selectedReservation.startTime).toLocaleDateString()}</p></div><div><p className="text-sm text-gray-500">Horario</p><p className="font-bold text-[#112320]">{selectedReservation.startTime.split('T')[1].substring(0, 5)} - {selectedReservation.endTime.split('T')[1].substring(0, 5)}</p></div></div><div><p className="text-sm text-gray-500">Cancha</p><p className="font-bold text-[#112320]">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p></div><div><p className="text-sm text-gray-500">Cliente</p><p className="font-bold text-[#112320]">{selectedReservation.clientName}</p></div><div><p className="text-sm text-gray-500">Tipo</p><Badge color="gray">{RESERVATION_META[(selectedReservation as any).type || 'Normal']?.label || (selectedReservation as any).type || 'Normal'}</Badge></div><div><p className="text-sm text-gray-500">Creado Por</p><p className="font-bold text-[#112320]">{selectedReservation.createdBy || 'Sistema'}</p></div><div><p className="text-sm text-gray-500">Método de Pago</p><p className="font-bold text-[#112320]">{selectedReservation.paymentMethod || 'No especificado'}</p></div>{(selectedReservation as any).notes && (<div><p className="text-sm text-gray-500">Notas</p><p className="text-[#112320] italic">{(selectedReservation as any).notes}</p></div>)}{selectedReservation.status === ReservationStatus.CANCELLED && selectedReservation.cancellationReason && (<div className="bg-red-50 p-4 rounded-xl border border-red-100"><p className="text-xs font-bold text-red-600 uppercase mb-1">Motivo Cancelación</p><p className="text-sm text-gray-700">{selectedReservation.cancellationReason}</p></div>)}</div>
+                     {selectedReservation.status !== ReservationStatus.CANCELLED && (<div className="pt-6 flex flex-col gap-3"><Button onClick={handleEditReservation}>Editar Reserva</Button><Button variant="destructive" onClick={initiateDeleteReservation}>Cancelar Reserva</Button></div>)}
+                </div>
+            )}
+        </SideSheet>
+         <SideSheet isOpen={activeSheet === 'COURT'} onClose={closeSheet} title={selectedCourt ? "Editar Cancha" : "Nueva Cancha"}>
+            <form className="space-y-6" onSubmit={handleSaveCourt}>
+                <Input name="name" label="Nombre de la Cancha" placeholder="Ej. Cancha 1" defaultValue={selectedCourt?.name} required />
+                <div className="space-y-2"><MultiSelect label="Deportes" options={SPORTS_LIST} selected={courtFormTypes} onChange={setCourtFormTypes} /></div>
+                <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>{SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+                <RadioGroup label="Forzar Inicio de Turnos" name="forceStart" defaultValue={selectedCourt?.forceStart || 'NO_ROUNDING'} options={[{ label: 'No redondear (Cualquier horario)', value: 'NO_ROUNDING' }, { label: 'En punto (XX:00)', value: 'ON_HOUR' }, { label: 'Y media (XX:30)', value: 'HALF_HOUR' }]} />
+                <div className="space-y-3"><label className="text-base font-medium text-[#112320]">Atributos</label><div className="flex flex-col gap-3"><Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} /><Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} /></div></div>
+                <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar</Button></div>
+            </form>
+        </SideSheet>
+         <SideSheet isOpen={activeSheet === 'CLIENT'} onClose={closeSheet} title={selectedClient ? "Editar Cliente" : "Nuevo Cliente"}>
+            <form className="space-y-6" onSubmit={handleSaveClient}>
+                <Input name="name" label="Nombre Completo" placeholder="Ej. Maria Gomez" defaultValue={selectedClient?.name} required />
+                <Input name="phone" label="Teléfono" placeholder="+54 9 11..." defaultValue={selectedClient?.phone} required />
+                <Input name="email" label="Email" type="email" placeholder="maria@email.com" defaultValue={selectedClient?.email} />
+                <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">{selectedClient ? 'Actualizar Cliente' : 'Guardar Cliente'}</Button></div>
+            </form>
+        </SideSheet>
+         <SideSheet isOpen={activeSheet === 'VIEW_CLIENT'} onClose={closeSheet} title="Detalle del Cliente">
+            {selectedClient && (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4 mb-6"><div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] text-2xl font-bold">{selectedClient.name.substring(0,2).toUpperCase()}</div><div><h3 className="text-xl font-bold text-[#112320]">{selectedClient.name}</h3><p className="text-gray-500">{selectedClient.email}</p></div></div>
+                    <div className="grid grid-cols-2 gap-4"><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Reservas</p><p className="text-2xl font-bold text-[#112320]">{selectedClient.totalBookings}</p></Card><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Gastado</p><p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent}</p></Card></div>
+                    <div className="space-y-4"><div><p className="text-sm text-gray-500">Teléfono</p><p className="font-bold text-[#112320]">{selectedClient.phone}</p></div><div><p className="text-sm text-gray-500">Última Visita</p><p className="font-bold text-[#112320]">{new Date(selectedClient.lastBooking).toLocaleDateString()}</p></div></div>
+                    <div className="pt-6"><Button className="w-full" onClick={() => { openBookClient(selectedClient); }}>Nueva Reserva</Button></div>
+                </div>
+            )}
+        </SideSheet>
+        <SideSheet isOpen={activeSheet === 'PRODUCT'} onClose={closeSheet} title={selectedProduct ? "Editar Producto" : "Nuevo Producto"}>
+             <form className="space-y-6" onSubmit={handleSaveProduct}>
+                <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5 w-full"><Input name="code" label="Código" placeholder="ABC-001" defaultValue={selectedProduct?.code} /></div><div className="space-y-1.5 w-full"><Input name="name" label="Nombre del Producto" placeholder="Ej. Gatorade" defaultValue={selectedProduct?.name} required /></div></div>
+                <div className="grid grid-cols-2 gap-4"><Input name="purchasePrice" type="number" label="Precio Costo" icon={DollarSign} defaultValue={selectedProduct?.purchasePrice} required /><Input name="salePrice" type="number" label="Precio Venta" icon={DollarSign} defaultValue={selectedProduct?.salePrice} required /></div>
+                <div className="grid grid-cols-2 gap-4"><Select name="type" label="Categoría" defaultValue={selectedProduct?.type || 'Bebidas'}><option value="Bebidas">Bebidas</option><option value="Snacks">Snacks</option><option value="Equipamiento">Equipamiento</option><option value="Indumentaria">Indumentaria</option><option value="Venta">Venta</option></Select><Input name="stock" type="number" label="Stock Inicial" defaultValue={selectedProduct?.stock} required /></div>
+                <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar Producto</Button></div>
+            </form>
+        </SideSheet>
+        <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña"><form className="space-y-6" onSubmit={handleSaveReply}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><label className="text-base font-medium text-[#112320]">Tu Respuesta</label><textarea name="replyText" className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" placeholder="Escribe una respuesta amable..." required></textarea></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Enviar Respuesta</Button></div></form></SideSheet>
+        <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña"><form className="space-y-6" onSubmit={handleSaveReport}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><RadioGroup label="Motivo del Reporte" name="reportReason" options={[{ label: 'Contenido Ofensivo', value: 'OFFENSIVE' }, { label: 'Es Spam', value: 'SPAM' }, { label: 'Reseña Falsa', value: 'FAKE' }, { label: 'Otro', value: 'OTHER' }]} defaultValue="OFFENSIVE" /></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button></div></form></SideSheet>
+
+        <Modal isOpen={activeSheet === 'EXPORT_OPTIONS'} onClose={closeSheet} title="Exportar Reporte">
+             <div className="space-y-4">
+                 <p className="text-gray-600 mb-4">Selecciona el formato de exportación:</p>
+                 <div className="grid grid-cols-1 gap-3">
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('EXCEL')}><span className="font-bold text-[#112320]">Excel (.xlsx)</span><FileSpreadsheet className="text-green-600" /></button>
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('CSV')}><span className="font-bold text-[#112320]">CSV (.csv)</span><FileText className="text-blue-600" /></button>
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('PDF')}><span className="font-bold text-[#112320]">PDF (.pdf)</span><FileType className="text-red-600" /></button>
+                 </div>
+             </div>
+        </Modal>
+        
+        <Modal isOpen={activeSheet === 'IMPORT_INVENTORY'} onClose={closeSheet} title="Importar Inventario">
+            <div className="space-y-4">
+                <p className="text-gray-600">Sube un archivo CSV con la lista de productos para importar masivamente.</p>
+                <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    <Upload size={32} className="text-gray-400 mb-2"/>
+                    <p className="text-sm font-medium text-gray-600">Click para seleccionar archivo</p>
+                    <input type="file" accept=".csv" className="opacity-0 absolute inset-0 cursor-pointer" />
+                </div>
+                <div className="flex gap-3 justify-end pt-2">
                     <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
-                    <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
+                    <Button onClick={() => { setActiveSheet(null); showFeedback('Inventario importado'); }}>Importar</Button>
                 </div>
-            </Modal>
+            </div>
+        </Modal>
 
-          </div>
-        ) : <Navigate to="/login" />} />
-      </Routes>
+        <Modal isOpen={activeSheet === 'DELETE_USER_CONFIRMATION'} onClose={closeSheet} title="Eliminar Usuario">
+            <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmDeleteUser}>Eliminar</Button>
+            </div>
+        </Modal>
+        
+        <Modal isOpen={activeSheet === 'DELETE_COURT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Cancha">
+            <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar esta cancha? Se perderán las reservas asociadas.</p>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmDeleteCourt}>Eliminar</Button>
+            </div>
+        </Modal>
+
+        <Modal isOpen={activeSheet === 'DELETE_CLIENT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Cliente">
+            <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este cliente? Se perderá su historial.</p>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmDeleteClient}>Eliminar</Button>
+            </div>
+        </Modal>
+
+        <Modal isOpen={activeSheet === 'DELETE_PRODUCT_CONFIRMATION'} onClose={closeSheet} title="Eliminar Producto">
+            <p className="text-gray-600 mb-6">¿Estás seguro que deseas eliminar este producto del inventario?</p>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmDeleteProduct}>Eliminar</Button>
+            </div>
+        </Modal>
+
+        <Modal isOpen={activeSheet === 'DELETE_RESERVATION_CONFIRMATION'} onClose={closeSheet} title="Cancelar Reserva">
+            <div className="space-y-4 mb-6">
+                <p className="text-gray-600">Por favor indica el motivo de la cancelación:</p>
+                 <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="CLIENT_CANCEL" checked={cancellationReason === 'CLIENT_CANCEL'} onChange={() => setCancellationReason('CLIENT_CANCEL')} className="accent-[#1B3530]"/><span>Cancelado por el cliente</span></label>
+                    <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="WEATHER" checked={cancellationReason === 'WEATHER'} onChange={() => setCancellationReason('WEATHER')} className="accent-[#1B3530]"/><span>Condiciones climáticas</span></label>
+                     <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="MAINTENANCE" checked={cancellationReason === 'MAINTENANCE'} onChange={() => setCancellationReason('MAINTENANCE')} className="accent-[#1B3530]"/><span>Mantenimiento de cancha</span></label>
+                    <label className="flex items-center gap-3 cursor-pointer"><input type="radio" name="cancelReason" value="OTHER" checked={cancellationReason === 'OTHER'} onChange={() => setCancellationReason('OTHER')} className="accent-[#1B3530]"/><span>Otro motivo</span></label>
+                 </div>
+                 {cancellationReason === 'OTHER' && (
+                     <textarea 
+                        className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#1B3530]"
+                        placeholder="Especificar motivo..."
+                        value={cancellationOtherText}
+                        onChange={(e) => setCancellationOtherText(e.target.value)}
+                     ></textarea>
+                 )}
+            </div>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Volver</Button>
+                <Button variant="destructive" onClick={confirmDeleteReservation}>Confirmar Cancelación</Button>
+            </div>
+        </Modal>
+
+        <Modal isOpen={activeSheet === 'LOGOUT_CONFIRMATION'} onClose={closeSheet} title="Cerrar Sesión">
+            <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir de la aplicación?</p>
+            <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={closeSheet}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmLogout}>Cerrar Sesión</Button>
+            </div>
+        </Modal>
+
+      </div>
     </HashRouter>
   );
 };

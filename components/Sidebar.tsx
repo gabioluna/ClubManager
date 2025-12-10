@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Users, Trophy, BarChart3, ShoppingBag, Store, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, Users, Trophy, BarChart3, ShoppingBag, Store, LogOut, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 import { Tooltip } from './UI';
 
 const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, label: string, collapsed: boolean }) => (
@@ -78,6 +78,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
             <NavItem to="/reports" icon={BarChart3} label="Reportes" collapsed={collapsed} />
           </>
         )}
+        
+        <NavItem to="/help" icon={HelpCircle} label="Ayuda" collapsed={collapsed} />
       </nav>
 
       <div className="pt-6 border-t border-gray-200 mt-4 space-y-2">
