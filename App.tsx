@@ -1,13 +1,77 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal, AutocompleteInput, Textarea, Snackbar, Switch } from './components/UI';
 import { TIME_SLOTS, SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat, BarChart3, ShoppingBag } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import { supabase } from './lib/supabase';
+
+// --- Skeleton Components ---
+
+const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`animate-pulse bg-gray-200 rounded-xl ${className}`}></div>
+);
+
+const TableSkeleton = () => (
+  <div className="w-full space-y-4">
+    <div className="bg-[#F8F8F8] h-12 w-full rounded-t-2xl animate-pulse" />
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-100">
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-8 w-1/4 rounded-full" />
+      </div>
+    ))}
+  </div>
+);
+
+const FormSkeleton = () => (
+  <div className="space-y-6 w-full max-w-4xl animate-in fade-in">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-12 w-full" /></div>
+      <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-12 w-full" /></div>
+      <div className="space-y-2 col-span-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-12 w-full" /></div>
+    </div>
+    <div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-32 w-full" /></div>
+  </div>
+);
+
+const DashboardSkeleton = () => (
+  <div className="space-y-8 animate-in fade-in">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[...Array(4)].map((_, i) => (
+        <Skeleton key={i} className="h-32 w-full" />
+      ))}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <Skeleton className="h-80 w-full" />
+      <Skeleton className="h-80 w-full" />
+    </div>
+  </div>
+);
+
+const CalendarSkeleton = () => (
+    <div className="w-full h-full flex flex-col gap-4 animate-in fade-in">
+        <div className="flex gap-2 mb-4">
+             <Skeleton className="h-10 w-32 rounded-full" />
+             <Skeleton className="h-10 w-64 rounded-full" />
+        </div>
+        <div className="flex-1 border border-gray-200 rounded-3xl overflow-hidden bg-white">
+            <div className="h-12 bg-[#F8F8F8] border-b border-gray-200 w-full" />
+            <div className="flex flex-col">
+                {[...Array(8)].map((_, i) => (
+                    <div key={i} className="h-20 border-b border-gray-100 flex">
+                        <div className="w-24 border-r border-gray-100 bg-white" />
+                        <div className="flex-1 bg-gray-50/30" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
 
 // --- Shared Components ---
 
@@ -30,14 +94,18 @@ const EmptyState = ({ title, description, actionLabel, onAction, icon: Icon }: {
 // --- Auth & Selection Components ---
 
 const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs: any[], onSelectClub: (club: any) => void, onLogout: () => void, userName: string }) => {
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
-            <Card className="w-full max-w-xl p-8 shadow-xl border-none">
+        <div 
+            className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center relative"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=2000&auto=format&fit=crop')" }}
+        >
+            <div className="absolute inset-0 bg-black/50 z-0"></div>
+            <Card className="w-full max-w-lg p-8 shadow-2xl border-none relative z-10 bg-white/95 backdrop-blur-sm">
                 <div className="flex flex-col items-center mb-8 text-center">
                     <h1 className="text-2xl font-bold text-[#112320] mb-2">Hola {userName}, selecciona tu Club</h1>
-                    <p className="text-gray-500">Tienes acceso a los siguientes clubes</p>
+                    <p className="text-gray-500">Elige el club que deseas gestionar hoy</p>
                 </div>
 
                 {clubs.length > 0 ? (
@@ -48,19 +116,19 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
                                 onClick={() => onSelectClub(item.club)}
                                 className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group text-left w-full"
                             >
-                                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center border border-gray-100">
+                                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                                     {item.club.logo ? (
                                         <img src={item.club.logo} alt={item.club.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Building2 size={24} className="text-gray-400" />
+                                        <Building2 size={24} className="text-gray-400 group-hover:text-[#1B3530] transition-colors" />
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-[#112320] group-hover:text-[#1B3530] transition-colors">{item.club.name}</h3>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-lg text-[#112320] truncate">{item.club.name}</h3>
                                     <p className="text-sm text-gray-500 truncate">{item.club.address || 'Sin dirección'}</p>
                                 </div>
                                 <div className="flex-shrink-0">
-                                    <Badge color={item.role === 'OWNER' ? 'blue' : 'gray'}>
+                                     <Badge color={item.role === 'OWNER' ? 'blue' : 'gray'}>
                                         {item.role === 'OWNER' ? 'Dueño' : item.role === 'ADMIN' ? 'Admin' : 'Empleado'}
                                     </Badge>
                                 </div>
@@ -71,21 +139,21 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
                     <div className="text-center py-12 bg-gray-50 rounded-2xl mb-8 border border-dashed border-gray-200">
                         <AlertTriangle className="mx-auto text-yellow-500 mb-2" size={32}/>
                         <h3 className="text-lg font-bold text-[#112320]">No tienes clubes asociados</h3>
-                        <p className="text-gray-500 max-w-xs mx-auto mt-2">Contacta al administrador del sistema para que te vincule a un club existente.</p>
+                        <p className="text-gray-500 max-w-xs mx-auto mt-2">No tienes membresías activas en ningún club. Contacta al administrador.</p>
                     </div>
                 )}
                 
                 <div className="flex justify-center border-t border-gray-100 pt-6">
-                    <Button variant="ghost" onClick={() => setShowLogoutModal(true)} className="text-red-600 hover:bg-red-50">
+                    <Button variant="ghost" onClick={() => setShowLogoutConfirm(true)} className="text-red-600 hover:bg-red-50">
                         <LogOut size={16} className="mr-2"/> Cerrar Sesión
                     </Button>
                 </div>
             </Card>
 
-            <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Cerrar Sesión">
+            <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Cerrar Sesión">
                 <p className="text-gray-600 mb-6">¿Estás seguro que deseas salir de la aplicación?</p>
                 <div className="flex gap-3 justify-end">
-                    <Button variant="ghost" onClick={() => setShowLogoutModal(false)}>Cancelar</Button>
+                    <Button variant="ghost" onClick={() => setShowLogoutConfirm(false)}>Cancelar</Button>
                     <Button variant="destructive" onClick={onLogout}>Cerrar Sesión</Button>
                 </div>
             </Modal>
@@ -103,8 +171,12 @@ const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl border-none">
+    <div 
+        className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center relative"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=2000&auto=format&fit=crop')" }}
+    >
+      <div className="absolute inset-0 bg-black/50 z-0"></div>
+      <Card className="w-full max-w-md p-8 shadow-2xl border-none relative z-10 bg-white/95 backdrop-blur-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-[#1B3530] rounded-xl flex items-center justify-center text-[#C7F269] font-bold text-xl mb-4">
             G
@@ -149,21 +221,35 @@ const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string
   );
 };
 
-// ... UsersPage, ReservasPage, CourtsPage, ClientsPage, InventoryPage, ReportsPage, MyClubPage, UserProfilePage, HelpPage ...
-// (Keeping all existing logic for these components, but for brevity not repeating 1000 lines of unchanged code. 
-// I will ensure they are included in the final output if I were writing the whole file, but here I focus on the requested changes integration)
-
 const UsersPage = ({ 
   users, 
   onAddUser, 
   onEditUser, 
-  onToggleStatus 
+  onToggleStatus,
+  loading 
 }: { 
   users: User[], 
   onAddUser: () => void, 
   onEditUser: (u: User) => void, 
-  onToggleStatus: (u: User) => void
+  onToggleStatus: (u: User) => void,
+  loading?: boolean
 }) => {
+  if (loading) {
+      return (
+          <div className="p-8 space-y-6 h-full">
+               <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
+                 <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-48" />
+                 </div>
+                 <Skeleton className="h-9 w-32 rounded-full" />
+              </div>
+              <Card className="p-0 overflow-hidden w-full">
+                  <TableSkeleton />
+              </Card>
+          </div>
+      )
+  }
+
   if (users.length === 0) {
      return (
         <div className="p-8 h-full">
@@ -248,7 +334,9 @@ const ReservasPage = ({
   onSelectReservation,
   selectedDate,
   onDateChange,
-  schedule
+  schedule,
+  userRole,
+  loading
 }: { 
   courts: Court[], 
   reservations: Reservation[], 
@@ -256,7 +344,9 @@ const ReservasPage = ({
   onSelectReservation: (res: Reservation) => void,
   selectedDate: string,
   onDateChange: (date: string) => void,
-  schedule: any[]
+  schedule: any[],
+  userRole: string,
+  loading?: boolean
 }) => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
@@ -362,14 +452,26 @@ const ReservasPage = ({
   const totalPages = Math.ceil(filteredReservationsList.length / itemsPerPage);
   const paginatedReservations = filteredReservationsList.slice((listPage - 1) * itemsPerPage, listPage * itemsPerPage);
 
+  if (loading) {
+      return (
+          <div className="p-8 space-y-6 flex flex-col h-full">
+               <div className="flex justify-between items-center">
+                    <Skeleton className="h-10 w-48" />
+                    <Skeleton className="h-10 w-64 rounded-full" />
+               </div>
+               {viewMode === 'CALENDAR' ? <CalendarSkeleton /> : <Card className="p-0"><TableSkeleton /></Card>}
+          </div>
+      )
+  }
+
   if (courts.length === 0 && viewMode === 'CALENDAR') {
       return (
         <div className="p-8 h-full">
             <EmptyState 
                 title="No hay canchas configuradas" 
                 description="Para comenzar a gestionar reservas, primero debes agregar canchas en la sección 'Canchas'." 
-                actionLabel="Ir a Canchas"
-                onAction={() => navigate('/courts')}
+                actionLabel={userRole !== 'RECEPTIONIST' ? "Ir a Canchas" : undefined}
+                onAction={userRole !== 'RECEPTIONIST' ? () => navigate('/courts') : undefined}
                 icon={Calendar}
             />
         </div>
@@ -597,13 +699,15 @@ const ReservasPage = ({
 const CourtsPage = ({ 
   courts, 
   onAddCourt, 
-  onEditCourt,
-  onDeleteCourt
+  onEditCourt, 
+  onDeleteCourt,
+  loading
 }: { 
   courts: Court[], 
   onAddCourt: () => void, 
   onEditCourt: (c: Court) => void,
-  onDeleteCourt: (id: string) => void
+  onDeleteCourt: (id: string) => void,
+  loading?: boolean
 }) => {
   const [sortConfig, setSortConfig] = useState<{key: keyof Court, direction: 'asc' | 'desc'} | null>(null);
 
@@ -628,6 +732,20 @@ const CourtsPage = ({
       if (sortConfig?.key !== key) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
       return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-[#1B3530]" /> : <ArrowDown size={14} className="ml-1 text-[#1B3530]" />;
   };
+
+  if (loading) {
+     return (
+        <div className="p-8 space-y-6 h-full">
+            <div className="flex justify-between items-end">
+                <Skeleton className="h-10 w-48" />
+                <Skeleton className="h-9 w-32 rounded-full" />
+            </div>
+            <Card className="p-0 overflow-hidden">
+                <TableSkeleton />
+            </Card>
+        </div>
+     );
+  }
 
   if (courts.length === 0) {
       return (
@@ -700,14 +818,31 @@ const CourtsPage = ({
 const ClientsPage = ({ 
   clients, 
   onAddClient, 
-  onEditClient
+  onEditClient,
+  loading
 }: { 
   clients: Client[], 
   onAddClient: () => void, 
-  onEditClient: (client: Client) => void
+  onEditClient: (client: Client) => void,
+  loading?: boolean
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const filteredClients = clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    if (loading) {
+       return (
+          <div className="p-8 space-y-6 h-full">
+            <div className="flex justify-between items-center">
+               <Skeleton className="h-10 w-48" />
+               <Skeleton className="h-9 w-32 rounded-full" />
+            </div>
+            <Skeleton className="h-12 w-full rounded-full" />
+            <Card className="p-0 overflow-hidden">
+               <TableSkeleton />
+            </Card>
+          </div>
+       )
+    }
 
     if (clients.length === 0) {
         return (
@@ -783,7 +918,7 @@ const ClientsPage = ({
       );
 };
 
-const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct, onImport }: { inventory: Product[], onAddProduct: () => void, onEditProduct: (p: Product) => void, onDeleteProduct: (id: string) => void, onImport: () => void }) => {
+const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct, onImport, loading }: { inventory: Product[], onAddProduct: () => void, onEditProduct: (p: Product) => void, onDeleteProduct: (id: string) => void, onImport: () => void, loading?: boolean }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{key: keyof Product, direction: 'asc' | 'desc'} | null>(null);
 
@@ -817,6 +952,24 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
     if (sortConfig?.key !== key) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
     return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-[#1B3530]" /> : <ArrowDown size={14} className="ml-1 text-[#1B3530]" />;
   };
+
+  if (loading) {
+      return (
+         <div className="p-8 space-y-6 h-full">
+            <div className="flex justify-between items-center">
+                <Skeleton className="h-10 w-48" />
+                <div className="flex gap-2">
+                    <Skeleton className="h-9 w-24 rounded-full" />
+                    <Skeleton className="h-9 w-32 rounded-full" />
+                </div>
+            </div>
+            <Skeleton className="h-12 w-full rounded-full" />
+            <Card className="p-0 overflow-hidden">
+                <TableSkeleton />
+            </Card>
+         </div>
+      );
+  }
 
   if (inventory.length === 0) {
       return (
@@ -928,7 +1081,7 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
   );
 };
 
-const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reservations: Reservation[] }) => {
+const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void, reservations: Reservation[], loading?: boolean }) => {
   const [dateRange, setDateRange] = useState('7_DAYS');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -975,15 +1128,13 @@ const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reserva
   const avgSession = 60; // Mocked for now, or calculate from duration
   const utilization = 0; // Requires court hours capacity logic
 
-  // Revenue Over Time Data - Updated to group by full date (dd/MM) instead of weekday name
+  // Revenue Over Time Data
   const revenueByDayMap = new Map<string, number>();
   
-  // Sort by date first
   const sortedReservations = [...filteredReservations].sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   sortedReservations.forEach(r => {
       const dateObj = new Date(r.startTime);
-      // Use dd/MM format for the chart key
       const day = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
       const current = revenueByDayMap.get(day) || 0;
       revenueByDayMap.set(day, current + r.price);
@@ -999,7 +1150,6 @@ const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reserva
   });
   const customerSegments = Array.from(segmentsMap.entries()).map(([name, value]) => ({ name, value }));
 
-  // Colors for Segments
   const getSegmentColor = (type: string) => {
       if (RESERVATION_META[type]) return RESERVATION_META[type].color;
       return '#E5E7EB';
@@ -1024,6 +1174,21 @@ const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reserva
   const dateLabel = dateRange === 'CUSTOM' 
     ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
     : startDate.toLocaleDateString() + ' - Hoy';
+
+  if (loading) {
+      return (
+          <div className="p-8 space-y-8 pb-20 h-full">
+               <div className="flex justify-between items-center">
+                    <div>
+                        <Skeleton className="h-10 w-48 mb-2" />
+                        <Skeleton className="h-5 w-64" />
+                    </div>
+                    <Skeleton className="h-10 w-48 rounded-full" />
+               </div>
+               <DashboardSkeleton />
+          </div>
+      )
+  }
 
   return (
     <div className="p-8 space-y-8 pb-20 h-full overflow-y-auto">
@@ -1174,24 +1339,6 @@ const ReportsPage = ({ onExport, reservations }: { onExport: () => void, reserva
   );
 }
 
-// ... MyClubPage, UserProfilePage, HelpPage ...
-// (Keeping MyClubPage and UserProfilePage largely same but ensuring they call the updated handlers correctly)
-
-interface MyClubProps {
-  users: User[];
-  onAddUser: () => void;
-  onEditUser: (u: User) => void;
-  onToggleStatus: (u: User) => void; 
-  onDeleteUser: (id: string) => void;
-  reviews: any[];
-  clubConfig: any;
-  onUpdateClub: (data: any) => void;
-  onReplyReview: (id: number) => void;
-  onReportReview: (id: number) => void;
-  selectedClub: any;
-  onChangeClub: () => void;
-}
-
 const DEFAULT_SCHEDULE = [
     { day: 'Domingo', open: true, start: '09:00', end: '22:00' },
     { day: 'Lunes', open: true, start: '09:00', end: '22:00' },
@@ -1203,10 +1350,23 @@ const DEFAULT_SCHEDULE = [
     { day: 'Feriado', open: true, start: '09:00', end: '22:00' },
 ];
 
-const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview, selectedClub, onChangeClub }: MyClubProps) => {
-    // ... Existing MyClubPage logic ...
-    // Copying the existing component logic to ensure it works. 
-    // Just ensuring the handler calls are passed through.
+interface MyClubProps {
+    users: User[];
+    onAddUser: () => void;
+    onEditUser: (u: User) => void;
+    onToggleStatus: (u: User) => void;
+    onDeleteUser: (id: string) => void;
+    reviews: any[];
+    clubConfig: any;
+    onUpdateClub: (data: any) => void;
+    onReplyReview: (id: number) => void;
+    onReportReview: (id: number) => void;
+    selectedClub: any;
+    onChangeClub: () => void;
+    loading?: boolean;
+}
+
+const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview, selectedClub, onChangeClub, loading }: MyClubProps) => {
     const [activeTab, setActiveTab] = useState('DATOS');
     const [basicInfo, setBasicInfo] = useState({ 
         name: 'Club Central', 
@@ -1286,6 +1446,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
   
     const handleUpdateBasicInfo = () => {
         const [lat, lng] = basicInfo.coords.split(',').map(s => s.trim());
+        
         onUpdateClub({
           name: basicInfo.name,
           phone: basicInfo.phone,
@@ -1314,6 +1475,18 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
       { id: 'RESEÑAS', label: 'Reseñas', icon: MessageSquare },
     ];
     
+    if (loading) {
+       return (
+          <div className="p-8 space-y-4 w-full h-full">
+               <Skeleton className="h-10 w-48 mb-6" />
+               <div className="flex gap-2 mb-6">
+                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-9 w-32 rounded-full" />)}
+               </div>
+               <FormSkeleton />
+          </div>
+       )
+    }
+
     return (
       <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
         <div className="pb-2">
@@ -1321,14 +1494,14 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         </div>
 
         {/* Change Club Header */}
-        <div className="w-full max-w-4xl mx-auto md:mx-0 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="w-full mx-auto md:mx-0 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#F8F8F8] border border-gray-100 flex items-center justify-center text-[#1B3530] overflow-hidden">
-                 {selectedClub?.logo ? (
-                     <img src={selectedClub.logo} alt="Logo" className="w-full h-full object-cover" />
-                 ) : (
-                     <Building2 size={24} />
-                 )}
+              <div className="w-12 h-12 bg-[#F8F8F8] rounded-xl text-[#1B3530] flex items-center justify-center overflow-hidden border border-gray-100">
+                  {selectedClub?.logo ? (
+                      <img src={selectedClub.logo} alt="Club Logo" className="w-full h-full object-cover" />
+                  ) : (
+                      <Building2 size={24} />
+                  )}
               </div>
               <div>
                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">Gestionando</p>
@@ -1341,7 +1514,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
            </Button>
         </div>
         
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-full max-w-full overflow-x-auto no-scrollbar border border-gray-200">
           {TABS.map(tab => {
               const TabIcon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -1460,7 +1633,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                       <div className="space-y-4">
                           <label className="text-base font-medium text-[#112320] block">Imagen de Portada</label>
                           <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48 relative overflow-hidden" onClick={() => coverInputRef.current?.click()}>
-                               {basicInfo.cover ? <img src={basicInfo.cover} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" /> : <><div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300"><ImageIcon size={48} /></div><p className="text-sm font-bold text-[#1B3530]">Subir Portada</p><p className="text-xs text-gray-400">Max 5MB</p><p className="text-[10px] text-gray-400">Recomendado: 1920x1080px</p></>}
+                               {basicInfo.cover ? <img src={basicInfo.cover} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" /> : <><div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300"><ImageIcon size={48} /></div><p className="text-sm font-bold text-[#1B3530]">Subir Portada</p><p className="text-xs text-gray-400">Max 5MB</p><p className="text-xs text-gray-400">Max 5MB</p><p className="text-xs text-gray-400">Recomendado: 1920x1080px</p></>}
                           </div>
                       </div>
                    </div>
@@ -1477,19 +1650,39 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     );
 };
 
-const UserProfilePage = ({ user, email, onUpdateProfile, onUpdatePassword }: { user: any, email: string, onUpdateProfile: (data: any) => void, onUpdatePassword: (pass: string) => void }) => {
+const UserProfilePage = ({ 
+  user, 
+  email, 
+  onUpdateProfile, 
+  onUpdatePassword,
+  onUpdateNotifications,
+  loading
+}: { 
+  user: any, 
+  email: string, 
+  onUpdateProfile: (data: any) => void, 
+  onUpdatePassword: (pass: string) => void,
+  onUpdateNotifications: (settings: any) => void,
+  loading?: boolean
+}) => {
   const [activeTab, setActiveTab] = useState('PROFILE');
   const [formData, setFormData] = useState({ full_name: user?.name || '', phone: user?.phone || '' });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  
+  // Initialize from user settings if available, else defaults
   const [notificationSettings, setNotificationSettings] = useState({
       newReservation: true,
       cancelledReservation: true,
-      modifiedReservation: false
+      modifiedReservation: false,
+      ...(user?.notification_settings || {})
   });
 
   useEffect(() => {
     if(user) {
         setFormData({ full_name: user.name || '', phone: user.phone || '' });
+        if (user.notification_settings) {
+            setNotificationSettings(prev => ({...prev, ...user.notification_settings}));
+        }
     }
   }, [user]);
 
@@ -1508,7 +1701,9 @@ const UserProfilePage = ({ user, email, onUpdateProfile, onUpdatePassword }: { u
   };
 
   const handleNotificationChange = (key: keyof typeof notificationSettings) => {
-      setNotificationSettings(prev => ({ ...prev, [key]: !prev[key] }));
+      const newSettings = { ...notificationSettings, [key]: !notificationSettings[key] };
+      setNotificationSettings(newSettings);
+      onUpdateNotifications(newSettings);
   };
 
   const TABS = [
@@ -1516,6 +1711,18 @@ const UserProfilePage = ({ user, email, onUpdateProfile, onUpdatePassword }: { u
       { id: 'SECURITY', label: 'Seguridad', icon: Shield },
       { id: 'NOTIFICATIONS', label: 'Notificaciones', icon: Bell }
   ];
+
+  if (loading) {
+      return (
+         <div className="p-8 space-y-4 w-full h-full">
+            <Skeleton className="h-10 w-48 mb-6" />
+            <div className="flex gap-2 mb-6">
+                 {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9 w-32 rounded-full" />)}
+            </div>
+            <FormSkeleton />
+         </div>
+      );
+  }
 
   return (
     <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
@@ -1606,9 +1813,10 @@ const UserProfilePage = ({ user, email, onUpdateProfile, onUpdatePassword }: { u
 };
 
 const HelpPage = () => {
-    // ... Existing HelpPage logic ...
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
 
     const toggleExpand = (id: string) => {
         setExpandedIds(prev => 
@@ -1616,76 +1824,276 @@ const HelpPage = () => {
         );
     };
 
-    const faqs = [
-        { id: '1', category: 'Reservas', question: '¿Cómo creo una nueva reserva?', answer: 'Ve a la sección "Reservas", selecciona el horario disponible en el calendario o haz clic en "Nueva Reserva" en la parte superior derecha. Completa los datos del cliente y la cancha.' },
-        { id: '2', category: 'Reservas', question: '¿Cómo cancelo una reserva?', answer: 'Haz clic sobre la reserva en el calendario o en la lista de historial, selecciona "Ver Detalles" y luego "Cancelar Reserva". Deberás indicar el motivo.' },
-        { id: '3', category: 'Reservas', question: '¿Qué significan los colores de las reservas?', answer: 'Verde Oscuro: Normal, Azul: Fijo/Abonado, Violeta: Clase/Escuela, Naranja: Torneo, Rosa: Cumpleaños. El borde amarillo indica Pendiente y el borde rojo Cancelada.' },
-        { id: '4', category: 'Canchas', question: '¿Cómo agrego una nueva cancha?', answer: 'Ve a "Canchas", haz clic en "Agregar Cancha" y completa el formulario con el nombre, deporte, superficie y atributos como iluminación o techo.' },
-        { id: '5', category: 'Canchas', question: '¿Puedo eliminar una cancha?', answer: 'Sí, desde la tabla de canchas puedes hacer clic en el botón de eliminar (ícono de basura). Ten en cuenta que esto podría afectar el historial de reportes.' },
-        { id: '6', category: 'Clientes', question: '¿Se crean clientes automáticamente?', answer: 'Sí, al crear una reserva, si ingresas un nombre de cliente que no existe en la base de datos, el sistema te ofrecerá crearlo automáticamente.' },
-        { id: '7', category: 'Mi Club', question: '¿Cómo cambio el logo de mi club?', answer: 'Ve a "Mi Club", selecciona la pestaña "Apariencia" y haz clic en el área de "Subir Logo". Selecciona una imagen de tu dispositivo.' },
-        { id: '8', category: 'Usuarios', question: '¿Cómo restablezco la contraseña de un usuario?', answer: 'Como administrador, puedes editar al usuario y asignarle una nueva contraseña temporal, o el usuario puede cambiarla desde su perfil en "Seguridad".' },
+    const shortcuts = [
+        { id: 'reservas', label: 'Nueva Reserva', icon: CalendarPlus, link: '/', helpId: '1' },
+        { id: 'clientes', label: 'Nuevo Cliente', icon: UsersIcon, link: '/clients', helpId: '4' },
+        { id: 'canchas', label: 'Agregar Cancha', icon: Trophy, link: '/courts', helpId: '3' },
+        { id: 'reportes', label: 'Ver Reportes', icon: BarChart3, link: '/reports', helpId: '6' },
+        { id: 'inventario', label: 'Inventario', icon: ShoppingBag, link: '/inventory', helpId: '5' },
+        { id: 'config', label: 'Configurar Club', icon: Building2, link: '/my-club', helpId: '7' },
     ];
 
-    const filteredFaqs = faqs.filter(faq => 
-        faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        faq.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const articles = [
+        {
+            id: '1',
+            category: 'Reservas',
+            title: 'Cómo crear y gestionar reservas',
+            content: (
+                <div className="space-y-4">
+                    <p>El panel de reservas es el corazón de tu gestión. Aquí te explicamos cómo operar eficientemente.</p>
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <h4 className="font-bold text-blue-800 mb-2">Paso a paso para crear una reserva:</h4>
+                        <ol className="list-decimal list-inside space-y-2 text-blue-900">
+                            <li>Ve a la vista de <strong>Calendario</strong>.</li>
+                            <li>Identifica la cancha y el horario deseado (celda vacía).</li>
+                            <li>Haz clic en el ícono <span className="inline-block bg-gray-200 rounded p-0.5"><Plus size={12}/></span> que aparece al pasar el mouse.</li>
+                            <li>En el formulario, ingresa el nombre del cliente (si es nuevo, se creará automáticamente).</li>
+                            <li>Selecciona la duración y el tipo de reserva (Normal, Torneo, Clase, etc.).</li>
+                            <li>Confirma el monto y el método de pago si ya se ha realizado una seña.</li>
+                            <li>Haz clic en <strong>Confirmar Reserva</strong>.</li>
+                        </ol>
+                    </div>
+                    <p>Para <strong>editar</strong> o <strong>mover</strong> una reserva, simplemente haz clic sobre la tarjeta de la reserva existente y modifica los datos necesarios.</p>
+                </div>
+            ),
+            related: ['2', '4']
+        },
+        {
+            id: '2',
+            category: 'Reservas',
+            title: 'Cancelación y Bloqueo de Horarios',
+            content: (
+                <div className="space-y-4">
+                    <p>Es importante mantener el calendario actualizado para evitar confusiones.</p>
+                    <h4 className="font-bold text-[#1B3530]">Para cancelar una reserva:</h4>
+                    <p>Haz clic en la reserva > Selecciona "Cancelar Reserva" > Indica el motivo (Clima, Cliente canceló, etc.). El historial guardará este registro pero liberará el horario.</p>
+                    
+                    <h4 className="font-bold text-[#1B3530] mt-4">Para bloquear una cancha (Mantenimiento):</h4>
+                    <p>Crea una reserva normalmente y en "Tipo de Reserva" selecciona "Bloqueo" o "Mantenimiento". Esto evitará que otros usuarios intenten reservar en ese espacio.</p>
+                </div>
+            ),
+            related: ['1', '3']
+        },
+        {
+            id: '3',
+            category: 'Canchas',
+            title: 'Gestión de Canchas y Superficies',
+            content: (
+                <div className="space-y-4">
+                    <p>Configura correctamente tus instalaciones para que los clientes sepan qué están reservando.</p>
+                    <ul className="list-disc list-inside space-y-2 text-gray-700">
+                        <li>Ve a la sección <strong>Canchas</strong>.</li>
+                        <li>Usa el botón "Agregar Cancha" para sumar una nueva instalación.</li>
+                        <li>Define atributos clave: <strong>Deporte</strong> (Fútbol, Pádel, Tenis), <strong>Superficie</strong> (Césped, Sintético, Cemento) y si es <strong>Techada</strong> o tiene <strong>Iluminación</strong>.</li>
+                    </ul>
+                    <p className="text-sm italic text-gray-500">Nota: Eliminar una cancha borrará su historial de reservas asociadas. Úsalo con precaución.</p>
+                </div>
+            ),
+            related: ['7']
+        },
+        {
+            id: '4',
+            category: 'Clientes',
+            title: 'Base de Datos de Clientes',
+            content: (
+                <div className="space-y-4">
+                    <p>Fideliza a tus usuarios llevando un registro detallado.</p>
+                    <p>Cada vez que creas una reserva con un nombre nuevo, el sistema sugiere crear un perfil. También puedes hacerlo manualmente desde la sección <strong>Clientes</strong>.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <h5 className="font-bold">Historial</h5>
+                            <p className="text-sm">Consulta cuántas veces ha venido un cliente y cuánto ha gastado en total.</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <h5 className="font-bold">Contacto</h5>
+                            <p className="text-sm">Guarda WhatsApp y Email para enviar promociones o avisos de cancelación.</p>
+                        </div>
+                    </div>
+                </div>
+            ),
+            related: ['1']
+        },
+        {
+            id: '5',
+            category: 'Inventario',
+            title: 'Control de Stock y Ventas',
+            content: (
+                <div className="space-y-4">
+                    <p>Gestiona el kiosco o tienda de tu club.</p>
+                    <ol className="list-decimal list-inside space-y-2">
+                        <li>Ve a <strong>Inventario</strong>.</li>
+                        <li>Agrega productos indicando precio de costo y venta para calcular márgenes.</li>
+                        <li>El sistema alertará visualmente cuando el stock sea bajo (menos de 5 unidades).</li>
+                    </ol>
+                    <p>Puedes importar listas masivas de precios usando un archivo CSV.</p>
+                </div>
+            ),
+            related: ['6']
+        },
+        {
+            id: '6',
+            category: 'Reportes',
+            title: 'Análisis Financiero y Métricas',
+            content: (
+                <div className="space-y-4">
+                    <p>Toma decisiones basadas en datos reales.</p>
+                    <ul className="list-disc list-inside text-gray-700">
+                        <li><strong>Revenue Overview:</strong> Ingresos totales filtrados por fecha.</li>
+                        <li><strong>Hourly Distribution:</strong> Descubre tus "horas pico" y "horas valle" para lanzar promociones en horarios vacíos.</li>
+                        <li><strong>Customer Segments:</strong> Entiende qué tipo de reserva es la más popular (Torneos, Clases, Alquiler normal).</li>
+                    </ul>
+                    <p>Usa el botón "Exportar" para descargar balances en Excel o PDF.</p>
+                </div>
+            ),
+            related: ['5']
+        },
+        {
+            id: '7',
+            category: 'Configuración',
+            title: 'Personalización de Mi Club',
+            content: (
+                <div className="space-y-4">
+                    <p>Adapta la plataforma a la identidad de tu negocio.</p>
+                    <div className="space-y-2">
+                        <p><strong>Horarios:</strong> Define hora de apertura y cierre para cada día de la semana en la pestaña "Horarios". Esto bloqueará visualmente las celdas fuera de hora.</p>
+                        <p><strong>Apariencia:</strong> Sube tu logo y una foto de portada para personalizar el dashboard.</p>
+                        <p><strong>Usuarios:</strong> Invita a tus empleados con rol de "Recepción" (acceso limitado) o a tus socios como "Administradores".</p>
+                    </div>
+                </div>
+            ),
+            related: ['3', '1']
+        }
+    ];
 
-    const groupedFaqs = filteredFaqs.reduce((acc, faq) => {
-        if (!acc[faq.category]) acc[faq.category] = [];
-        acc[faq.category].push(faq);
-        return acc;
-    }, {} as Record<string, typeof faqs>);
+    const getArticleById = (id: string) => articles.find(a => a.id === id);
+
+    const filteredArticles = articles.filter(article => {
+        const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              article.category.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'ALL' || article.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     return (
-        <div className="p-8 space-y-6 h-full overflow-y-auto w-full pb-20">
-             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
-                <p className="text-gray-500">Encuentra respuestas a las preguntas más frecuentes.</p>
+        <div className="p-8 space-y-8 h-full overflow-y-auto w-full pb-20">
+             <div className="flex flex-col gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
+                    <p className="text-gray-500 mt-1">Encuentra respuestas, guías paso a paso y trucos para gestionar tu club.</p>
+                </div>
+
+                <div className="relative w-full max-w-2xl">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="¿Qué necesitas saber hoy?" 
+                        className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-lg bg-white shadow-sm transition-shadow focus:shadow-md"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
 
-            <div className="relative max-w-2xl">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input 
-                    type="text" 
-                    placeholder="Buscar por palabra clave..." 
-                    className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            {/* Shortcuts Section */}
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Acceso Rápido</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {shortcuts.map(shortcut => {
+                        const Icon = shortcut.icon;
+                        return (
+                            <button 
+                                key={shortcut.id}
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setSelectedCategory('ALL');
+                                    setExpandedIds([shortcut.helpId]);
+                                    const element = document.getElementById(`article-${shortcut.helpId}`);
+                                    if(element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                                className="flex flex-col items-center justify-center p-4 bg-white border border-gray-100 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group"
+                            >
+                                <div className="w-10 h-10 bg-[#F8F8F8] rounded-full flex items-center justify-center mb-2 group-hover:bg-[#1B3530] group-hover:text-[#C7F269] transition-colors text-[#1B3530]">
+                                    <Icon size={20} />
+                                </div>
+                                <span className="text-sm font-bold text-gray-700 text-center">{shortcut.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
-            <div className="max-w-3xl space-y-8">
-                {Object.keys(groupedFaqs).length > 0 ? (
-                    Object.keys(groupedFaqs).map(category => (
-                        <div key={category} className="space-y-3">
-                            <h3 className="text-lg font-bold text-[#1B3530] border-b border-gray-100 pb-2 mb-4">{category}</h3>
-                            <div className="grid gap-3">
-                                {groupedFaqs[category].map(faq => {
-                                    const isExpanded = expandedIds.includes(faq.id);
-                                    return (
-                                        <div key={faq.id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300">
-                                            <button 
-                                                onClick={() => toggleExpand(faq.id)}
-                                                className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none"
-                                            >
-                                                <span className="font-semibold text-[#112320]">{faq.question}</span>
-                                                {isExpanded ? <ChevronDown className="text-gray-400 rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
-                                            </button>
-                                            <div className={`px-6 text-gray-600 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                                <p className="leading-relaxed">{faq.answer}</p>
-                                            </div>
+            {/* Categories Filter */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                <button onClick={() => setSelectedCategory('ALL')} className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === 'ALL' ? 'bg-[#1B3530] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Todos</button>
+                {Array.from(new Set(articles.map(a => a.category))).map(cat => (
+                    <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === cat ? 'bg-[#1B3530] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>{cat}</button>
+                ))}
+            </div>
+
+            {/* Articles List */}
+            <div className="max-w-4xl space-y-6">
+                {filteredArticles.length > 0 ? (
+                    filteredArticles.map(article => {
+                        const isExpanded = expandedIds.includes(article.id);
+                        return (
+                            <div key={article.id} id={`article-${article.id}`} className={`border border-gray-200 rounded-3xl bg-white overflow-hidden transition-all duration-300 ${isExpanded ? 'shadow-lg ring-1 ring-[#1B3530]/10' : 'hover:border-gray-300'}`}>
+                                <button 
+                                    onClick={() => toggleExpand(article.id)}
+                                    className="w-full px-8 py-6 text-left flex justify-between items-center focus:outline-none"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isExpanded ? 'bg-[#1B3530] text-[#C7F269]' : 'bg-gray-100 text-gray-500'}`}>
+                                            {article.category.charAt(0)}
                                         </div>
-                                    );
-                                })}
+                                        <div>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-1">{article.category}</span>
+                                            <span className="text-xl font-bold text-[#112320]">{article.title}</span>
+                                        </div>
+                                    </div>
+                                    {isExpanded ? <ChevronDown className="text-[#1B3530] rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
+                                </button>
+                                <div className={`px-8 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[800px] pb-8 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    <div className="pt-4 border-t border-gray-100 text-gray-600 leading-relaxed text-base">
+                                        {article.content}
+                                        
+                                        {article.related && article.related.length > 0 && (
+                                            <div className="mt-8 pt-6 border-t border-dashed border-gray-200">
+                                                <p className="text-xs font-bold text-gray-400 uppercase mb-3">Temas Relacionados</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {article.related.map(relId => {
+                                                        const relArticle = getArticleById(relId);
+                                                        if (!relArticle) return null;
+                                                        return (
+                                                            <button 
+                                                                key={relId}
+                                                                onClick={() => {
+                                                                    if (!expandedIds.includes(relId)) toggleExpand(relId);
+                                                                    setTimeout(() => {
+                                                                        const el = document.getElementById(`article-${relId}`);
+                                                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                                                    }, 100);
+                                                                }}
+                                                                className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#1B3530] rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center gap-2"
+                                                            >
+                                                                <Link2 size={14} />
+                                                                {relArticle.title}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
-                    <div className="text-center py-12">
-                        <p className="text-gray-500">No se encontraron resultados para "{searchTerm}"</p>
+                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                        <Search className="mx-auto text-gray-300 mb-4" size={48} />
+                        <h3 className="text-lg font-bold text-[#112320]">No encontramos respuestas</h3>
+                        <p className="text-gray-500 mt-2">Intenta buscar con otras palabras clave.</p>
+                        <button onClick={() => {setSearchTerm(''); setSelectedCategory('ALL');}} className="mt-4 text-[#1B3530] font-bold hover:underline">Limpiar búsqueda</button>
                     </div>
                 )}
             </div>
@@ -1698,6 +2106,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [availableClubs, setAvailableClubs] = useState<any[]>([]);
   const [selectedClub, setSelectedClub] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   // Data State
   const [usersDb, setUsersDb] = useState<User[]>([]);
@@ -1713,9 +2122,6 @@ const App: React.FC = () => {
   const [snackbar, setSnackbar] = useState<{message: string, type: 'success' | 'error' | 'info', isOpen: boolean}>({
       message: '', type: 'success', isOpen: false
   });
-
-  // Local user profile state to reflect changes immediately
-  const [userProfile, setUserProfile] = useState<{name: string, phone: string} | null>(null);
 
   const showFeedback = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
       setSnackbar({ message, type, isOpen: true });
@@ -1743,9 +2149,9 @@ const App: React.FC = () => {
               // Reset state on logout
               setAvailableClubs([]);
               setSelectedClub(null);
+              setUserProfile(null);
               setReservations([]);
               setCourts([]);
-              setUserProfile(null);
           }
       });
 
@@ -1753,9 +2159,9 @@ const App: React.FC = () => {
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
-      const { data } = await supabase.from('profiles').select('name').eq('id', userId).single();
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (data) {
-          setUserProfile({ name: data.name, phone: '' });
+          setUserProfile(data);
       }
   };
 
@@ -1765,6 +2171,7 @@ const App: React.FC = () => {
               .from('club_members')
               .select(`
                   role,
+                  status,
                   club_id,
                   club:club_settings (*)
               `)
@@ -1773,7 +2180,9 @@ const App: React.FC = () => {
           if (error) throw error;
           
           if (data && data.length > 0) {
-              setAvailableClubs(data);
+              // Filter out clubs where the user status is not ACTIVE
+              const activeClubs = data.filter((member: any) => member.status === 'ACTIVE');
+              setAvailableClubs(activeClubs);
           } else {
               setAvailableClubs([]);
           }
@@ -1800,30 +2209,37 @@ const App: React.FC = () => {
 
   const handleSelectClub = (clubData: any) => {
       setSelectedClub(clubData);
+      // Fetch all data for this club
       fetchData(clubData.id);
   };
 
   const fetchData = async (clubId: string) => {
       setLoading(true);
       try {
+          // 1. Fetch Club Settings
           const { data: clubData } = await supabase.from('club_settings').select('*').eq('id', clubId).single();
           if (clubData) setClubConfig(clubData);
 
+          // 2. Fetch Courts
           const { data: courtsData } = await supabase.from('courts').select('*').eq('club_id', clubId);
           if (courtsData) setCourts(courtsData);
 
+          // 3. Fetch Reservations
           const { data: resData } = await supabase.from('reservations').select('*').eq('club_id', clubId);
           if (resData) setReservations(resData as unknown as Reservation[]);
 
+          // 4. Fetch Clients
           const { data: clientData } = await supabase.from('clients').select('*').eq('club_id', clubId);
           if (clientData) setClients(clientData);
 
+          // 5. Fetch Inventory
           const { data: invData } = await supabase.from('products').select('*').eq('club_id', clubId);
           if (invData) setInventory(invData);
 
+          // 6. Fetch Users (Members of this club)
           const { data: membersData } = await supabase
               .from('club_members')
-              .select('user_id, role')
+              .select('user_id, role, status')
               .eq('club_id', clubId);
           
           if (membersData && membersData.length > 0) {
@@ -1842,7 +2258,7 @@ const App: React.FC = () => {
                           name: profile.name || profile.email,
                           email: profile.email,
                           role: memberInfo?.role || 'RECEPTIONIST',
-                          status: 'ACTIVE'
+                          status: memberInfo?.status || 'ACTIVE'
                       }
                   });
                   setUsersDb(mappedUsers as User[]);
@@ -1860,9 +2276,6 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => { 
-      // This is called from sidebar, so we use the sidebar confirmation logic usually, 
-      // but here we redirect to club selection which handles it via modal or directly.
-      // Actually sidebar calls this directly, so let's confirm.
       setActiveSheet('LOGOUT_CONFIRMATION'); 
   };
   
@@ -1874,25 +2287,39 @@ const App: React.FC = () => {
   // --- Data Mutation Handlers ---
   
   const handleUpdateProfile = async (data: any) => { 
-       if (!session?.user?.id) return;
-       
-       const { error } = await supabase
-         .from('profiles')
-         .update({ name: data.full_name })
-         .eq('id', session.user.id);
-
-       if (error) {
-           showFeedback('Error al actualizar perfil', 'error');
-       } else {
-           // Update local state to reflect change immediately in Sidebar
-           setUserProfile(prev => ({ ...prev, name: data.full_name, phone: data.phone || '' }));
-           showFeedback('Perfil actualizado correctamente');
-       }
+      if (!session) return;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name: data.full_name, phone: data.phone })
+        .eq('id', session.user.id);
+        
+      if (!error) {
+          setUserProfile((prev: any) => ({ ...prev, name: data.full_name, phone: data.phone }));
+          showFeedback('Perfil actualizado');
+      } else {
+          showFeedback('Error al actualizar perfil', 'error');
+      }
   };
+  
   const handleUpdatePassword = async (pass: string) => { 
       const { error } = await supabase.auth.updateUser({ password: pass });
       if (error) showFeedback('Error al actualizar', 'error');
       else showFeedback('Contraseña actualizada correctamente'); 
+  };
+
+  const handleUpdateNotifications = async (settings: any) => {
+      if (!session) return;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_settings: settings })
+        .eq('id', session.user.id);
+      
+      if (!error) {
+          setUserProfile((prev: any) => ({ ...prev, notification_settings: settings }));
+          // Optional: showFeedback('Notificaciones actualizadas');
+      } else {
+          showFeedback('Error al guardar notificaciones', 'error');
+      }
   };
 
   const handleUpdateClub = async (newData: any) => { 
@@ -1902,15 +2329,18 @@ const App: React.FC = () => {
           console.error(error);
           showFeedback('Error al actualizar club', 'error');
       } else {
-          setClubConfig((prev: any) => ({ ...prev, ...newData }));
-          // Update selectedClub state and availableClubs list to reflect name changes immediately
+          setClubConfig((prev: any) => ({ ...prev, ...newData })); 
+          // Sync Selected Club Header
           setSelectedClub((prev: any) => ({ ...prev, ...newData }));
-          setAvailableClubs(prev => prev.map(c => c.club_id === selectedClub.id ? { ...c, club: { ...c.club, ...newData } } : c));
+          // Sync Selection List
+          setAvailableClubs((prev) => prev.map(c => 
+            c.club_id === selectedClub.id ? { ...c, club: { ...c.club, ...newData } } : c
+          ));
           showFeedback('Información del club actualizada'); 
       }
   };
 
-  // Reviews Mock (Not connected to DB yet)
+  // Reviews Mock (Not connected to DB yet as per SQL)
   const [reviews, setReviews] = useState([]);
 
   // Sheets State
@@ -1937,20 +2367,24 @@ const App: React.FC = () => {
   const closeSheet = () => { setActiveSheet(null); };
   const resetReservationForm = () => { setReservationForm({ clientName: '', clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: 'Efectivo', notes: '', type: 'Normal', duration: '60', isRecurring: false, price: '4500' }); setPrefillReservation(null); setSelectedReservation(null); };
 
-  // --- Specific Handlers ---
-  // ... (keeping existing handlers for Reservations, Courts, Clients, Products) ...
+  // --- Specific Handlers with Supabase ---
+
   const handleClientNameChange = (val: string) => { setReservationForm(prev => ({ ...prev, clientName: val })); };
   const handleClientSelect = (client: any) => { setReservationForm(prev => ({ ...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email })); };
+  
   const handleSaveReservation = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       if (!selectedClub) return;
+
       const formCourtId = prefillReservation?.courtId || courts[0].id; 
       const formDate = prefillReservation?.date || selectedDate; 
       const formTime = prefillReservation?.time || '10:00'; 
       const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`; 
       const creatorName = session.user.email; 
       const clientNameInput = reservationForm.clientName; 
+      
       const existingClient = clients.find(c => c.name.toLowerCase() === clientNameInput.toLowerCase()); 
+      
       if (!existingClient && clientNameInput.trim() !== '') { 
           const { data: newClient, error } = await supabase.from('clients').insert({
               club_id: selectedClub.id,
@@ -1959,8 +2393,13 @@ const App: React.FC = () => {
               phone: reservationForm.clientPhone,
               "totalBookings": 1
           }).select().single();
-          if (!error && newClient) { setClients(prev => [...prev, newClient]); showFeedback(`Nuevo cliente registrado`, 'info'); }
+
+          if (!error && newClient) {
+              setClients(prev => [...prev, newClient]);
+              showFeedback(`Nuevo cliente registrado`, 'info'); 
+          }
       } 
+      
       const reservationPayload = {
           club_id: selectedClub.id,
           "courtId": formCourtId,
@@ -1974,48 +2413,225 @@ const App: React.FC = () => {
           type: reservationForm.type,
           notes: reservationForm.notes
       };
+
       let error;
       if (selectedReservation) {
           const { error: err } = await supabase.from('reservations').update(reservationPayload).eq('id', selectedReservation.id);
           error = err;
-          if (!err) { setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, ...reservationPayload } : r)); showFeedback('Reserva actualizada'); }
+          if (!err) {
+              setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, ...reservationPayload } : r));
+              showFeedback('Reserva actualizada');
+          }
       } else {
           const { data, error: err } = await supabase.from('reservations').insert(reservationPayload).select().single();
           error = err;
-          if (!err && data) { setReservations([...reservations, data as unknown as Reservation]); showFeedback('Reserva creada exitosamente'); }
+          if (!err && data) {
+              setReservations([...reservations, data as unknown as Reservation]);
+              showFeedback('Reserva creada exitosamente');
+          }
       }
+      
       if (error) showFeedback('Error al guardar reserva', 'error');
-      resetReservationForm(); setActiveSheet(null); 
+      resetReservationForm(); 
+      setActiveSheet(null); 
   };
-  const confirmDeleteReservation = async () => { if (selectedReservation) { const reason = cancellationReason === 'OTHER' ? cancellationOtherText : cancellationReason; const { error } = await supabase.from('reservations').update({ status: ReservationStatus.CANCELLED, "cancellationReason": reason }).eq('id', selectedReservation.id); if (!error) { setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, status: ReservationStatus.CANCELLED, cancellationReason: reason } : r)); showFeedback('Reserva cancelada', 'error'); } else { showFeedback('Error al cancelar', 'error'); } } resetReservationForm(); setActiveSheet(null); };
-  const handleSaveCourt = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const courtPayload = { club_id: selectedClub.id, name: formData.get('name') as string, types: courtFormTypes, surface: formData.get('surface') as string, "isIndoor": formData.get('isIndoor') === 'on', "hasLighting": formData.get('hasLighting') === 'on', "forceStart": (formData.get('forceStart') as ForceStartOption) || 'NO_ROUNDING' }; if (selectedCourt) { const { error } = await supabase.from('courts').update(courtPayload).eq('id', selectedCourt.id); if (!error) { setCourts(courts.map(c => c.id === selectedCourt.id ? { ...c, ...courtPayload } : c)); showFeedback('Cancha actualizada'); } } else { const { data, error } = await supabase.from('courts').insert(courtPayload).select().single(); if (!error && data) { setCourts([...courts, data]); showFeedback('Cancha creada'); } } setSelectedCourt(null); setActiveSheet(null); };
-  const confirmDeleteCourt = async () => { if (deleteCourtId) { const { error } = await supabase.from('courts').delete().eq('id', deleteCourtId); if (!error) { setCourts(courts.filter(c => c.id !== deleteCourtId)); showFeedback('Cancha eliminada', 'error'); } } setDeleteCourtId(null); setActiveSheet(null); };
-  const handleSaveClient = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const clientPayload = { club_id: selectedClub.id, name: formData.get('name') as string, email: formData.get('email') as string, phone: formData.get('phone') as string, }; if (selectedClient) { const { error } = await supabase.from('clients').update(clientPayload).eq('id', selectedClient.id); if (!error) { setClients(clients.map(c => c.id === selectedClient.id ? { ...c, ...clientPayload } : c)); showFeedback('Cliente actualizado'); } } else { const { data, error } = await supabase.from('clients').insert(clientPayload).select().single(); if (!error && data) { setClients([...clients, data]); showFeedback('Cliente registrado'); } } setSelectedClient(null); setActiveSheet(null); };
-  const confirmDeleteClient = async () => { if (deleteClientId) { const { error } = await supabase.from('clients').delete().eq('id', deleteClientId); if (!error) { setClients(clients.filter(c => c.id !== deleteClientId)); showFeedback('Cliente eliminado', 'error'); } } setDeleteClientId(null); setActiveSheet(null); };
-  const handleSaveProduct = async (e: React.FormEvent) => { e.preventDefault(); if (!selectedClub) return; const formData = new FormData(e.target as HTMLFormElement); const prodPayload = { club_id: selectedClub.id, code: formData.get('code') as string, name: formData.get('name') as string, "purchasePrice": Number(formData.get('purchasePrice')), "salePrice": Number(formData.get('salePrice')), type: formData.get('type') as string, stock: Number(formData.get('stock')), "showInStock": true, active: true, "lastModified": new Date().toISOString() }; if(selectedProduct) { const { error } = await supabase.from('products').update(prodPayload).eq('id', selectedProduct.id); if(!error) { setInventory(inventory.map(p => p.id === selectedProduct.id ? { ...p, ...prodPayload } : p)); showFeedback('Producto actualizado'); } } else { const { data, error } = await supabase.from('products').insert(prodPayload).select().single(); if (!error && data) { setInventory([...inventory, data]); showFeedback('Producto creado'); } } setSelectedProduct(null); setActiveSheet(null); };
-  const confirmDeleteProduct = async () => { if (deleteProductId) { const { error } = await supabase.from('products').delete().eq('id', deleteProductId); if (!error) { setInventory(inventory.filter(p => p.id !== deleteProductId)); showFeedback('Producto eliminado', 'error'); } } setDeleteProductId(null); setActiveSheet(null); };
 
+  const confirmDeleteReservation = async () => { 
+      if (selectedReservation) { 
+          const reason = cancellationReason === 'OTHER' ? cancellationOtherText : cancellationReason; 
+          const { error } = await supabase.from('reservations').update({ 
+              status: ReservationStatus.CANCELLED, 
+              "cancellationReason": reason 
+          }).eq('id', selectedReservation.id);
+
+          if (!error) {
+               setReservations(reservations.map(r => r.id === selectedReservation.id ? { ...r, status: ReservationStatus.CANCELLED, cancellationReason: reason } : r)); 
+               showFeedback('Reserva cancelada', 'error'); 
+          } else {
+              showFeedback('Error al cancelar', 'error');
+          }
+      } 
+      resetReservationForm(); 
+      setActiveSheet(null); 
+  };
+
+  const handleSaveCourt = async (e: React.FormEvent) => { 
+      e.preventDefault(); 
+      if (!selectedClub) return;
+
+      const formData = new FormData(e.target as HTMLFormElement); 
+      const courtPayload = {
+          club_id: selectedClub.id,
+          name: formData.get('name') as string,
+          types: courtFormTypes,
+          surface: formData.get('surface') as string,
+          "isIndoor": formData.get('isIndoor') === 'on',
+          "hasLighting": formData.get('hasLighting') === 'on',
+          "forceStart": (formData.get('forceStart') as ForceStartOption) || 'NO_ROUNDING'
+      };
+
+      if (selectedCourt) { 
+          const { error } = await supabase.from('courts').update(courtPayload).eq('id', selectedCourt.id);
+          if (!error) {
+               setCourts(courts.map(c => c.id === selectedCourt.id ? { ...c, ...courtPayload } : c)); 
+               showFeedback('Cancha actualizada'); 
+          }
+      } else { 
+          const { data, error } = await supabase.from('courts').insert(courtPayload).select().single();
+          if (!error && data) {
+              setCourts([...courts, data]); 
+              showFeedback('Cancha creada'); 
+          }
+      } 
+      setSelectedCourt(null); 
+      setActiveSheet(null); 
+  };
+
+  const confirmDeleteCourt = async () => { 
+      if (deleteCourtId) { 
+          const { error } = await supabase.from('courts').delete().eq('id', deleteCourtId);
+          if (!error) {
+              setCourts(courts.filter(c => c.id !== deleteCourtId)); 
+              showFeedback('Cancha eliminada', 'error'); 
+          }
+      } 
+      setDeleteCourtId(null); 
+      setActiveSheet(null); 
+  };
+
+  const handleSaveClient = async (e: React.FormEvent) => { 
+      e.preventDefault(); 
+      if (!selectedClub) return;
+
+      const formData = new FormData(e.target as HTMLFormElement); 
+      const clientPayload = {
+          club_id: selectedClub.id,
+          name: formData.get('name') as string,
+          email: formData.get('email') as string,
+          phone: formData.get('phone') as string,
+      };
+
+      if (selectedClient) { 
+           const { error } = await supabase.from('clients').update(clientPayload).eq('id', selectedClient.id);
+           if (!error) {
+                setClients(clients.map(c => c.id === selectedClient.id ? { ...c, ...clientPayload } : c)); 
+                showFeedback('Cliente actualizado'); 
+           }
+      } else { 
+           const { data, error } = await supabase.from('clients').insert(clientPayload).select().single();
+           if (!error && data) {
+               setClients([...clients, data]); 
+               showFeedback('Cliente registrado'); 
+           }
+      } 
+      setSelectedClient(null); 
+      setActiveSheet(null); 
+  };
+
+  const confirmDeleteClient = async () => { 
+      if (deleteClientId) { 
+          const { error } = await supabase.from('clients').delete().eq('id', deleteClientId);
+          if (!error) {
+              setClients(clients.filter(c => c.id !== deleteClientId)); 
+              showFeedback('Cliente eliminado', 'error'); 
+          }
+      } 
+      setDeleteClientId(null); 
+      setActiveSheet(null); 
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => { 
+      e.preventDefault(); 
+      if (!selectedClub) return;
+
+      const formData = new FormData(e.target as HTMLFormElement); 
+      const prodPayload = {
+          club_id: selectedClub.id,
+          code: formData.get('code') as string,
+          name: formData.get('name') as string,
+          "purchasePrice": Number(formData.get('purchasePrice')),
+          "salePrice": Number(formData.get('salePrice')),
+          type: formData.get('type') as string,
+          stock: Number(formData.get('stock')),
+          "showInStock": true,
+          active: true,
+          "lastModified": new Date().toISOString()
+      };
+
+      if(selectedProduct) { 
+          const { error } = await supabase.from('products').update(prodPayload).eq('id', selectedProduct.id);
+          if(!error) {
+             setInventory(inventory.map(p => p.id === selectedProduct.id ? { ...p, ...prodPayload } : p)); 
+             showFeedback('Producto actualizado'); 
+          }
+      } else { 
+          const { data, error } = await supabase.from('products').insert(prodPayload).select().single();
+          if (!error && data) {
+             setInventory([...inventory, data]); 
+             showFeedback('Producto creado'); 
+          }
+      } 
+      setSelectedProduct(null); 
+      setActiveSheet(null); 
+  };
+
+  const confirmDeleteProduct = async () => { 
+      if (deleteProductId) { 
+          const { error } = await supabase.from('products').delete().eq('id', deleteProductId);
+          if (!error) {
+              setInventory(inventory.filter(p => p.id !== deleteProductId)); 
+              showFeedback('Producto eliminado', 'error'); 
+          }
+      } 
+      setDeleteProductId(null); 
+      setActiveSheet(null); 
+  };
+
+  // Other utility functions
   const openBookClient = (client: Client) => { setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts[0].id, clientName: client.name }); setReservationForm(prev => ({...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email})); setActiveSheet('RESERVATION'); };
   const handleExport = (format: string) => { showFeedback(`Exportando reporte en formato ${format}...`, 'info'); setActiveSheet(null); };
   const handleSaveReply = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
   const handleSaveReport = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
-  const handleEditReservation = () => { if (!selectedReservation) return; const startDate = new Date(selectedReservation.startTime); const endDate = new Date(selectedReservation.endTime); const duration = (endDate.getTime() - startDate.getTime()) / 60000; setPrefillReservation({ date: selectedReservation.startTime.split('T')[0], time: selectedReservation.startTime.split('T')[1].substring(0, 5), courtId: selectedReservation.courtId, clientName: selectedReservation.clientName }); setReservationForm({ clientName: selectedReservation.clientName, clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: selectedReservation.paymentMethod || 'Efectivo', notes: (selectedReservation as any).notes || '', type: (selectedReservation as any).type || 'Normal', duration: duration.toString(), isRecurring: false, price: selectedReservation.price.toString() }); setActiveSheet('RESERVATION'); };
+  
+  const handleEditReservation = () => { 
+      if (!selectedReservation) return; 
+      const startDate = new Date(selectedReservation.startTime); 
+      const endDate = new Date(selectedReservation.endTime); 
+      const duration = (endDate.getTime() - startDate.getTime()) / 60000; 
+      setPrefillReservation({ date: selectedReservation.startTime.split('T')[0], time: selectedReservation.startTime.split('T')[1].substring(0, 5), courtId: selectedReservation.courtId, clientName: selectedReservation.clientName }); 
+      setReservationForm({ clientName: selectedReservation.clientName, clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: selectedReservation.paymentMethod || 'Efectivo', notes: (selectedReservation as any).notes || '', type: (selectedReservation as any).type || 'Normal', duration: duration.toString(), isRecurring: false, price: selectedReservation.price.toString() }); 
+      setActiveSheet('RESERVATION'); 
+  };
 
-  const handleToggleUserStatus = (user: User) => {
+  const handleToggleUserStatus = async (user: User) => {
     if (user.role === 'OWNER') {
         showFeedback('No se puede desactivar al dueño', 'error');
         return;
     }
-    showFeedback(`Funcionalidad de estado de usuario pendiente en DB`);
+    
+    if (!selectedClub) return;
+
+    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    const { error } = await supabase
+        .from('club_members')
+        .update({ status: newStatus })
+        .eq('user_id', user.id)
+        .eq('club_id', selectedClub.id);
+
+    if (error) {
+        console.error('Error updating status:', error);
+        showFeedback('Error al actualizar estado', 'error');
+    } else {
+        setUsersDb(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+        showFeedback(`Usuario ${newStatus === 'ACTIVE' ? 'activado' : 'desactivado'} correcamente`);
+    }
   };
 
   const handleSaveUser = async (e: React.FormEvent) => { 
       e.preventDefault(); 
-      // In a real implementation with Supabase Auth:
-      // 1. You would use supabase.auth.admin.inviteUserByEmail(email) (requires service role key usually)
-      // 2. Or insert into club_members pending acceptance.
-      // For this demo, we simulate success as requested for the UI.
-      showFeedback('Para agregar usuarios reales, se requiere configuración SMTP en Supabase. (Simulado)', 'info');
+      // User creation involves Auth API + Club Members table, complex flow for simple example
+      showFeedback('Para agregar usuarios, invítalos desde el panel de Supabase Auth (simulado)', 'info');
       setActiveSheet(null); 
   };
   
@@ -2028,7 +2644,8 @@ const App: React.FC = () => {
   const userDisplay = { 
       name: userProfile?.name || session?.user?.email?.split('@')[0] || 'Usuario', 
       role: role || 'RECEPTIONIST',
-      email: session?.user?.email
+      email: session?.user?.email,
+      phone: userProfile?.phone
   };
   const canAccessFullApp = role === 'OWNER' || role === 'ADMIN';
 
@@ -2050,7 +2667,7 @@ const App: React.FC = () => {
              clubs={availableClubs} 
              onSelectClub={handleSelectClub} 
              onLogout={confirmLogout}
-             userName={userProfile?.name || session.user.email?.split('@')[0] || 'Usuario'}
+             userName={userProfile?.name || session.user.email?.split('@')[0]}
           />
       );
   }
@@ -2058,28 +2675,37 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <Snackbar message={snackbar.message} type={snackbar.type} isOpen={snackbar.isOpen} onClose={closeSnackbar} />
-      <div className="flex bg-[#F8F8F8] min-h-screen">
-        <Sidebar onLogout={handleLogout} user={userDisplay} />
+      <div className="flex bg-[#FFFFFF] min-h-screen">
+        <Sidebar onLogout={handleLogout} onChangeClub={() => setSelectedClub(null)} user={userDisplay} />
         <main className="flex-1 h-screen overflow-hidden">
             <Routes>
-              <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={clubConfig?.schedule || []} onAddReservation={(date, time, courtId) => { resetReservationForm(); setPrefillReservation({ date: date || selectedDate, time: time || '09:00', courtId: courtId || courts[0].id }); setActiveSheet('RESERVATION'); }} onSelectReservation={(res) => { setSelectedReservation(res); setActiveSheet('VIEW_RESERVATION'); }} />} />
-              <Route path="/profile" element={<UserProfilePage user={userDisplay} email={session?.user?.email} onUpdateProfile={handleUpdateProfile} onUpdatePassword={handleUpdatePassword} />} />
+              <Route path="/" element={<ReservasPage courts={courts} reservations={reservations} selectedDate={selectedDate} onDateChange={setSelectedDate} schedule={clubConfig?.schedule || []} onAddReservation={(date, time, courtId) => { resetReservationForm(); setPrefillReservation({ date: date || selectedDate, time: time || '09:00', courtId: courtId || courts[0].id }); setActiveSheet('RESERVATION'); }} onSelectReservation={(res) => { setSelectedReservation(res); setActiveSheet('VIEW_RESERVATION'); }} userRole={userDisplay.role} loading={loading} />} />
+              <Route path="/profile" element={
+                <UserProfilePage 
+                  user={{...userDisplay, notification_settings: userProfile?.notification_settings}} 
+                  email={session?.user?.email} 
+                  onUpdateProfile={handleUpdateProfile} 
+                  onUpdatePassword={handleUpdatePassword} 
+                  onUpdateNotifications={handleUpdateNotifications}
+                  loading={loading}
+                />
+              } />
               <Route path="/help" element={<HelpPage />} />
               {canAccessFullApp ? (
                 <>
-                    <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} onDeleteCourt={(id) => { setDeleteCourtId(id); setActiveSheet('DELETE_COURT_CONFIRMATION'); }} />} />
-                    <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} />} />
-                    <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} />} />
-                    <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} />} />
-                    <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} />} />
+                    <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} onDeleteCourt={(id) => { setDeleteCourtId(id); setActiveSheet('DELETE_COURT_CONFIRMATION'); }} loading={loading} />} />
+                    <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} loading={loading} />} />
+                    <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} loading={loading} />} />
+                    <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} loading={loading} />} />
+                    <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} loading={loading} />} />
                 </>
               ) : ( <Route path="*" element={<Navigate to="/" />} /> )}
             </Routes>
         </main>
 
         {/* --- All SideSheets and Modals --- */}
+        {/* Same SideSheets as before */}
         
-        {/* Reservation, Court, Client, Product, etc. SideSheets (Unchanged logic, just ensure they are here) */}
         <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
             <form className="space-y-6" onSubmit={handleSaveReservation}>
                <div className="space-y-4">
@@ -2096,34 +2722,6 @@ const App: React.FC = () => {
                <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Confirmar Reserva</Button></div>
             </form>
         </SideSheet>
-        
-        {/* ADDED: User SideSheet to fix "Agregar Usuario" button not working */}
-        <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Agregar Usuario"}>
-            <form className="space-y-6" onSubmit={handleSaveUser}>
-                <div className="space-y-4">
-                    <Input label="Email del Usuario" type="email" placeholder="email@ejemplo.com" defaultValue={selectedUser?.email} required disabled={!!selectedUser} />
-                    <Select label="Rol Asignado" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
-                        <option value="ADMIN">Encargado (Acceso Total)</option>
-                        <option value="RECEPTIONIST">Empleado (Acceso Limitado)</option>
-                    </Select>
-                    {!selectedUser && (
-                        <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl">
-                            <p>El usuario recibirá una invitación por email para unirse a este club.</p>
-                        </div>
-                    )}
-                </div>
-                <div className="pt-6 flex gap-3">
-                    <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
-                    <Button type="submit" className="flex-1">{selectedUser ? 'Guardar Cambios' : 'Enviar Invitación'}</Button>
-                </div>
-                {selectedUser && selectedUser.role !== 'OWNER' && (
-                     <div className="pt-4 border-t border-gray-100">
-                         <Button type="button" variant="destructive" className="w-full bg-red-50 text-red-600 hover:bg-red-100 border-none" onClick={() => initiateDeleteUser(selectedUser.id)}>Eliminar Usuario del Club</Button>
-                     </div>
-                )}
-            </form>
-        </SideSheet>
-
          <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
             {selectedReservation && (
                 <div className="space-y-6">
@@ -2171,6 +2769,34 @@ const App: React.FC = () => {
         </SideSheet>
         <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña"><form className="space-y-6" onSubmit={handleSaveReply}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><label className="text-base font-medium text-[#112320]">Tu Respuesta</label><textarea name="replyText" className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" placeholder="Escribe una respuesta amable..." required></textarea></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Enviar Respuesta</Button></div></form></SideSheet>
         <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña"><form className="space-y-6" onSubmit={handleSaveReport}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><RadioGroup label="Motivo del Reporte" name="reportReason" options={[{ label: 'Contenido Ofensivo', value: 'OFFENSIVE' }, { label: 'Es Spam', value: 'SPAM' }, { label: 'Reseña Falsa', value: 'FAKE' }, { label: 'Otro', value: 'OTHER' }]} defaultValue="OFFENSIVE" /></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button></div></form></SideSheet>
+
+        <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Agregar Usuario"}>
+            <form className="space-y-6" onSubmit={handleSaveUser}>
+                <Input label="Email" placeholder="usuario@email.com" defaultValue={selectedUser?.email} required disabled={!!selectedUser} />
+                {!selectedUser && <p className="text-xs text-gray-500">Se enviará una invitación a este correo.</p>}
+                <Select label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
+                    <option value="ADMIN">Encargado (Admin)</option>
+                    <option value="RECEPTIONIST">Empleado (Recepción)</option>
+                </Select>
+                {selectedUser && (
+                   <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                      <p className="text-sm text-yellow-800">Para cambiar la contraseña, el usuario debe hacerlo desde su perfil.</p>
+                   </div>
+                )}
+                
+                <div className="pt-6 flex flex-col gap-3">
+                    <div className="flex gap-3">
+                       <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                       <Button type="submit" className="flex-1">{selectedUser ? 'Guardar Cambios' : 'Enviar Invitación'}</Button>
+                    </div>
+                    {selectedUser && selectedUser.role !== 'OWNER' && (
+                        <Button type="button" variant="destructive" className="w-full mt-2" onClick={() => { closeSheet(); initiateDeleteUser(selectedUser.id); }}>
+                            Eliminar Usuario
+                        </Button>
+                    )}
+                </div>
+            </form>
+        </SideSheet>
 
         <Modal isOpen={activeSheet === 'EXPORT_OPTIONS'} onClose={closeSheet} title="Exportar Reporte">
              <div className="space-y-4">

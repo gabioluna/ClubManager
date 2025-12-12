@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Users, Trophy, BarChart3, ShoppingBag, Store, LogOut, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
+import { CalendarDays, Users, Trophy, BarChart3, ShoppingBag, Store, LogOut, ChevronLeft, ChevronRight, HelpCircle, User as UserIcon, Repeat } from 'lucide-react';
 import { Tooltip } from './UI';
 
 const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, label: string, collapsed: boolean }) => (
@@ -23,6 +24,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
 
 interface SidebarProps {
   onLogout: () => void;
+  onChangeClub: () => void;
   user?: {
     name: string;
     role: string;
@@ -30,8 +32,21 @@ interface SidebarProps {
   };
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onChangeClub, user }) => {
   const [collapsed, setCollapsed] = useState(true);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const initials = user?.name 
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() 
@@ -82,11 +97,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
         <NavItem to="/help" icon={HelpCircle} label="Ayuda" collapsed={collapsed} />
       </nav>
 
-      <div className="pt-6 border-t border-gray-200 mt-4 space-y-2">
-        <Tooltip text="Mi Perfil" show={collapsed}>
-          <NavLink 
-            to="/profile"
-            className={`flex items-center gap-3 px-2 py-2 rounded-full hover:bg-[#F8F8F8] transition-colors group ${collapsed ? 'justify-center' : ''}`}
+      <div className="pt-6 border-t border-gray-200 mt-4 relative" ref={menuRef}>
+          <button 
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className={`flex items-center gap-3 px-2 py-2 rounded-full hover:bg-[#F8F8F8] transition-colors group w-full ${collapsed ? 'justify-center' : ''} ${showUserMenu ? 'bg-[#F8F8F8]' : ''}`}
           >
             <div className="w-10 h-10 rounded-full bg-[#C7F269] border border-[#C7F269] flex items-center justify-center text-[#1B3530] font-bold flex-shrink-0 transition-colors">
               {initials}
@@ -97,18 +111,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, user }) => {
                 <span className="text-xs text-gray-500 truncate">{roleDisplay}</span>
               </div>
             )}
-          </NavLink>
-        </Tooltip>
-        
-        <Tooltip text="Cerrar Sesión" show={collapsed}>
-          <button 
-            onClick={onLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-full text-base font-medium transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
-          >
-            <LogOut size={20} className="flex-shrink-0" />
-            {!collapsed && <span>Cerrar Sesión</span>}
           </button>
-        </Tooltip>
+
+          {showUserMenu && (
+             <div className={`absolute bottom-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2 w-56 overflow-hidden z-[70] ${collapsed ? 'left-0' : 'left-0 w-full'} animate-in slide-in-from-bottom-2 duration-200`}>
+                 <NavLink 
+                    to="/profile" 
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F8F8] text-[#112320] text-sm font-medium transition-colors"
+                 >
+                    <UserIcon size={18} className="text-gray-500" />
+                    Mi Perfil
+                 </NavLink>
+                 <button 
+                    onClick={() => { setShowUserMenu(false); onChangeClub(); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F8F8] text-[#112320] text-sm font-medium transition-colors text-left"
+                 >
+                    <Repeat size={18} className="text-gray-500" />
+                    Cambiar de Club
+                 </button>
+                 <div className="h-px bg-gray-100 my-1"></div>
+                 <button 
+                    onClick={() => { setShowUserMenu(false); onLogout(); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-600 text-sm font-medium transition-colors text-left"
+                 >
+                    <LogOut size={18} />
+                    Cerrar Sesión
+                 </button>
+             </div>
+          )}
       </div>
     </aside>
   );
