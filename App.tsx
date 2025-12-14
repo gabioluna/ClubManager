@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, useNavigate, NavLink, Link, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal, AutocompleteInput, Textarea, Snackbar, Switch } from './components/UI';
 import { TIME_SLOTS, SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat, BarChart3, ShoppingBag } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import { supabase } from './lib/supabase';
 
@@ -1364,9 +1365,10 @@ interface MyClubProps {
     selectedClub: any;
     onChangeClub: () => void;
     loading?: boolean;
+    courts: Court[];
 }
 
-const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview, selectedClub, onChangeClub, loading }: MyClubProps) => {
+const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser, reviews, clubConfig, onUpdateClub, onReplyReview, onReportReview, selectedClub, onChangeClub, loading, courts }: MyClubProps) => {
     const [activeTab, setActiveTab] = useState('DATOS');
     const [basicInfo, setBasicInfo] = useState({ 
         name: 'Club Central', 
@@ -1374,7 +1376,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         address: '', 
         coords: '', 
         status: 'ACTIVE', 
-        welcomeMessage: '',
+        description: '',
         logo: '',
         cover: ''
     });
@@ -1386,6 +1388,20 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     const [customDateEnd, setCustomDateEnd] = useState('');
     const logoInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
+
+    // Special Events State
+    const [specialEvents, setSpecialEvents] = useState<{id: string, date: string, name: string, type: string, scope: string, courtIds: string[]}[]>([]);
+    const [newEvent, setNewEvent] = useState({ date: '', name: '', type: 'Feriado', scope: 'ALL', courtIds: [] as string[] });
+
+    const handleAddEvent = () => {
+        if (!newEvent.date || !newEvent.name) return;
+        setSpecialEvents([...specialEvents, { ...newEvent, id: Date.now().toString() }]);
+        setNewEvent({ date: '', name: '', type: 'Feriado', scope: 'ALL', courtIds: [] });
+    };
+
+    const handleDeleteEvent = (id: string) => {
+        setSpecialEvents(specialEvents.filter(e => e.id !== id));
+    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'LOGO' | 'COVER') => {
         const file = e.target.files?.[0];
@@ -1402,6 +1418,41 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
             reader.readAsDataURL(file);
         }
     };
+
+    // Review Filters
+    const [reviewSort, setReviewSort] = useState('RECENT');
+    const [reviewFilter, setReviewFilter] = useState<number | 'ALL'>('ALL');
+
+    // Lógica de filtrado y ordenamiento
+    const filteredReviews = React.useMemo(() => {
+        let res = [...reviews];
+        
+        // Filtrar por estrellas
+        if (reviewFilter !== 'ALL') {
+            res = res.filter(r => Math.round(r.rating) === reviewFilter);
+        }
+        
+        // Ordenar
+        if (reviewSort === 'RECENT') {
+                res.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (reviewSort === 'ASC') {
+            res.sort((a, b) => a.rating - b.rating);
+        } else if (reviewSort === 'DESC') {
+            res.sort((a, b) => b.rating - a.rating);
+        }
+        return res;
+    }, [reviews, reviewFilter, reviewSort]);
+
+    // Helper para renderizar estrellas
+    const renderStars = (rating: number) => {
+        return (
+            <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} className={`${i < Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`} />
+                ))}
+            </div>
+        );
+    };
   
     useEffect(() => {
         if (clubConfig) {
@@ -1411,7 +1462,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                 address: clubConfig.address || '',
                 coords: clubConfig.lat && clubConfig.lng ? `${clubConfig.lat}, ${clubConfig.lng}` : '',
                 status: clubConfig.isActive ? 'ACTIVE' : 'INACTIVE',
-                welcomeMessage: clubConfig.welcomeMessage || '',
+                description: clubConfig.description || '',
                 logo: clubConfig.logo || '',
                 cover: clubConfig.cover || ''
             });
@@ -1459,7 +1510,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     
     const handleUpdateAppearance = () => {
       onUpdateClub({ 
-          welcomeMessage: basicInfo.welcomeMessage,
+          description: basicInfo.description,
           logo: basicInfo.logo,
           cover: basicInfo.cover
       });
@@ -1527,7 +1578,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         </div>
 
         <div className="py-4 w-full">
-          <div className="w-full max-w-4xl mx-auto md:mx-0">
+          <div className="w-full max-w-5xl mx-auto md:mx-0">
               {activeTab === 'DATOS' && (
                 <Card className="space-y-6 animate-in fade-in duration-300">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1547,38 +1598,218 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
               {activeTab === 'USUARIOS' && (
                   <UsersPage users={users} onAddUser={onAddUser} onEditUser={onEditUser} onToggleStatus={onToggleStatus} />
               )}
-              {activeTab === 'RESEÑAS' && (
-                  <div className="space-y-6 animate-in fade-in duration-300 w-full">
-                       <div className="text-center py-10 bg-gray-50 rounded-2xl">
-                          <p className="text-gray-500">Módulo de reseñas en desarrollo para la nueva base de datos.</p>
-                       </div>
-                  </div>
-              )}
+            {activeTab === 'RESEÑAS' && (
+                <div className="space-y-6 animate-in fade-in duration-300 w-full">
+                    {/* Header Summary con Promedio */}
+                    <div className="bg-white rounded-3xl p-6 border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                        <div className="flex items-center gap-6">
+                            <div className="flex flex-col items-center justify-center w-24 h-24 bg-[#F8F8F8] rounded-2xl border border-gray-100">
+                                <span className="text-3xl font-bold text-[#1B3530]">{clubConfig?.avgRating || 0}</span>
+                                <div className="flex gap-0.5 mt-1">
+                                    {[1,2,3,4,5].map(i => <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />)}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-[#112320]">Calificación Promedio</h3>
+                                <p className="text-gray-500">Basado en {reviews.length} reseñas</p>
+                            </div>
+                        </div>
+                        {/* Barras de distribución simples */}
+                        <div className="flex flex-col gap-2 w-full md:w-auto min-w-[200px]">
+                            <div className="flex items-center gap-2 w-full">
+                                <span className="text-xs font-bold w-4">5</span> <Star size={10} className="text-yellow-400 fill-yellow-400"/>
+                                <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 rounded-full" style={{ width: `${(reviews.filter(r => Math.round(r.rating) === 5).length / Math.max(reviews.length, 1)) * 100}%` }}></div></div>
+                            </div>
+                            <div className="flex items-center gap-2 w-full">
+                                <span className="text-xs font-bold w-4">4</span> <Star size={10} className="text-yellow-400 fill-yellow-400"/>
+                                <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 rounded-full" style={{ width: `${(reviews.filter(r => Math.round(r.rating) === 4).length / Math.max(reviews.length, 1)) * 100}%` }}></div></div>
+                            </div>
+                            {/* Puedes agregar 3, 2, 1 aquí si deseas */}
+                        </div>
+                    </div>
+
+                    {/* Filtros y Ordenamiento */}
+                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-2xl border border-gray-200">
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto p-1">
+                            <button onClick={() => setReviewFilter('ALL')} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${reviewFilter === 'ALL' ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>Todos</button>
+                            <button onClick={() => setReviewFilter(5)} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${reviewFilter === 5 ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>5 <Star size={12} className="fill-current"/></button>
+                            {/* Repetir para 4, 3, 2, 1 */}
+                        </div>
+                        <div className="w-full sm:w-auto px-2">
+                            <select 
+                                value={reviewSort} 
+                                onChange={(e) => setReviewSort(e.target.value)}
+                                className="w-full sm:w-auto bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-[#1B3530] focus:border-[#1B3530] block p-2.5 outline-none"
+                            >
+                                <option value="RECENT">Más Recientes</option>
+                                <option value="DESC">Mayor Calificación</option>
+                                <option value="ASC">Menor Calificación</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Lista de Reseñas */}
+                    <div className="space-y-4">
+                        {filteredReviews.length === 0 ? (
+                            <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <p className="text-gray-500 font-medium">No hay reseñas con este filtro.</p>
+                            </div>
+                        ) : (
+                            filteredReviews.map(review => (
+                                <Card key={review.id} className="p-6 transition-all hover:shadow-md">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-[#1B3530]">
+                                                {review.clientName ? review.clientName.substring(0,2).toUpperCase() : 'AN'}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-[#112320] text-sm">{review.clientName}</h4>
+                                                <p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {renderStars(review.rating)}
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-600 text-sm leading-relaxed mb-4 pl-[52px]">
+                                        "{review.comment}"
+                                    </p>
+                                    
+                                    {/* Bloque de Respuesta del Club */}
+                                    {review.reply_comment && (
+                                        <div className="mt-4 ml-[52px] bg-gray-50 p-4 rounded-xl border-l-4 border-[#1B3530]">
+                                            <p className="text-xs font-bold text-[#1B3530] mb-1">Respuesta del Club</p>
+                                            <p className="text-sm text-gray-600 italic">"{review.reply_comment}"</p>
+                                            {review.reply_at && (
+                                                <p className="text-[10px] text-gray-400 mt-2 text-right">{new Date(review.reply_at).toLocaleDateString()}</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-2 pl-[52px]">
+                                        <button 
+                                            onClick={() => onReplyReview(review.id)}
+                                            className="text-xs font-semibold text-[#1B3530] hover:underline flex items-center gap-1"
+                                        >
+                                            <MessageSquare size={14} /> Responder
+                                        </button>
+                                        <button 
+                                            onClick={() => onReportReview(review.id)}
+                                            className="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 ml-4"
+                                        >
+                                            <Flag size={14} /> Reportar
+                                        </button>
+                                    </div>
+                                </Card>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
               {activeTab === 'HORARIOS' && (
-                 <Card className="animate-in fade-in duration-300 space-y-6">
-                   <div className="flex justify-between items-center mb-4">
-                       <div><h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3><p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p></div>
-                   </div>
-                   <div className="space-y-4">
-                      {schedule.map((day, idx) => (
-                          <div key={day.day || idx} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
-                              <div className="w-24 font-bold text-[#112320]">{day.day}</div>
-                              <div className="flex-1 flex items-center gap-4">
-                                  <Checkbox label="Abierto" checked={day.open} onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} />
-                                  {day.open && (
-                                      <div className="flex items-center gap-2">
-                                          <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.start} onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)} />
-                                          <span className="text-gray-400">-</span>
-                                          <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.end} onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)} />
-                                      </div>
-                                  )}
-                                  {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
-                              </div>
-                          </div>
-                      ))}
-                   </div>
-                   <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateSchedule}>Guardar Horarios</Button></div>
-                 </Card>
+                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                    <Card className="space-y-6 h-fit">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3>
+                                <p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            {schedule.map((day, idx) => (
+                                <div key={day.day || idx} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
+                                    <div className="w-24 font-bold text-[#112320]">{day.day}</div>
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <Checkbox label="Abierto" checked={day.open} onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} />
+                                        {day.open && (
+                                            <div className="flex items-center gap-2">
+                                                <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.start} onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)} />
+                                                <span className="text-gray-400">-</span>
+                                                <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.end} onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)} />
+                                            </div>
+                                        )}
+                                        {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateSchedule}>Guardar Horarios</Button></div>
+                    </Card>
+
+                    <Card className="space-y-6 h-fit">
+                        <div>
+                             <h3 className="text-lg font-bold text-[#112320]">Eventos Especiales</h3>
+                             <p className="text-gray-500 text-sm">Configura días feriados o cierres por mantenimiento.</p>
+                        </div>
+                        
+                        <div className="space-y-4 p-4 bg-[#F8F8F8] rounded-2xl">
+                             <h4 className="font-bold text-sm text-[#112320]">Nuevo Evento</h4>
+                             <div className="grid grid-cols-2 gap-4">
+                                 <Input type="date" label="Fecha" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
+                                 <Select label="Tipo" value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})}>
+                                     <option value="Feriado">Feriado</option>
+                                     <option value="Cerrado">Cerrado</option>
+                                 </Select>
+                             </div>
+                             <Input label="Motivo / Nombre" placeholder="Ej. Día del Club" value={newEvent.name} onChange={e => setNewEvent({...newEvent, name: e.target.value})} />
+                             
+                             <div className="space-y-2">
+                                 <label className="text-base font-medium text-[#112320]">Aplica a</label>
+                                 <div className="flex gap-4">
+                                     <label className="flex items-center gap-2 cursor-pointer">
+                                         <input type="radio" name="scope" checked={newEvent.scope === 'ALL'} onChange={() => setNewEvent({...newEvent, scope: 'ALL', courtIds: []})} className="accent-[#1B3530]" />
+                                         <span className="text-sm font-medium">Todo el Club</span>
+                                     </label>
+                                     <label className="flex items-center gap-2 cursor-pointer">
+                                         <input type="radio" name="scope" checked={newEvent.scope === 'SPECIFIC'} onChange={() => setNewEvent({...newEvent, scope: 'SPECIFIC'})} className="accent-[#1B3530]" />
+                                         <span className="text-sm font-medium">Canchas Específicas</span>
+                                     </label>
+                                 </div>
+                             </div>
+
+                             {newEvent.scope === 'SPECIFIC' && (
+                                 <MultiSelect 
+                                    label="Seleccionar Canchas" 
+                                    options={courts.map(c => c.name)} 
+                                    selected={courts.filter(c => newEvent.courtIds.includes(c.id)).map(c => c.name)}
+                                    onChange={(selectedNames) => {
+                                         const ids = courts.filter(c => selectedNames.includes(c.name)).map(c => c.id);
+                                         setNewEvent({...newEvent, courtIds: ids});
+                                    }}
+                                 />
+                             )}
+                             
+                             <Button className="w-full" onClick={handleAddEvent} disabled={!newEvent.date || !newEvent.name}>
+                                 <Plus className="w-4 h-4 mr-2" /> Agregar Evento
+                             </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                             <h4 className="font-bold text-sm text-[#112320]">Próximos Eventos</h4>
+                             {specialEvents.length === 0 ? (
+                                 <p className="text-sm text-gray-400 italic text-center py-4">No hay eventos configurados.</p>
+                             ) : (
+                                 specialEvents.map(event => (
+                                     <div key={event.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-[#F8F8F8] transition-colors group">
+                                         <div>
+                                             <div className="flex items-center gap-2">
+                                                 <span className="font-bold text-[#112320] text-sm">{new Date(event.date + 'T00:00:00').toLocaleDateString()}</span>
+                                                 <Badge color={event.type === 'Feriado' ? 'blue' : 'red'}>{event.type}</Badge>
+                                             </div>
+                                             <p className="text-sm text-gray-600">{event.name}</p>
+                                             <p className="text-xs text-gray-400">
+                                                 {event.scope === 'ALL' ? 'Todo el Club' : `${event.courtIds.length} canchas`}
+                                             </p>
+                                         </div>
+                                         <button onClick={() => handleDeleteEvent(event.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                             <Trash2 size={16} />
+                                         </button>
+                                     </div>
+                                 ))
+                             )}
+                        </div>
+                    </Card>
+                 </div>
               )}
               {activeTab === 'SERVICIOS' && (
                  <Card className="animate-in fade-in duration-300">
@@ -1638,8 +1869,8 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                       </div>
                    </div>
                    <div className="pt-4 relative">
-                       <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" value={basicInfo.welcomeMessage} onChange={(e) => { if (e.target.value.length <= 140) { setBasicInfo({...basicInfo, welcomeMessage: e.target.value}); } }} />
-                       <div className="absolute right-0 top-0 text-xs text-gray-400 mt-2">{basicInfo.welcomeMessage.length}/140</div>
+                       <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" value={basicInfo.description} onChange={(e) => { if (e.target.value.length <= 140) { setBasicInfo({...basicInfo, description: e.target.value}); } }} />
+                       <div className="absolute right-0 top-0 text-xs text-gray-400 mt-2">{basicInfo.description.length}/140</div>
                    </div>
                    <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateAppearance}>Guardar Apariencia</Button></div>
                  </Card>
@@ -1813,10 +2044,8 @@ const UserProfilePage = ({
 };
 
 const HelpPage = () => {
-    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
 
     const toggleExpand = (id: string) => {
         setExpandedIds(prev => 
@@ -1824,276 +2053,76 @@ const HelpPage = () => {
         );
     };
 
-    const shortcuts = [
-        { id: 'reservas', label: 'Nueva Reserva', icon: CalendarPlus, link: '/', helpId: '1' },
-        { id: 'clientes', label: 'Nuevo Cliente', icon: UsersIcon, link: '/clients', helpId: '4' },
-        { id: 'canchas', label: 'Agregar Cancha', icon: Trophy, link: '/courts', helpId: '3' },
-        { id: 'reportes', label: 'Ver Reportes', icon: BarChart3, link: '/reports', helpId: '6' },
-        { id: 'inventario', label: 'Inventario', icon: ShoppingBag, link: '/inventory', helpId: '5' },
-        { id: 'config', label: 'Configurar Club', icon: Building2, link: '/my-club', helpId: '7' },
+    const faqs = [
+        { id: '1', category: 'Reservas', question: '¿Cómo creo una nueva reserva?', answer: 'Ve a la sección "Reservas", selecciona el horario disponible en el calendario o haz clic en "Nueva Reserva" en la parte superior derecha. Completa los datos del cliente y la cancha.' },
+        { id: '2', category: 'Reservas', question: '¿Cómo cancelo una reserva?', answer: 'Haz clic sobre la reserva en el calendario o en la lista de historial, selecciona "Ver Detalles" y luego "Cancelar Reserva". Deberás indicar el motivo.' },
+        { id: '3', category: 'Reservas', question: '¿Qué significan los colores de las reservas?', answer: 'Verde Oscuro: Normal, Azul: Fijo/Abonado, Violeta: Clase/Escuela, Naranja: Torneo, Rosa: Cumpleaños. El borde amarillo indica Pendiente y el borde rojo Cancelada.' },
+        { id: '4', category: 'Canchas', question: '¿Cómo agrego una nueva cancha?', answer: 'Ve a "Canchas", haz clic en "Agregar Cancha" y completa el formulario con el nombre, deporte, superficie y atributos como iluminación o techo.' },
+        { id: '5', category: 'Canchas', question: '¿Puedo eliminar una cancha?', answer: 'Sí, desde la tabla de canchas puedes hacer clic en el botón de eliminar (ícono de basura). Ten en cuenta que esto podría afectar el historial de reportes.' },
+        { id: '6', category: 'Clientes', question: '¿Se crean clientes automáticamente?', answer: 'Sí, al crear una reserva, si ingresas un nombre de cliente que no existe en la base de datos, el sistema te ofrecerá crearlo automáticamente.' },
+        { id: '7', category: 'Mi Club', question: '¿Cómo cambio el logo de mi club?', answer: 'Ve a "Mi Club", selecciona la pestaña "Apariencia" y haz clic en el área de "Subir Logo". Selecciona una imagen de tu dispositivo.' },
+        { id: '8', category: 'Usuarios', question: '¿Cómo restablezco la contraseña de un usuario?', answer: 'Como administrador, puedes editar al usuario y asignarle una nueva contraseña temporal, o el usuario puede cambiarla desde su perfil en "Seguridad".' },
     ];
 
-    const articles = [
-        {
-            id: '1',
-            category: 'Reservas',
-            title: 'Cómo crear y gestionar reservas',
-            content: (
-                <div className="space-y-4">
-                    <p>El panel de reservas es el corazón de tu gestión. Aquí te explicamos cómo operar eficientemente.</p>
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <h4 className="font-bold text-blue-800 mb-2">Paso a paso para crear una reserva:</h4>
-                        <ol className="list-decimal list-inside space-y-2 text-blue-900">
-                            <li>Ve a la vista de <strong>Calendario</strong>.</li>
-                            <li>Identifica la cancha y el horario deseado (celda vacía).</li>
-                            <li>Haz clic en el ícono <span className="inline-block bg-gray-200 rounded p-0.5"><Plus size={12}/></span> que aparece al pasar el mouse.</li>
-                            <li>En el formulario, ingresa el nombre del cliente (si es nuevo, se creará automáticamente).</li>
-                            <li>Selecciona la duración y el tipo de reserva (Normal, Torneo, Clase, etc.).</li>
-                            <li>Confirma el monto y el método de pago si ya se ha realizado una seña.</li>
-                            <li>Haz clic en <strong>Confirmar Reserva</strong>.</li>
-                        </ol>
-                    </div>
-                    <p>Para <strong>editar</strong> o <strong>mover</strong> una reserva, simplemente haz clic sobre la tarjeta de la reserva existente y modifica los datos necesarios.</p>
-                </div>
-            ),
-            related: ['2', '4']
-        },
-        {
-            id: '2',
-            category: 'Reservas',
-            title: 'Cancelación y Bloqueo de Horarios',
-            content: (
-                <div className="space-y-4">
-                    <p>Es importante mantener el calendario actualizado para evitar confusiones.</p>
-                    <h4 className="font-bold text-[#1B3530]">Para cancelar una reserva:</h4>
-                    <p>Haz clic en la reserva > Selecciona "Cancelar Reserva" > Indica el motivo (Clima, Cliente canceló, etc.). El historial guardará este registro pero liberará el horario.</p>
-                    
-                    <h4 className="font-bold text-[#1B3530] mt-4">Para bloquear una cancha (Mantenimiento):</h4>
-                    <p>Crea una reserva normalmente y en "Tipo de Reserva" selecciona "Bloqueo" o "Mantenimiento". Esto evitará que otros usuarios intenten reservar en ese espacio.</p>
-                </div>
-            ),
-            related: ['1', '3']
-        },
-        {
-            id: '3',
-            category: 'Canchas',
-            title: 'Gestión de Canchas y Superficies',
-            content: (
-                <div className="space-y-4">
-                    <p>Configura correctamente tus instalaciones para que los clientes sepan qué están reservando.</p>
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                        <li>Ve a la sección <strong>Canchas</strong>.</li>
-                        <li>Usa el botón "Agregar Cancha" para sumar una nueva instalación.</li>
-                        <li>Define atributos clave: <strong>Deporte</strong> (Fútbol, Pádel, Tenis), <strong>Superficie</strong> (Césped, Sintético, Cemento) y si es <strong>Techada</strong> o tiene <strong>Iluminación</strong>.</li>
-                    </ul>
-                    <p className="text-sm italic text-gray-500">Nota: Eliminar una cancha borrará su historial de reservas asociadas. Úsalo con precaución.</p>
-                </div>
-            ),
-            related: ['7']
-        },
-        {
-            id: '4',
-            category: 'Clientes',
-            title: 'Base de Datos de Clientes',
-            content: (
-                <div className="space-y-4">
-                    <p>Fideliza a tus usuarios llevando un registro detallado.</p>
-                    <p>Cada vez que creas una reserva con un nombre nuevo, el sistema sugiere crear un perfil. También puedes hacerlo manualmente desde la sección <strong>Clientes</strong>.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <h5 className="font-bold">Historial</h5>
-                            <p className="text-sm">Consulta cuántas veces ha venido un cliente y cuánto ha gastado en total.</p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <h5 className="font-bold">Contacto</h5>
-                            <p className="text-sm">Guarda WhatsApp y Email para enviar promociones o avisos de cancelación.</p>
-                        </div>
-                    </div>
-                </div>
-            ),
-            related: ['1']
-        },
-        {
-            id: '5',
-            category: 'Inventario',
-            title: 'Control de Stock y Ventas',
-            content: (
-                <div className="space-y-4">
-                    <p>Gestiona el kiosco o tienda de tu club.</p>
-                    <ol className="list-decimal list-inside space-y-2">
-                        <li>Ve a <strong>Inventario</strong>.</li>
-                        <li>Agrega productos indicando precio de costo y venta para calcular márgenes.</li>
-                        <li>El sistema alertará visualmente cuando el stock sea bajo (menos de 5 unidades).</li>
-                    </ol>
-                    <p>Puedes importar listas masivas de precios usando un archivo CSV.</p>
-                </div>
-            ),
-            related: ['6']
-        },
-        {
-            id: '6',
-            category: 'Reportes',
-            title: 'Análisis Financiero y Métricas',
-            content: (
-                <div className="space-y-4">
-                    <p>Toma decisiones basadas en datos reales.</p>
-                    <ul className="list-disc list-inside text-gray-700">
-                        <li><strong>Revenue Overview:</strong> Ingresos totales filtrados por fecha.</li>
-                        <li><strong>Hourly Distribution:</strong> Descubre tus "horas pico" y "horas valle" para lanzar promociones en horarios vacíos.</li>
-                        <li><strong>Customer Segments:</strong> Entiende qué tipo de reserva es la más popular (Torneos, Clases, Alquiler normal).</li>
-                    </ul>
-                    <p>Usa el botón "Exportar" para descargar balances en Excel o PDF.</p>
-                </div>
-            ),
-            related: ['5']
-        },
-        {
-            id: '7',
-            category: 'Configuración',
-            title: 'Personalización de Mi Club',
-            content: (
-                <div className="space-y-4">
-                    <p>Adapta la plataforma a la identidad de tu negocio.</p>
-                    <div className="space-y-2">
-                        <p><strong>Horarios:</strong> Define hora de apertura y cierre para cada día de la semana en la pestaña "Horarios". Esto bloqueará visualmente las celdas fuera de hora.</p>
-                        <p><strong>Apariencia:</strong> Sube tu logo y una foto de portada para personalizar el dashboard.</p>
-                        <p><strong>Usuarios:</strong> Invita a tus empleados con rol de "Recepción" (acceso limitado) o a tus socios como "Administradores".</p>
-                    </div>
-                </div>
-            ),
-            related: ['3', '1']
-        }
-    ];
+    const filteredFaqs = faqs.filter(faq => 
+        faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        faq.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-    const getArticleById = (id: string) => articles.find(a => a.id === id);
-
-    const filteredArticles = articles.filter(article => {
-        const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              article.category.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'ALL' || article.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
+    const groupedFaqs = filteredFaqs.reduce((acc, faq) => {
+        if (!acc[faq.category]) acc[faq.category] = [];
+        acc[faq.category].push(faq);
+        return acc;
+    }, {} as Record<string, typeof faqs>);
 
     return (
-        <div className="p-8 space-y-8 h-full overflow-y-auto w-full pb-20">
-             <div className="flex flex-col gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
-                    <p className="text-gray-500 mt-1">Encuentra respuestas, guías paso a paso y trucos para gestionar tu club.</p>
-                </div>
-
-                <div className="relative w-full max-w-2xl">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input 
-                        type="text" 
-                        placeholder="¿Qué necesitas saber hoy?" 
-                        className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-lg bg-white shadow-sm transition-shadow focus:shadow-md"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+        <div className="p-8 space-y-6 h-full overflow-y-auto w-full pb-20">
+             <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
+                <p className="text-gray-500">Encuentra respuestas a las preguntas más frecuentes.</p>
             </div>
 
-            {/* Shortcuts Section */}
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Acceso Rápido</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {shortcuts.map(shortcut => {
-                        const Icon = shortcut.icon;
-                        return (
-                            <button 
-                                key={shortcut.id}
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setSelectedCategory('ALL');
-                                    setExpandedIds([shortcut.helpId]);
-                                    const element = document.getElementById(`article-${shortcut.helpId}`);
-                                    if(element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }}
-                                className="flex flex-col items-center justify-center p-4 bg-white border border-gray-100 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group"
-                            >
-                                <div className="w-10 h-10 bg-[#F8F8F8] rounded-full flex items-center justify-center mb-2 group-hover:bg-[#1B3530] group-hover:text-[#C7F269] transition-colors text-[#1B3530]">
-                                    <Icon size={20} />
-                                </div>
-                                <span className="text-sm font-bold text-gray-700 text-center">{shortcut.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+            <div className="relative max-w-2xl">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <input 
+                    type="text" 
+                    placeholder="Buscar por palabra clave..." 
+                    className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
-            {/* Categories Filter */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                <button onClick={() => setSelectedCategory('ALL')} className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === 'ALL' ? 'bg-[#1B3530] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Todos</button>
-                {Array.from(new Set(articles.map(a => a.category))).map(cat => (
-                    <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === cat ? 'bg-[#1B3530] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>{cat}</button>
-                ))}
-            </div>
-
-            {/* Articles List */}
-            <div className="max-w-4xl space-y-6">
-                {filteredArticles.length > 0 ? (
-                    filteredArticles.map(article => {
-                        const isExpanded = expandedIds.includes(article.id);
-                        return (
-                            <div key={article.id} id={`article-${article.id}`} className={`border border-gray-200 rounded-3xl bg-white overflow-hidden transition-all duration-300 ${isExpanded ? 'shadow-lg ring-1 ring-[#1B3530]/10' : 'hover:border-gray-300'}`}>
-                                <button 
-                                    onClick={() => toggleExpand(article.id)}
-                                    className="w-full px-8 py-6 text-left flex justify-between items-center focus:outline-none"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isExpanded ? 'bg-[#1B3530] text-[#C7F269]' : 'bg-gray-100 text-gray-500'}`}>
-                                            {article.category.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-1">{article.category}</span>
-                                            <span className="text-xl font-bold text-[#112320]">{article.title}</span>
-                                        </div>
-                                    </div>
-                                    {isExpanded ? <ChevronDown className="text-[#1B3530] rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
-                                </button>
-                                <div className={`px-8 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[800px] pb-8 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                    <div className="pt-4 border-t border-gray-100 text-gray-600 leading-relaxed text-base">
-                                        {article.content}
-                                        
-                                        {article.related && article.related.length > 0 && (
-                                            <div className="mt-8 pt-6 border-t border-dashed border-gray-200">
-                                                <p className="text-xs font-bold text-gray-400 uppercase mb-3">Temas Relacionados</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {article.related.map(relId => {
-                                                        const relArticle = getArticleById(relId);
-                                                        if (!relArticle) return null;
-                                                        return (
-                                                            <button 
-                                                                key={relId}
-                                                                onClick={() => {
-                                                                    if (!expandedIds.includes(relId)) toggleExpand(relId);
-                                                                    setTimeout(() => {
-                                                                        const el = document.getElementById(`article-${relId}`);
-                                                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                                                                    }, 100);
-                                                                }}
-                                                                className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#1B3530] rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center gap-2"
-                                                            >
-                                                                <Link2 size={14} />
-                                                                {relArticle.title}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+            <div className="max-w-3xl space-y-8">
+                {Object.keys(groupedFaqs).length > 0 ? (
+                    Object.keys(groupedFaqs).map(category => (
+                        <div key={category} className="space-y-3">
+                            <h3 className="text-lg font-bold text-[#1B3530] border-b border-gray-100 pb-2 mb-4">{category}</h3>
+                            <div className="grid gap-3">
+                                {groupedFaqs[category].map(faq => {
+                                    const isExpanded = expandedIds.includes(faq.id);
+                                    return (
+                                        <div key={faq.id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300">
+                                            <button 
+                                                onClick={() => toggleExpand(faq.id)}
+                                                className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none"
+                                            >
+                                                <span className="font-semibold text-[#112320]">{faq.question}</span>
+                                                {isExpanded ? <ChevronDown className="text-gray-400 rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
+                                            </button>
+                                            <div className={`px-6 text-gray-600 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                                <p className="leading-relaxed">{faq.answer}</p>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    })
+                        </div>
+                    ))
                 ) : (
-                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                        <Search className="mx-auto text-gray-300 mb-4" size={48} />
-                        <h3 className="text-lg font-bold text-[#112320]">No encontramos respuestas</h3>
-                        <p className="text-gray-500 mt-2">Intenta buscar con otras palabras clave.</p>
-                        <button onClick={() => {setSearchTerm(''); setSelectedCategory('ALL');}} className="mt-4 text-[#1B3530] font-bold hover:underline">Limpiar búsqueda</button>
+                    <div className="text-center py-12">
+                        <p className="text-gray-500">No se encontraron resultados para "{searchTerm}"</p>
                     </div>
                 )}
             </div>
@@ -2267,6 +2296,22 @@ const App: React.FC = () => {
               setUsersDb([]);
           }
 
+          // 7. Fetch Reviews
+            const { data: reviewsData } = await supabase
+                .from('reviews')
+                .select('*, client:clients(name)') // Hacemos el join con la tabla clients
+                .eq('club_id', clubId);
+
+            if (reviewsData) {
+                // Mapeamos para "aplanar" el nombre del cliente y facilitar su uso
+                setReviews(reviewsData.map((r: any) => ({
+                    ...r,
+                    clientName: r.client?.name || 'Cliente Anónimo' 
+                })));
+            } else {
+                setReviews([]);
+            }
+
       } catch (error) {
           console.error("Error loading club data", error);
           showFeedback("Error cargando datos del club", 'error');
@@ -2359,7 +2404,7 @@ const App: React.FC = () => {
   const [cancellationReason, setCancellationReason] = useState('OTHER');
   const [cancellationOtherText, setCancellationOtherText] = useState('');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
-  const [reviewActionId, setReviewActionId] = useState<number | null>(null);
+  const [reviewActionId, setReviewActionId] = useState<string | number | null>(null);
   const [deleteCourtId, setDeleteCourtId] = useState<string | null>(null);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
@@ -2587,11 +2632,59 @@ const App: React.FC = () => {
       setActiveSheet(null); 
   };
 
+const handleSaveReply = async (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    if (!reviewActionId) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const replyText = formData.get('replyText') as string;
+    const replyDate = new Date().toISOString();
+
+    const { error } = await supabase
+        .from('reviews')
+        .update({ 
+            reply_comment: replyText,
+            reply_at: replyDate
+        })
+        .eq('id', reviewActionId);
+
+    if (!error) {
+        setReviews(reviews.map(r => r.id === reviewActionId ? { ...r, reply_comment: replyText, reply_at: replyDate } : r));
+        showFeedback('Respuesta enviada correctamente'); 
+    } else {
+        console.error(error); // Agrega esto para ver el error real en la consola del navegador
+        showFeedback('Error al enviar respuesta', 'error');
+    }
+    setActiveSheet(null); 
+};
+
+const handleSaveReport = async (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    if (!reviewActionId) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const reportReason = formData.get('reportReason') as string;
+
+    const { error } = await supabase
+        .from('reviews')
+        .update({ 
+            report_reason: reportReason 
+        })
+        .eq('id', reviewActionId);
+
+    if (!error) {
+        // Actualizar estado local
+        setReviews(reviews.map(r => r.id === reviewActionId ? { ...r, report_reason: reportReason } : r));
+        showFeedback('Reseña reportada correctamente'); 
+    } else {
+        showFeedback('Error al reportar reseña', 'error');
+    }
+    setActiveSheet(null); 
+}; 
+
   // Other utility functions
   const openBookClient = (client: Client) => { setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts[0].id, clientName: client.name }); setReservationForm(prev => ({...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email})); setActiveSheet('RESERVATION'); };
   const handleExport = (format: string) => { showFeedback(`Exportando reporte en formato ${format}...`, 'info'); setActiveSheet(null); };
-  const handleSaveReply = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
-  const handleSaveReport = (e: React.FormEvent) => { e.preventDefault(); showFeedback('Funcionalidad pendiente de conexión a BD', 'info'); setActiveSheet(null); };
   
   const handleEditReservation = () => { 
       if (!selectedReservation) return; 
@@ -2697,7 +2790,7 @@ const App: React.FC = () => {
                     <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} loading={loading} />} />
                     <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} loading={loading} />} />
                     <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} loading={loading} />} />
-                    <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} loading={loading} />} />
+                    <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} loading={loading} courts={courts} />} />
                 </>
               ) : ( <Route path="*" element={<Navigate to="/" />} /> )}
             </Routes>
@@ -2767,8 +2860,6 @@ const App: React.FC = () => {
                 <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar Producto</Button></div>
             </form>
         </SideSheet>
-        <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña"><form className="space-y-6" onSubmit={handleSaveReply}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><label className="text-base font-medium text-[#112320]">Tu Respuesta</label><textarea name="replyText" className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" placeholder="Escribe una respuesta amable..." required></textarea></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Enviar Respuesta</Button></div></form></SideSheet>
-        <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña"><form className="space-y-6" onSubmit={handleSaveReport}><div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p><p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p></div><div className="space-y-2"><RadioGroup label="Motivo del Reporte" name="reportReason" options={[{ label: 'Contenido Ofensivo', value: 'OFFENSIVE' }, { label: 'Es Spam', value: 'SPAM' }, { label: 'Reseña Falsa', value: 'FAKE' }, { label: 'Otro', value: 'OTHER' }]} defaultValue="OFFENSIVE" /></div><div className="pt-4 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button></div></form></SideSheet>
 
         <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Agregar Usuario"}>
             <form className="space-y-6" onSubmit={handleSaveUser}>
@@ -2797,6 +2888,54 @@ const App: React.FC = () => {
                 </div>
             </form>
         </SideSheet>
+
+        <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña">
+        <form className="space-y-6" onSubmit={handleSaveReply}>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p>
+                <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+            </div>
+            <div className="space-y-2">
+                <label className="text-base font-medium text-[#112320]">Tu Respuesta</label>
+                <textarea 
+                    name="replyText" 
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" 
+                    placeholder="Escribe una respuesta amable..." 
+                    required
+                ></textarea>
+            </div>
+            <div className="pt-4 flex gap-3">
+                <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                <Button type="submit" className="flex-1">Enviar Respuesta</Button>
+            </div>
+        </form>
+    </SideSheet>
+
+    <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña">
+        <form className="space-y-6" onSubmit={handleSaveReport}>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p>
+                <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+            </div>
+            <div className="space-y-2">
+                <RadioGroup 
+                    label="Motivo del Reporte" 
+                    name="reportReason" 
+                    options={[
+                        { label: 'Contenido Ofensivo', value: 'OFFENSIVE' }, 
+                        { label: 'Es Spam', value: 'SPAM' }, 
+                        { label: 'Reseña Falsa', value: 'FAKE' }, 
+                        { label: 'Otro', value: 'OTHER' }
+                    ]} 
+                    defaultValue="OFFENSIVE" 
+                />
+            </div>
+            <div className="pt-4 flex gap-3">
+                <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
+                <Button type="submit" variant="destructive" className="flex-1">Reportar Comentario</Button>
+            </div>
+        </form>
+    </SideSheet>
 
         <Modal isOpen={activeSheet === 'EXPORT_OPTIONS'} onClose={closeSheet} title="Exportar Reporte">
              <div className="space-y-4">
