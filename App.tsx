@@ -5,9 +5,28 @@ import { Sidebar } from './components/Sidebar';
 import { Button, Card, Input, Badge, SideSheet, Select, MultiSelect, RadioGroup, Checkbox, Modal, AutocompleteInput, Textarea, Snackbar, Switch } from './components/UI';
 import { TIME_SLOTS, SPORTS_LIST, SURFACE_LIST, RESERVATION_META } from './constants';
 import { Court, Reservation, ReservationStatus, User, Product, CourtType, SurfaceType, ForceStartOption, Client } from './types';
-import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, Image as ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat } from 'lucide-react';
+import { Search, Bell, Plus, Filter, MoreHorizontal, DollarSign, MapPin, Edit2, Trash2, Check, Package, Calendar, LayoutGrid, List, Lock, Ban, ChevronRight, Zap, CloudRain, ImageIcon, Link2, Clock, Map as MapIcon, Phone, Power, RefreshCw, TrendingUp, Users as UsersIcon, Clock as ClockIcon, Activity, User as UserIcon, Mail, Shield, Key, FileText, Sheet, FileSpreadsheet, ChevronLeft, Eye, CalendarPlus, Upload, ChevronDown, Star, MessageSquare, Flag, Download, FileType, AlertTriangle, CornerDownRight, LogIn, LogOut, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, FolderOpen, Trophy, HelpCircle, Building2, Repeat } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import { supabase } from './lib/supabase';
+
+// --- Helper para normalizar fechas de la DB (Ignorar Timezone) ---
+const normalizeTime = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  // Reemplazamos espacio por T si existe y cortamos antes de la 'Z' o el offset
+  const normalized = dateStr.replace(' ', 'T').slice(0, 19);
+  return new Date(normalized);
+};
+
+const getOnlyTime = (dateStr: string) => {
+    if (!dateStr) return "00:00";
+    const timePart = dateStr.split('T')[1] || dateStr.split(' ')[1] || "00:00";
+    return timePart.substring(0, 5);
+};
+
+const getOnlyDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    return dateStr.split('T')[0].split(' ')[0];
+};
 
 // --- Skeleton Components ---
 
@@ -60,8 +79,8 @@ const CalendarSkeleton = () => (
              <Skeleton className="h-10 w-32 rounded-full" />
              <Skeleton className="h-10 w-64 rounded-full" />
         </div>
-        <div className="flex-1 border border-gray-200 rounded-3xl overflow-hidden bg-white">
-            <div className="h-12 bg-[#F8F8F8] border-b border-gray-200 w-full" />
+        <div className="flex-1 border border-gray-300 rounded-3xl overflow-hidden bg-white">
+            <div className="h-12 bg-[#F8F8F8] border-b border-gray-300 w-full" />
             <div className="flex flex-col">
                 {[...Array(8)].map((_, i) => (
                     <div key={i} className="h-20 border-b border-gray-100 flex">
@@ -81,7 +100,7 @@ const EmptyState = ({ title, description, actionLabel, onAction, icon: Icon }: {
     <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
        {Icon ? <Icon size={40} className="text-gray-300" /> : <FolderOpen size={40} className="text-gray-300" />}
     </div>
-    <h3 className="text-xl font-bold text-[#112320] mb-2">{title}</h3>
+    <h3 className="text-xl font-bold text-black mb-2">{title}</h3>
     <p className="text-gray-500 max-w-sm mb-8">{description}</p>
     {actionLabel && onAction && (
       <Button onClick={onAction}>
@@ -103,9 +122,9 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=2000&auto=format&fit=crop')" }}
         >
             <div className="absolute inset-0 bg-black/50 z-0"></div>
-            <Card className="w-full max-w-lg p-8 shadow-2xl border-none relative z-10 bg-white/95 backdrop-blur-sm">
+            <Card className="w-full max-w-lg p-8 shadow-2xl border-none relative z-10 bg-white backdrop-blur-sm">
                 <div className="flex flex-col items-center mb-8 text-center">
-                    <h1 className="text-2xl font-bold text-[#112320] mb-2">Hola {userName}, selecciona tu Club</h1>
+                    <h1 className="text-2xl font-bold text-black mb-2">¡Hola {userName}!</h1>
                     <p className="text-gray-500">Elige el club que deseas gestionar hoy</p>
                 </div>
 
@@ -115,18 +134,18 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
                             <button
                                 key={item.club_id}
                                 onClick={() => onSelectClub(item.club)}
-                                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group text-left w-full"
+                                className="flex items-center gap-4 p-4 bg-white border border-gray-300 rounded-2xl hover:border-[#1B3530] hover:shadow-md transition-all group text-left w-full"
                             >
                                 <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                                     {item.club.logo ? (
                                         <img src={item.club.logo} alt={item.club.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Building2 size={24} className="text-gray-400 group-hover:text-[#1B3530] transition-colors" />
+                                        <Building2 size={24} className="text-gray-500 group-hover:text-[#1B3530] transition-colors" />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-lg text-[#112320] truncate">{item.club.name}</h3>
-                                    <p className="text-sm text-gray-500 truncate">{item.club.address || 'Sin dirección'}</p>
+                                    <h3 className="font-bold text-lg text-black truncate">{item.club.name}</h3>
+                                    <p className="text-base text-gray-500 truncate">{item.club.address || 'Sin dirección'}</p>
                                 </div>
                                 <div className="flex-shrink-0">
                                      <Badge color={item.role === 'OWNER' ? 'blue' : 'gray'}>
@@ -137,9 +156,9 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-2xl mb-8 border border-dashed border-gray-200">
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl mb-8 border border-dashed border-gray-300">
                         <AlertTriangle className="mx-auto text-yellow-500 mb-2" size={32}/>
-                        <h3 className="text-lg font-bold text-[#112320]">No tienes clubes asociados</h3>
+                        <h3 className="text-lg font-bold text-black">No tienes clubes asociados</h3>
                         <p className="text-gray-500 max-w-xs mx-auto mt-2">No tienes membresías activas en ningún club. Contacta al administrador.</p>
                     </div>
                 )}
@@ -165,6 +184,29 @@ const ClubSelectionPage = ({ clubs, onSelectClub, onLogout, userName }: { clubs:
 const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string) => void, loading: boolean, error: string | null }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const DOMAINS = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'icloud.com'];
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+
+    if (value.includes('@')) {
+      const [user, domain] = value.split('@');
+      if (user.length > 0) {
+        const filtered = DOMAINS.filter(d => d.startsWith(domain));
+        setSuggestions(filtered);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const selectSuggestion = (domain: string) => {
+    const [user] = email.split('@');
+    setEmail(`${user}@${domain}`);
+    setSuggestions([]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,32 +219,52 @@ const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=2000&auto=format&fit=crop')" }}
     >
       <div className="absolute inset-0 bg-black/50 z-0"></div>
-      <Card className="w-full max-w-md p-8 shadow-2xl border-none relative z-10 bg-white/95 backdrop-blur-sm">
+      <Card className="w-full max-w-md p-8 shadow-2xl border-none relative z-10 bg-white backdrop-blur-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-[#1B3530] rounded-xl flex items-center justify-center text-[#C7F269] font-bold text-xl mb-4">
             G
           </div>
-          <h1 className="text-2xl font-bold text-[#112320]">Iniciar Sesión</h1>
+          <h1 className="text-2xl font-bold text-black">Iniciar Sesión</h1>
           <p className="text-gray-500">Gestor de Clubes Deportivos</p>
         </div>
 
         {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-base rounded-lg flex items-center gap-2">
                 <AlertTriangle size={16} />
                 {error}
             </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <Input 
-            label="Email" 
-            type="email" 
-            placeholder="usuario@club.com" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)}
-            required 
-            icon={Mail}
-          />
+          <div className="relative">
+            <Input 
+              label="Email" 
+              type="email" 
+              placeholder="usuario@email.com" 
+              value={email} 
+              onChange={handleEmailChange}
+              required 
+              icon={Mail}
+            />
+            {suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-xl rounded-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                {suggestions.map((domain) => (
+                  <button
+                    key={domain}
+                    type="button"
+                    onClick={() => selectSuggestion(domain)}
+                    className="w-full text-left px-4 py-3 text-base hover:bg-gray-50 text-black transition-colors flex items-center justify-between group"
+                  >
+                    <span>
+                      <span className="text-gray-400">{email.split('@')[0]}@</span>
+                      <span className="font-bold">{domain}</span>
+                    </span>
+                    <ChevronRight size={14} className="text-gray-300 group-hover:text-[#1B3530]" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <Input 
             label="Contraseña" 
             type="password" 
@@ -212,7 +274,6 @@ const LoginPage = ({ onLogin, loading, error }: { onLogin: (e: string, p: string
             required 
             icon={Key}
           />
-          
           <Button type="submit" className="w-full py-3.5" isLoading={loading}>
             Ingresar
           </Button>
@@ -255,8 +316,8 @@ const UsersPage = ({
      return (
         <div className="p-8 h-full">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-[#112320]">Gestión de Usuarios</h3>
-                <Button onClick={onAddUser} className="h-9 text-sm px-4"><Plus className="w-4 h-4 mr-2"/>Agregar Usuario</Button>
+                <h3 className="text-lg font-bold text-black">Gestión de Usuarios</h3>
+                <Button onClick={onAddUser} className="h-9 text-base px-4"><Plus className="w-4 h-4 mr-2"/>Agregar Usuario</Button>
             </div>
             <EmptyState 
                 title="No hay usuarios registrados" 
@@ -271,29 +332,28 @@ const UsersPage = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 w-full">
-      <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
+      <div className="flex justify-between items-center mb-2 pb-2">
          <div className="flex items-center gap-2">
-            <UsersIcon className="text-gray-400" size={20} />
-            <h3 className="text-lg font-bold text-[#112320]">Gestión de Usuarios</h3>
+            <h3 className="text-lg font-bold text-black">Gestión de Usuarios</h3>
          </div>
-         <Button onClick={onAddUser} className="h-9 text-sm px-4"><Plus className="w-4 h-4 mr-2"/>Agregar Usuario</Button>
+         <Button onClick={onAddUser} className="h-9 text-base px-4"><Plus className="w-4 h-4 mr-2"/>Agregar Usuario</Button>
       </div>
 
       <Card className="p-0 overflow-hidden w-full">
         <table className="w-full text-left">
-          <thead className="bg-[#F8F8F8] border-b border-gray-200">
+          <thead className="bg-[#F8F8F8] border-b border-gray-300">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Email</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Rol</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Nombre</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Email</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Rol</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {users.map(user => (
               <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{user.name}</td>
+                <td className="px-6 py-4 text-base font-bold text-black">{user.name}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">{user.email}</td>
                 <td className="px-6 py-4">
                   <Badge color={user.role === 'OWNER' ? 'blue' : user.role === 'ADMIN' ? 'gray' : 'yellow'}>
@@ -307,14 +367,14 @@ const UsersPage = ({
                        onChange={() => onToggleStatus(user)} 
                        disabled={user.role === 'OWNER'}
                      />
-                     <span className="text-sm font-medium text-gray-500 min-w-[60px]">
+                     <span className="text-base font-medium text-gray-500 min-w-[60px]">
                         {user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                      </span>
                    </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex justify-end gap-2">
-                     <button className="p-2 flex items-center justify-center border border-gray-200 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditUser(user)}>
+                     <button className="p-2 flex items-center justify-center border border-gray-300 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditUser(user)}>
                         <Edit2 size={16}/>
                      </button>
                    </div>
@@ -401,12 +461,27 @@ const ReservasPage = ({
 
   const timeSlots = generateTimeSlots();
 
-  const getReservation = (courtId: string, timeString: string) => {
+  // Helper para saber qué reserva DIBUJAR en este slot (solo si empieza aquí)
+  const getReservationToDraw = (courtId: string, timeString: string) => {
     return reservations.find(r => {
       if (r.status === ReservationStatus.CANCELLED) return false;
-      const [resDate, resFullTime] = r.startTime.split('T');
-      const resTime = resFullTime.substring(0, 5);
-      return r.courtId === courtId && resDate === selectedDate && resTime === timeString;
+      const resDate = getOnlyDate(r.startTime);
+      const resFullTime = getOnlyTime(r.startTime);
+      const resHour = resFullTime.substring(0, 2); 
+      const slotHour = timeString.substring(0, 2); 
+      return r.courtId === courtId && resDate === selectedDate && resHour === slotHour;
+    });
+  };
+
+  // Helper para saber si un slot está ocupado por una reserva que empezó antes
+  const isSlotOccupied = (courtId: string, timeString: string) => {
+    const slotTime = new Date(`${selectedDate}T${timeString}`).getTime();
+    return reservations.some(r => {
+      if (r.status === ReservationStatus.CANCELLED) return false;
+      // USAMOS EL HELPER NORMALIZE PARA EVITAR DESFASE DE 3 HORAS
+      const start = normalizeTime(r.startTime).getTime();
+      const end = normalizeTime(r.endTime).getTime();
+      return r.courtId === courtId && slotTime >= start && slotTime < end;
     });
   };
 
@@ -436,7 +511,7 @@ const ReservasPage = ({
   };
 
   const getReservationColor = (type: string | undefined, status: string) => {
-     if (status === ReservationStatus.BLOCKED) return 'bg-gray-100 border border-gray-200 text-gray-500';
+     if (status === ReservationStatus.BLOCKED) return 'bg-gray-100 border border-gray-300 text-gray-500';
      if (status === ReservationStatus.PENDING) return 'bg-yellow-50 border border-yellow-200 text-yellow-900';
      if (status === ReservationStatus.CANCELLED) return 'bg-red-50 border border-red-200 text-red-900';
      
@@ -447,8 +522,8 @@ const ReservasPage = ({
   };
 
   const filteredReservationsList = viewMode === 'CALENDAR' 
-      ? reservations.filter(r => r.startTime.startsWith(selectedDate) && r.status !== ReservationStatus.CANCELLED)
-      : [...reservations].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      ? reservations.filter(r => getOnlyDate(r.startTime) === selectedDate && r.status !== ReservationStatus.CANCELLED)
+      : [...reservations].sort((a, b) => normalizeTime(b.startTime).getTime() - normalizeTime(a.startTime).getTime());
   
   const totalPages = Math.ceil(filteredReservationsList.length / itemsPerPage);
   const paginatedReservations = filteredReservationsList.slice((listPage - 1) * itemsPerPage, listPage * itemsPerPage);
@@ -484,19 +559,38 @@ const ReservasPage = ({
       <header className="flex flex-col gap-6 flex-shrink-0">
         <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-[#112320]">Reservas</h1>
+              <h1 className="text-4xl font-semibold text-black">Reservas</h1>
             </div>
+            {viewMode === 'CALENDAR' && (
+            <div className="flex items-center gap-4 bg-white p-1 rounded-full border border-gray-300 w-fit shadow-sm">
+                <Button variant="ghost" onClick={handleToday} className="h-9 px-4 text-base font-semibold hover:bg-gray-100 text-gray-600 hover:text-gray-900 rounded-full">
+                    Hoy
+                </Button>
+                <div className="h-6 w-px bg-gray-200"></div>
+                <div className="flex items-center gap-2">
+                    <button onClick={handlePrevDay} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900 transition-colors">
+                        <ChevronLeft size={20} />
+                    </button>
+                    <span className="text-base font-semibold text-black min-w-[240px] text-center capitalize select-none">
+                        {formattedDateDisplay}
+                    </span>
+                    <button onClick={handleNextDay} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900 transition-colors">
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            </div>
+            )}
             <div className="flex gap-3">
-                 <div className="flex bg-gray-100 rounded-full p-1 border border-gray-200">
+                 <div className="flex bg-gray-100 rounded-full p-1 border border-gray-300">
                     <button 
                         onClick={() => setViewMode('CALENDAR')} 
-                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${viewMode === 'CALENDAR' ? 'bg-white text-[#1B3530] shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`px-4 py-2 rounded-full text-base font-semibold transition-all flex items-center gap-2 ${viewMode === 'CALENDAR' ? 'bg-white text-[#1B3530] shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         <Calendar size={16} /> Calendario
                     </button>
                     <button 
                         onClick={() => setViewMode('LIST')} 
-                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${viewMode === 'LIST' ? 'bg-white text-[#1B3530] shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`px-4 py-2 rounded-full text-base font-semibold transition-all flex items-center gap-2 ${viewMode === 'LIST' ? 'bg-white text-[#1B3530] shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         <List size={16} /> Historial
                     </button>
@@ -507,46 +601,28 @@ const ReservasPage = ({
             </div>
         </div>
 
-        {viewMode === 'CALENDAR' && (
-            <div className="flex items-center gap-4 bg-white p-2 rounded-full border border-gray-200 w-fit shadow-sm">
-                <Button variant="ghost" onClick={handleToday} className="h-9 px-4 text-sm font-semibold hover:bg-gray-100 text-gray-600 hover:text-gray-900 rounded-full">
-                    Hoy
-                </Button>
-                <div className="h-6 w-px bg-gray-200"></div>
-                <div className="flex items-center gap-2">
-                    <button onClick={handlePrevDay} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900 transition-colors">
-                        <ChevronLeft size={20} />
-                    </button>
-                    <span className="text-lg font-semibold text-[#112320] min-w-[240px] text-center capitalize select-none">
-                        {formattedDateDisplay}
-                    </span>
-                    <button onClick={handleNextDay} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900 transition-colors">
-                        <ChevronRight size={20} />
-                    </button>
-                </div>
-            </div>
-        )}
+        
       </header>
 
       {viewMode === 'CALENDAR' ? (
-        <Card className="p-0 border border-gray-200 bg-white flex-1 overflow-auto custom-scrollbar relative">
-            <div className="sticky top-0 z-40 flex border-b border-gray-200 bg-[#F8F8F8] min-w-max">
-            <div className="sticky left-0 z-50 w-24 p-4 border-r border-gray-200 font-bold text-sm text-[#112320] uppercase tracking-wider flex items-center justify-center bg-[#F8F8F8]">
-                Hora
-            </div>
-            <div 
-                className="flex-1 grid divide-x divide-gray-200 min-w-[600px]"
-                style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(200px, 1fr))` }}
-            >
-                {courts.map(court => (
-                    <div key={court.id} className="text-center py-4 px-2 flex flex-col justify-center items-center bg-[#F8F8F8]">
-                    <span className="text-base font-bold text-[#112320] truncate w-full">{court.name}</span>
-                    <span className="text-sm text-gray-500 font-medium mt-0.5">
-                        {court.isIndoor ? 'Techada' : 'Aire Libre'}
-                    </span>
-                    </div>
-                ))}
-            </div>
+        <Card className="p-0 border border-gray-300 bg-white flex-1 overflow-auto custom-scrollbar relative">
+            <div className="sticky top-0 z-40 flex border-b border-gray-300 bg-[#F8F8F8] min-w-max">
+                <div className="sticky left-0 z-50 w-24 p-4 border-r border-gray-300 font-bold text-base text-black uppercase tracking-wider flex items-center justify-center bg-[#F8F8F8]">
+                    Hora
+                </div>
+                <div 
+                    className="flex-1 grid divide-x divide-gray-200 min-w-[600px]"
+                    style={{ gridTemplateColumns: `repeat(${courts.length}, minmax(200px, 1fr))` }}
+                >
+                    {courts.map(court => (
+                        <div key={court.id} className="text-center py-4 px-2 flex flex-col justify-center items-center bg-[#F8F8F8]">
+                        <span className="text-base font-bold text-black truncate w-full">{court.name}</span>
+                        <span className="text-base text-gray-500 font-medium mt-0.5">
+                            {court.isIndoor ? 'Techada' : 'Aire Libre'}
+                        </span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <div className="min-w-max">
@@ -557,8 +633,8 @@ const ReservasPage = ({
                 const closed = isClosed(time);
                 
                 return (
-                <div key={time} className="flex border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors min-h-[80px] relative">
-                    <div className="sticky left-0 z-30 w-24 border-r border-gray-200 flex items-center justify-center bg-white text-sm font-bold text-gray-900 flex-shrink-0">
+                <div key={time} className="flex border-b border-gray-300 last:border-0 hover:bg-gray-50 transition-colors min-h-[80px] relative">
+                    <div className="sticky left-0 z-30 w-24 border-r border-gray-300 flex items-center justify-center bg-white text-base font-bold text-gray-900 flex-shrink-0">
                     {time}
                     </div>
                     <div 
@@ -567,17 +643,18 @@ const ReservasPage = ({
                     >
                     {showTimeIndicator && (
                         <div 
-                            className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-20 pointer-events-none flex items-center"
+                            className="absolute left-0 right-0 border-t-2 border-dashed border-[#C7F269] z-20 pointer-events-none flex items-center"
                             style={{ top: `${topPercentage}%` }}
                         >
-                            <div className="absolute left-1 bg-red-500 text-white text-[10px] px-1 rounded font-bold -translate-y-1/2">
-                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <div className="absolute left-0 bg-[#C7F269] text-blac text-[12px] py-1 px-2 rounded-full font-bold -translate-y-50">
+                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </div>
                         </div>
                     )}
 
                     {courts.map(court => {
-                            const res = getReservation(court.id, time);
+                            const res = getReservationToDraw(court.id, time); // Solo la reserva que inicia aquí
+                            const occupied = isSlotOccupied(court.id, time); // ¿Está el slot ocupado?
                             
                             if (closed && !res) {
                                 return (
@@ -586,33 +663,39 @@ const ReservasPage = ({
                             }
 
                             return (
-                            <div key={`${court.id}-${time}`} className="relative p-1 h-full z-10">
-                                {res ? (
-                                <div 
-                                    onClick={() => onSelectReservation(res)}
-                                    className={`w-full h-full rounded-xl p-3 text-xs flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm ${getReservationColor((res as any).type, res.status)}`}
-                                >
-                                    <div className="truncate font-bold text-sm">
-                                    {res.status === ReservationStatus.BLOCKED ? (
-                                        <span className="flex items-center gap-1"><Ban size={12}/> Bloqueado</span>
-                                    ) : res.clientName}
-                                    </div>
-                                    <div className="flex justify-between items-end mt-1">
-                                    <span className="opacity-90 font-semibold">
-                                        {res.status === ReservationStatus.BLOCKED ? res.clientName : `$${res.price}`}
-                                    </span>
-                                    {res.isPaid && <Check size={14} className="opacity-70" />}
-                                    </div>
+                                <div key={`${court.id}-${time}`} className="relative p-0 h-full z-10">
+                                    {res && (
+                                        <div 
+                                            onClick={() => onSelectReservation(res)}
+                                            className={`absolute left-1 right-1 rounded-xl p-3 text-sm z-20 cursor-pointer transition-all hover:scale-[1.01] shadow-md flex flex-col justify-between ${getReservationColor((res as any).type, res.status)}`}
+                                            /* CORRECCIÓN PUNTO 3: DETALLE VISUAL EXACTO */
+                                            style={{
+                                                top: `${(normalizeTime(res.startTime).getMinutes() / 60) * 100}%`,
+                                                height: `${((normalizeTime(res.endTime).getTime() - normalizeTime(res.startTime).getTime()) / 60000 / 60) * 100}%`,
+                                                minHeight: '40px'
+                                            }}
+                                        >
+                                            <div className="truncate font-bold text-base">
+                                                {res.status === ReservationStatus.BLOCKED ? <span className="flex items-center gap-1"><Ban size={12}/> Bloqueado</span> : res.clientName}
+                                            </div>
+                                            <div className="flex justify-between items-end mt-1">
+                                                <span className="opacity-90 font-semibold text-xs md:text-sm">
+                                                    {res.status === ReservationStatus.BLOCKED ? res.clientName : `$${res.price}`}
+                                                </span>
+                                                {res.isPaid && <Check size={14} className="opacity-70" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {!occupied && !closed && (
+                                        <div 
+                                            onClick={() => handleSlotClick(court.id, time)}
+                                            className="w-full h-full hover:bg-gray-100 cursor-pointer transition-all flex items-center justify-center group/cell"
+                                        >
+                                            <Plus className="text-gray-500 w-5 h-5 opacity-0 group-hover/cell:opacity-100 transition-opacity" />
+                                        </div>
+                                    )}
                                 </div>
-                                ) : (
-                                <div 
-                                    onClick={() => handleSlotClick(court.id, time)}
-                                    className="w-full h-full rounded-xl hover:bg-gray-100 cursor-pointer transition-all flex items-center justify-center group/cell"
-                                >
-                                    <Plus className="text-gray-400 w-5 h-5 opacity-0 group-hover/cell:opacity-100 transition-opacity" />
-                                </div>
-                                )}
-                            </div>
                             );
                         })}
                     </div>
@@ -624,22 +707,22 @@ const ReservasPage = ({
       ) : (
           <Card className="p-0 overflow-hidden flex-1 flex flex-col">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white">
-                   <h2 className="font-bold text-[#112320]">Historial de Reservas</h2>
+                   <h2 className="font-bold text-black">Historial de Reservas</h2>
               </div>
               {filteredReservationsList.length > 0 ? (
                   <>
                     <div className="overflow-auto custom-scrollbar flex-1">
                         <table className="w-full text-left">
-                            <thead className="bg-[#F8F8F8] border-b border-gray-200 sticky top-0 z-10">
+                            <thead className="bg-[#F8F8F8] border-b border-gray-300 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Fecha y Hora</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cancha</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Creado Por</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Tipo</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Precio</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Estado</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Fecha y Hora</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Cancha</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Cliente</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Creado Por</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Tipo</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Precio</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Estado</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -648,10 +731,10 @@ const ReservasPage = ({
                                         return (
                                             <tr key={res.id} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="px-6 py-4 text-base font-medium text-gray-900">
-                                                    <div className="text-sm font-bold text-[#112320]">{new Date(res.startTime).toLocaleDateString()}</div>
-                                                    <div className="text-sm text-gray-500">{res.startTime.split('T')[1].substring(0, 5)} - {res.endTime.split('T')[1].substring(0, 5)}</div>
+                                                    <div className="text-base font-bold text-black">{normalizeTime(res.startTime).toLocaleDateString()}</div>
+                                                    <div className="text-base text-gray-500">{getOnlyTime(res.startTime)} - {getOnlyTime(res.endTime)}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-base font-bold text-[#112320]">{courtName}</td>
+                                                <td className="px-6 py-4 text-base font-bold text-black">{courtName}</td>
                                                 <td className="px-6 py-4 text-base text-gray-600">{res.clientName}</td>
                                                 <td className="px-6 py-4 text-base text-gray-500 italic">{res.createdBy || '-'}</td>
                                                 <td className="px-6 py-4">
@@ -659,7 +742,7 @@ const ReservasPage = ({
                                                 </td>
                                                 <td className="px-6 py-4 text-base font-bold text-[#1B3530]">${res.price}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`text-sm font-semibold ${res.status === ReservationStatus.CONFIRMED ? 'text-green-600' : res.status === ReservationStatus.CANCELLED ? 'text-red-600' : 'text-yellow-600'}`}>
+                                                    <span className={`text-base font-semibold ${res.status === ReservationStatus.CONFIRMED ? 'text-green-600' : res.status === ReservationStatus.CANCELLED ? 'text-red-600' : 'text-yellow-600'}`}>
                                                         {res.status === ReservationStatus.CONFIRMED ? 'Confirmada' : res.status === ReservationStatus.CANCELLED ? 'Cancelada' : res.status}
                                                     </span>
                                                 </td>
@@ -676,9 +759,9 @@ const ReservasPage = ({
                     </div>
                     {filteredReservationsList.length > itemsPerPage && (
                         <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-white">
-                            <Button variant="ghost" disabled={listPage === 1} onClick={() => setListPage(p => p - 1)} className="text-sm">Anterior</Button>
-                            <span className="text-sm text-gray-600">Página {listPage} de {totalPages}</span>
-                            <Button variant="ghost" disabled={listPage === totalPages} onClick={() => setListPage(p => p + 1)} className="text-sm">Siguiente</Button>
+                            <Button variant="ghost" disabled={listPage === 1} onClick={() => setListPage(p => p - 1)} className="text-base">Anterior</Button>
+                            <span className="text-base text-gray-600">Página {listPage} de {totalPages}</span>
+                            <Button variant="ghost" disabled={listPage === totalPages} onClick={() => setListPage(p => p + 1)} className="text-base">Siguiente</Button>
                         </div>
                     )}
                   </>
@@ -752,7 +835,7 @@ const CourtsPage = ({
       return (
         <div className="p-8 h-full">
             <div className="flex justify-between items-end mb-6">
-                <h1 className="text-3xl font-bold text-[#112320]">Canchas</h1>
+                <h1 className="text-4xl font-semibold text-black">Canchas</h1>
             </div>
             <EmptyState 
                 title="Aún no tienes canchas" 
@@ -769,7 +852,7 @@ const CourtsPage = ({
     <div className="p-8 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-end">
         <div>
-           <h1 className="text-3xl font-bold text-[#112320]">Canchas</h1>
+           <h1 className="text-4xl font-semibold text-black">Canchas</h1>
         </div>
         <div className="flex gap-3">
           <Button onClick={onAddCourt}><Plus className="w-4 h-4 mr-2"/>Agregar Cancha</Button>
@@ -778,23 +861,23 @@ const CourtsPage = ({
 
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-left">
-        <thead className="bg-[#F8F8F8] border-b border-gray-200">
+        <thead className="bg-[#F8F8F8] border-b border-gray-300">
             <tr>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
+            <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
                 <div className="flex items-center">Nombre {renderSortIcon('name')}</div>
             </th>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Tipo</th>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('surface')}>
+            <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Tipo</th>
+            <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSort('surface')}>
                 <div className="flex items-center">Superficie {renderSortIcon('surface')}</div>
             </th>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Características</th>
-            <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+            <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Características</th>
+            <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider text-right">Acciones</th>
             </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
             {sortedCourts.map(court => (
             <tr key={court.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{court.name}</td>
+                <td className="px-6 py-4 text-base font-bold text-black">{court.name}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.types.join(', ')}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">{court.surface}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">
@@ -849,7 +932,7 @@ const ClientsPage = ({
         return (
           <div className="p-8 h-full">
                <div className="flex justify-between items-center mb-6">
-                 <h1 className="text-3xl font-bold text-[#112320]">Clientes</h1>
+                 <h1 className="text-4xl font-semibold text-black">Clientes</h1>
                </div>
               <EmptyState 
                   title="No hay clientes registrados" 
@@ -866,17 +949,17 @@ const ClientsPage = ({
         <div className="p-8 space-y-6 h-full overflow-y-auto">
           <div className="flex justify-between items-center">
              <div>
-                <h1 className="text-3xl font-bold text-[#112320]">Clientes</h1>
+                <h1 className="text-4xl font-semibold text-black">Clientes</h1>
              </div>
              <Button onClick={onAddClient}><Plus className="w-4 h-4 mr-2"/>Agregar Cliente</Button>
           </div>
 
           <div className="relative w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
             <input 
                 type="text" 
                 placeholder="Buscar por nombre o email..." 
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
+                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -884,30 +967,30 @@ const ClientsPage = ({
 
           <Card className="p-0 overflow-hidden">
             <table className="w-full text-left">
-              <thead className="bg-[#F8F8F8] border-b border-gray-200">
+              <thead className="bg-[#F8F8F8] border-b border-gray-300">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Contacto</th>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Bookings</th>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Total Gastado</th>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Última Reserva</th>
-                  <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Cliente</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Contacto</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Reservas</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Total Gastado</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Última Reserva</th>
+                  <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredClients.map(client => (
                   <tr key={client.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
-                        <div className="font-bold text-[#112320] text-base">{client.name}</div>
+                        <div className="font-bold text-black text-base">{client.name}</div>
                         <div className="text-base text-gray-500 font-medium">{client.email}</div>
                     </td>
                     <td className="px-6 py-4 text-base text-gray-500 font-medium">{client.phone}</td>
-                    <td className="px-6 py-4 text-base text-[#112320] font-bold">{client.totalBookings}</td>
+                    <td className="px-6 py-4 text-base text-black font-bold">{client.totalBookings}</td>
                     <td className="px-6 py-4 text-base text-[#1B3530] font-bold">${client.totalSpent.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(client.lastBooking).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-base text-gray-500 font-medium">{normalizeTime(client.lastBooking).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-right">
                        <div className="flex justify-end gap-2">
-                         <button className="p-2 flex items-center justify-center border border-gray-200 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditClient(client)}><Edit2 size={16}/></button>
+                         <button className="p-2 flex items-center justify-center border border-gray-300 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100" onClick={() => onEditClient(client)}><Edit2 size={16}/></button>
                        </div>
                     </td>
                   </tr>
@@ -976,7 +1059,7 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
       return (
         <div className="p-8 h-full">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-[#112320]">Inventario</h1>
+                <h1 className="text-4xl font-semibold text-black">Inventario</h1>
             </div>
             <EmptyState 
                 title="Inventario vacío" 
@@ -993,7 +1076,7 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
     <div className="p-8 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-center">
          <div>
-            <h1 className="text-3xl font-bold text-[#112320]">Inventario</h1>
+            <h1 className="text-4xl font-semibold text-black">Inventario</h1>
          </div>
          <div className="flex gap-2">
             <Button variant="secondary" onClick={onImport}><Upload className="w-4 h-4 mr-2"/> Importar</Button>
@@ -1002,11 +1085,11 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
       </div>
 
        <div className="relative w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
             <input 
                 type="text" 
                 placeholder="Buscar por nombre o código..." 
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
+                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1014,53 +1097,53 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
 
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-[#F8F8F8] border-b border-gray-200">
+          <thead className="bg-[#F8F8F8] border-b border-gray-300">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('code')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('code')}>
                  <div className="flex items-center">Código {renderSortIcon('code')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
                  <div className="flex items-center">Nombre {renderSortIcon('name')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('purchasePrice')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('purchasePrice')}>
                  <div className="flex items-center">Precio Compra {renderSortIcon('purchasePrice')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('salePrice')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('salePrice')}>
                  <div className="flex items-center">Precio Venta {renderSortIcon('salePrice')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('type')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('type')}>
                  <div className="flex items-center">Tipo {renderSortIcon('type')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('stock')}>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('stock')}>
                  <div className="flex items-center">Stock {renderSortIcon('stock')}</div>
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Activo</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider">Últ. Modif.</th>
-              <th className="px-6 py-4 text-xs font-bold text-[#112320] uppercase tracking-wider text-right">Acciones</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Activo</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider">Últ. Modif.</th>
+              <th className="px-6 py-4 text-sm font-bold text-black uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredInventory.map(item => (
               <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.code || '-'}</td>
-                <td className="px-6 py-4 text-base font-bold text-[#112320]">{item.name}</td>
+                <td className="px-6 py-4 text-base font-bold text-black">{item.name}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">${item.purchasePrice}</td>
                 <td className="px-6 py-4 text-base font-bold text-[#1B3530]">${item.salePrice}</td>
                 <td className="px-6 py-4 text-base text-gray-500 font-medium">{item.type}</td>
                 <td className="px-6 py-4">
-                    <span className={`text-base font-bold ${item.stock <= 5 ? 'text-red-600' : 'text-[#112320]'}`}>
+                    <span className={`text-base font-bold ${item.stock <= 5 ? 'text-red-600' : 'text-black'}`}>
                         {item.stock} u.
                     </span>
-                    {item.showInStock && <span className="ml-2 text-xs text-gray-400 border border-gray-200 rounded px-1">Visible</span>}
+                    {item.showInStock && <span className="ml-2 text-sm text-gray-500 border border-gray-300 rounded px-1">Visible</span>}
                 </td>
                 <td className="px-6 py-4">
                     <div className={`w-3 h-3 rounded-full ${item.active ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 </td>
-                <td className="px-6 py-4 text-base text-gray-500 font-medium">{new Date(item.lastModified).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-base text-gray-500 font-medium">{normalizeTime(item.lastModified).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex justify-end gap-2">
                      <button 
-                       className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-[#1B3530] hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+                       className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-300 text-[#1B3530] hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
                        onClick={() => onEditProduct(item)}
                      >
                         <Edit2 size={18}/>
@@ -1082,7 +1165,7 @@ const InventoryPage = ({ inventory, onAddProduct, onEditProduct, onDeleteProduct
   );
 };
 
-const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void, reservations: Reservation[], loading?: boolean }) => {
+const ReportsPage = ({ onExport, reservations, courts, loading }: { onExport: () => void, reservations: Reservation[], courts: Court[], loading?: boolean }) => {
   const [dateRange, setDateRange] = useState('7_DAYS');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -1119,7 +1202,7 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
   // Filter reservations
   const filteredReservations = reservations.filter(r => {
       if (r.status === ReservationStatus.CANCELLED) return false;
-      const rDate = new Date(r.startTime);
+      const rDate = normalizeTime(r.startTime);
       return rDate >= startDate && rDate <= endDate;
   });
 
@@ -1127,21 +1210,36 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
   const totalRevenue = filteredReservations.reduce((sum, r) => sum + r.price, 0);
   const totalBookings = filteredReservations.length;
   const avgSession = 60; // Mocked for now, or calculate from duration
-  const utilization = 0; // Requires court hours capacity logic
 
   // Revenue Over Time Data
-  const revenueByDayMap = new Map<string, number>();
-  
-  const sortedReservations = [...filteredReservations].sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+ // 1. Inicializar el mapa de ingresos
+const revenueByDayMap = new Map<string, number>();
 
-  sortedReservations.forEach(r => {
-      const dateObj = new Date(r.startTime);
-      const day = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-      const current = revenueByDayMap.get(day) || 0;
-      revenueByDayMap.set(day, current + r.price);
-  });
-  
-  const revenueData = Array.from(revenueByDayMap.entries()).map(([name, value]) => ({ name, value }));
+// 2. PRE-LLENADO: Recorrer cada día entre startDate y endDate para ponerlos en 0
+let currentDate = new Date(startDate);
+// Creamos una copia del endDate para comparar solo fechas (sin horas)
+const finalDate = new Date(endDate);
+
+while (currentDate <= finalDate) {
+    const dayLabel = currentDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    revenueByDayMap.set(dayLabel, 0);
+    currentDate.setDate(currentDate.getDate() + 1);
+}
+
+// 3. LLENADO REAL: Sumar los ingresos de las reservaciones existentes
+filteredReservations.forEach(r => {
+    const dateObj = normalizeTime(r.startTime);
+    const day = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    
+    // Solo sumamos si el día existe en nuestro mapa (por seguridad de rango)
+    if (revenueByDayMap.has(day)) {
+        const currentTotal = revenueByDayMap.get(day) || 0;
+        revenueByDayMap.set(day, currentTotal + r.price);
+    }
+});
+
+// 4. Convertir a formato para el gráfico
+const revenueData = Array.from(revenueByDayMap.entries()).map(([name, value]) => ({ name, value }));
 
   // Customer Segments Data (by Type)
   const segmentsMap = new Map<string, number>();
@@ -1159,22 +1257,60 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
   // Hourly Distribution
   const hourlyMap = new Array(24).fill(0);
   filteredReservations.forEach(r => {
-      const hour = new Date(r.startTime).getHours();
+      const hour = normalizeTime(r.startTime).getHours();
       hourlyMap[hour]++;
   });
   const hourlyData = hourlyMap.map((val, h) => ({ hour: `${h}:00`, value: val })).filter(d => d.value > 0);
 
   // Weekday Distribution
-  const weekdayMap = new Map<string, number>();
+  const weekdayCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 0: 0 };
   filteredReservations.forEach(r => {
-       const day = new Date(r.startTime).toLocaleDateString('es-ES', { weekday: 'short' });
-       weekdayMap.set(day, (weekdayMap.get(day) || 0) + 1);
+       const dayIndex = normalizeTime(r.startTime).getDay();
+       weekdayCounts[dayIndex]++;
   });
-  const bookingsByWeekday = Array.from(weekdayMap.entries()).map(([name, value]) => ({ name, value }));
-
+  const dayLabels: Record<number, string> = {
+      1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 0: 'Dom'
+  };
+  const bookingsByWeekday = [1, 2, 3, 4, 5, 6, 0].map(dayIndex => ({
+      name: dayLabels[dayIndex],
+      value: weekdayCounts[dayIndex]
+  }));
   const dateLabel = dateRange === 'CUSTOM' 
     ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
     : startDate.toLocaleDateString() + ' - Hoy';
+
+// 1. Calcular Horas Totales Disponibles (Capacidad)
+let totalAvailableHours = 0;
+const startDay = new Date(startDate);
+const endDay = new Date(endDate);
+
+// Recorremos cada día en el rango
+for (let d = new Date(startDay); d <= endDay; d.setDate(d.getDate() + 1)) {
+    const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
+    const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    
+    // DEFAULT_SCHEDULE está en tu archivo constants o App.tsx
+    // Buscamos el horario para ese día
+    const daySchedule = DEFAULT_SCHEDULE.find(s => s.day === dayNameCap);
+    
+    if (daySchedule && daySchedule.open) {
+        const startH = parseInt(daySchedule.start.split(':')[0]);
+        const endH = parseInt(daySchedule.end.split(':')[0]);
+        const hoursOpen = endH - startH;
+        // Multiplicamos horas por cantidad de canchas
+        totalAvailableHours += (hoursOpen * courts.length);
+    }
+}
+
+const totalReservedHours = filteredReservations.reduce((acc, r) => {
+    const start = normalizeTime(r.startTime).getTime();
+    const end = normalizeTime(r.endTime).getTime();
+    return acc + (end - start) / (1000 * 60 * 60);
+}, 0);
+
+const utilization = totalAvailableHours > 0 
+    ? (totalReservedHours / totalAvailableHours) * 100 
+    : 0;
 
   if (loading) {
       return (
@@ -1195,28 +1331,28 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
     <div className="p-8 space-y-8 pb-20 h-full overflow-y-auto">
       <div className="flex justify-between items-center">
         <div>
-           <h1 className="text-3xl font-bold text-[#112320]">Reportes</h1>
-           <p className="text-sm text-gray-500 mt-1">Viendo datos del periodo: <span className="font-semibold text-[#1B3530]">{dateLabel}</span></p>
+           <h1 className="text-4xl font-semibold text-black">Reportes</h1>
+           <p className="text-base text-gray-500 mt-1">Viendo datos del periodo: <span className="font-semibold text-[#1B3530]">{dateLabel}</span></p>
         </div>
         <div className="flex gap-3 items-center">
             {dateRange === 'CUSTOM' && (
                 <div className="flex gap-2 animate-in fade-in">
-                    <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
-                    <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#1B3530]" />
+                    <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="border border-gray-300 rounded-full px-4 py-2 text-base focus:outline-none focus:border-[#1B3530]" />
+                    <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="border border-gray-300 rounded-full px-4 py-2 text-base focus:outline-none focus:border-[#1B3530]" />
                 </div>
             )}
             <div className="relative">
                 <select 
                     value={dateRange} 
                     onChange={(e) => setDateRange(e.target.value)}
-                    className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full focus:outline-none focus:border-[#1B3530] cursor-pointer"
+                    className="appearance-none bg-white border border-gray-300 text-gray-700 py-3 pl-6 pr-0 text-base font-semibold rounded-full focus:outline-none focus:border-[#1B3530] cursor-pointer"
                 >
                     <option value="7_DAYS">Últimos 7 días</option>
                     <option value="30_DAYS">Últimos 30 días</option>
                     <option value="60_DAYS">Últimos 60 días</option>
                     <option value="CUSTOM">Seleccionar otra fecha</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-6 text-gray-700">
                     <ChevronDown size={16} />
                 </div>
             </div>
@@ -1225,38 +1361,38 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
+          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-300">
              <div className="flex items-start justify-between">
                 <div>
-                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Total Revenue</p>
-                     <h3 className="text-3xl font-bold text-[#112320] tracking-tight">${totalRevenue.toLocaleString()}</h3>
+                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Ingresos totales</p>
+                     <h3 className="text-3xl font-bold text-black tracking-tight">${totalRevenue.toLocaleString()}</h3>
                 </div>
                 <div className="p-3 rounded-2xl bg-green-100 text-green-700"><DollarSign size={24}/></div>
              </div>
           </Card>
-          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
+          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-300">
              <div className="flex items-start justify-between">
                 <div>
-                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Total Bookings</p>
-                     <h3 className="text-3xl font-bold text-[#112320] tracking-tight">{totalBookings}</h3>
+                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Reservas totales</p>
+                     <h3 className="text-3xl font-bold text-black tracking-tight">{totalBookings}</h3>
                 </div>
                 <div className="p-3 rounded-2xl bg-blue-100 text-blue-700"><Calendar size={24}/></div>
              </div>
           </Card>
-          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
+          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-300">
              <div className="flex items-start justify-between">
                 <div>
-                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Avg. Session</p>
-                     <h3 className="text-3xl font-bold text-[#112320] tracking-tight">{avgSession}m</h3>
+                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Sesión promedio</p>
+                     <h3 className="text-3xl font-bold text-black tracking-tight">{avgSession}m</h3>
                 </div>
                 <div className="p-3 rounded-2xl bg-orange-100 text-orange-700"><ClockIcon size={24}/></div>
              </div>
           </Card>
-          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-100 shadow-sm">
+          <Card className="p-6 relative overflow-hidden group bg-white border border-gray-300">
              <div className="flex items-start justify-between">
                 <div>
-                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Utilization</p>
-                     <h3 className="text-3xl font-bold text-[#112320] tracking-tight">--</h3>
+                     <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Ocupación</p>
+                     <h3 className="text-3xl font-bold text-black tracking-tight">{utilization.toFixed(1)}%</h3>
                 </div>
                 <div className="p-3 rounded-2xl bg-purple-100 text-purple-700"><Activity size={24}/></div>
              </div>
@@ -1265,13 +1401,13 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Revenue Overview</h3>
+              <h3 className="text-2xl font-semibold text-black mb-6">Resumen de ingresos</h3>
               <div className="h-64 w-full">
                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={revenueData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
+                        <YAxis axisLine={false} tickLine={false} fontSize={12} />
                         <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                         <Line type="monotone" dataKey="value" stroke="#1B3530" strokeWidth={3} dot={{r: 4, fill: "#1B3530"}} activeDot={{ r: 8 }} />
                     </LineChart>
@@ -1280,7 +1416,7 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
           </Card>
 
           <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Customer Segments</h3>
+              <h3 className="text-2xl font-semibold text-black mb-6">Segmentos de clientes</h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -1297,7 +1433,7 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
                         <Cell key={`cell-${index}`} fill={getSegmentColor(entry.name)} />
                         ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend verticalAlign="bottom" height={36}/>
                     </PieChart>
                 </ResponsiveContainer>
@@ -1307,27 +1443,27 @@ const ReportsPage = ({ onExport, reservations, loading }: { onExport: () => void
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Hourly Distribution</h3>
+              <h3 className="text-2xl font-semibold text-black mb-6">Distribución horaria</h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={hourlyData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="hour" axisLine={false} tickLine={false} fontSize={12} />
-                    <YAxis axisLine={false} tickLine={false} />
+                    <YAxis axisLine={false} tickLine={false} fontSize={12} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="value" fill="#C7F269" radius={[4, 4, 4, 4]} />
+                    <Bar dataKey="value" fill="#1B3530" radius={[4, 4, 4, 4]} />
                     </BarChart>
                 </ResponsiveContainer>
               </div>
           </Card>
            <Card className="p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-[#112320] mb-6">Bookings by Weekday</h3>
+              <h3 className="text-2xl font-semibold text-black mb-6">Reservas por día de la semana</h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={bookingsByWeekday}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
+                    <YAxis axisLine={false} tickLine={false} fontSize={12} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Bar dataKey="value" fill="#1B3530" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -1374,6 +1510,9 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         name: 'Club Central', 
         phone: '', 
         address: '', 
+        province: '',
+        municipality: '',
+        locality: '',
         coords: '', 
         status: 'ACTIVE', 
         description: '',
@@ -1382,10 +1521,6 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     });
     const [schedule, setSchedule] = useState<any[]>([]);
     const [services, setServices] = useState<string[]>([]);
-    const [dateFilter, setDateFilter] = useState('ALL');
-    const [starFilter, setStarFilter] = useState<number | 'ALL'>('ALL');
-    const [customDateStart, setCustomDateStart] = useState('');
-    const [customDateEnd, setCustomDateEnd] = useState('');
     const logoInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -1423,18 +1558,13 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     const [reviewSort, setReviewSort] = useState('RECENT');
     const [reviewFilter, setReviewFilter] = useState<number | 'ALL'>('ALL');
 
-    // Lógica de filtrado y ordenamiento
     const filteredReviews = React.useMemo(() => {
         let res = [...reviews];
-        
-        // Filtrar por estrellas
         if (reviewFilter !== 'ALL') {
             res = res.filter(r => Math.round(r.rating) === reviewFilter);
         }
-        
-        // Ordenar
         if (reviewSort === 'RECENT') {
-                res.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                res.sort((a, b) => normalizeTime(b.created_at).getTime() - normalizeTime(a.created_at).getTime());
         } else if (reviewSort === 'ASC') {
             res.sort((a, b) => a.rating - b.rating);
         } else if (reviewSort === 'DESC') {
@@ -1443,7 +1573,6 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         return res;
     }, [reviews, reviewFilter, reviewSort]);
 
-    // Helper para renderizar estrellas
     const renderStars = (rating: number) => {
         return (
             <div className="flex items-center gap-0.5">
@@ -1460,6 +1589,9 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                 name: clubConfig.name || '',
                 phone: clubConfig.phone || '',
                 address: clubConfig.address || '',
+                province: clubConfig.province || '',
+                municipality: clubConfig.municipality || '',
+                locality: clubConfig.locality || '',
                 coords: clubConfig.lat && clubConfig.lng ? `${clubConfig.lat}, ${clubConfig.lng}` : '',
                 status: clubConfig.isActive ? 'ACTIVE' : 'INACTIVE',
                 description: clubConfig.description || '',
@@ -1497,11 +1629,13 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
   
     const handleUpdateBasicInfo = () => {
         const [lat, lng] = basicInfo.coords.split(',').map(s => s.trim());
-        
         onUpdateClub({
           name: basicInfo.name,
           phone: basicInfo.phone,
           address: basicInfo.address,
+          province: basicInfo.province,
+          municipality: basicInfo.municipality,
+          locality: basicInfo.locality,
           lat: lat || '',
           lng: lng || '',
           isActive: basicInfo.status === 'ACTIVE'
@@ -1541,11 +1675,10 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
     return (
       <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
         <div className="pb-2">
-          <h1 className="text-3xl font-bold text-[#112320]">Mi Club</h1>
+          <h1 className="text-4xl font-semibold text-black">Mi Club</h1>
         </div>
 
-        {/* Change Club Header */}
-        <div className="w-full mx-auto md:mx-0 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+        <div className="w-full mx-auto md:mx-0 mb-6 bg-white p-4 rounded-2xl border border-gray-300 shadow-sm flex items-center justify-between">
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#F8F8F8] rounded-xl text-[#1B3530] flex items-center justify-center overflow-hidden border border-gray-100">
                   {selectedClub?.logo ? (
@@ -1555,8 +1688,8 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                   )}
               </div>
               <div>
-                 <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">Gestionando</p>
-                 <h2 className="text-lg font-bold text-[#112320]">{selectedClub?.name || 'Cargando...'}</h2>
+                 <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Gestionando</p>
+                 <h2 className="text-lg font-bold text-black">{selectedClub?.name || 'Cargando...'}</h2>
               </div>
            </div>
            <Button variant="secondary" onClick={onChangeClub}>
@@ -1565,12 +1698,12 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
            </Button>
         </div>
         
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-full max-w-full overflow-x-auto no-scrollbar border border-gray-200">
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-full max-w-full overflow-x-auto no-scrollbar border border-gray-300">
           {TABS.map(tab => {
               const TabIcon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${isActive ? 'bg-white text-[#1B3530] font-bold shadow-sm' : 'text-gray-500 hover:text-[#112320]'}`}>
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-base font-medium ${isActive ? 'bg-white text-[#1B3530] font-bold shadow-sm' : 'text-gray-500 hover:text-black'}`}>
                       <TabIcon size={16} />{tab.label}
                   </button>
               )
@@ -1578,13 +1711,22 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
         </div>
 
         <div className="py-4 w-full">
-          <div className="w-full max-w-5xl mx-auto md:mx-0">
+          <div className="w-full mx-auto md:mx-0">
               {activeTab === 'DATOS' && (
                 <Card className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-black">Información del club</h3>
+                      <p className="text-gray-500 text-base">Ingresa la información clave de tu club.</p>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input name="name" label="Nombre del Complejo" placeholder="Ej. Club Central" value={basicInfo.name} onChange={(e) => setBasicInfo({...basicInfo, name: e.target.value})} />
                     <Input name="phone" label="Teléfono" placeholder="+54 9 11..." icon={Phone} value={basicInfo.phone} onChange={(e) => setBasicInfo({...basicInfo, phone: e.target.value})} />
                     <Input name="address" label="Dirección" placeholder="Calle, Número, Ciudad" className="md:col-span-2" value={basicInfo.address} onChange={(e) => setBasicInfo({...basicInfo, address: e.target.value})} />
+                    <Input name="province" label="Provincia" placeholder="Ej. Buenos Aires" value={basicInfo.province} onChange={(e) => setBasicInfo({...basicInfo, province: e.target.value})} />
+                    <Input name="municipality" label="Municipio / Partido" placeholder="Ej. Vicente López" value={basicInfo.municipality} onChange={(e) => setBasicInfo({...basicInfo, municipality: e.target.value})} />
+                    <Input name="locality" label="Localidad / Barrio" placeholder="Ej. Olivos" className="md:col-span-2" value={basicInfo.locality} onChange={(e) => setBasicInfo({...basicInfo, locality: e.target.value})} />
                     <Input name="coords" label="Coordenadas" placeholder="Lat, Long (Ej: -34.6037, -58.3816)" icon={MapPin} value={basicInfo.coords} onChange={(e) => setBasicInfo({...basicInfo, coords: e.target.value})} />
                     <Select name="status" label="Estado del Complejo" value={basicInfo.status} onChange={(e) => setBasicInfo({...basicInfo, status: e.target.value})}>
                       <option value="ACTIVE">Activo</option>
@@ -1600,8 +1742,7 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
               )}
             {activeTab === 'RESEÑAS' && (
                 <div className="space-y-6 animate-in fade-in duration-300 w-full">
-                    {/* Header Summary con Promedio */}
-                    <div className="bg-white rounded-3xl p-6 border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                    <div className="bg-white rounded-3xl p-6 border border-gray-300 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
                         <div className="flex items-center gap-6">
                             <div className="flex flex-col items-center justify-center w-24 h-24 bg-[#F8F8F8] rounded-2xl border border-gray-100">
                                 <span className="text-3xl font-bold text-[#1B3530]">{clubConfig?.avgRating || 0}</span>
@@ -1610,36 +1751,36 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-[#112320]">Calificación Promedio</h3>
+                                <h3 className="text-xl font-bold text-black">Calificación Promedio</h3>
                                 <p className="text-gray-500">Basado en {reviews.length} reseñas</p>
                             </div>
                         </div>
-                        {/* Barras de distribución simples */}
                         <div className="flex flex-col gap-2 w-full md:w-auto min-w-[200px]">
-                            <div className="flex items-center gap-2 w-full">
-                                <span className="text-xs font-bold w-4">5</span> <Star size={10} className="text-yellow-400 fill-yellow-400"/>
-                                <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 rounded-full" style={{ width: `${(reviews.filter(r => Math.round(r.rating) === 5).length / Math.max(reviews.length, 1)) * 100}%` }}></div></div>
-                            </div>
-                            <div className="flex items-center gap-2 w-full">
-                                <span className="text-xs font-bold w-4">4</span> <Star size={10} className="text-yellow-400 fill-yellow-400"/>
-                                <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 rounded-full" style={{ width: `${(reviews.filter(r => Math.round(r.rating) === 4).length / Math.max(reviews.length, 1)) * 100}%` }}></div></div>
-                            </div>
-                            {/* Puedes agregar 3, 2, 1 aquí si deseas */}
+                            {[5, 4, 3, 2, 1].map(star => (
+                                <div key={star} className="flex items-center gap-2 w-full">
+                                    <span className="text-sm font-bold w-4">{star}</span> <Star size={10} className="text-yellow-400 fill-yellow-400"/>
+                                    <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${(reviews.filter(r => Math.round(r.rating) === star).length / Math.max(reviews.length, 1)) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Filtros y Ordenamiento */}
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-2xl border border-gray-200">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-2xl border border-gray-300">
                         <div className="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto p-1">
-                            <button onClick={() => setReviewFilter('ALL')} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${reviewFilter === 'ALL' ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>Todos</button>
-                            <button onClick={() => setReviewFilter(5)} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${reviewFilter === 5 ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>5 <Star size={12} className="fill-current"/></button>
-                            {/* Repetir para 4, 3, 2, 1 */}
+                            <button onClick={() => setReviewFilter('ALL')} className={`px-4 py-2 rounded-xl text-base font-semibold transition-all whitespace-nowrap ${reviewFilter === 'ALL' ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>Todos</button>
+                            {[5, 4, 3, 2, 1].map(num => (
+                                <button key={num} onClick={() => setReviewFilter(num)} className={`px-4 py-2 rounded-xl text-base font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${reviewFilter === num ? 'bg-[#1B3530] text-[#C7F269]' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                    {num} <Star size={12} className="fill-current"/>
+                                </button>
+                            ))}
                         </div>
                         <div className="w-full sm:w-auto px-2">
                             <select 
                                 value={reviewSort} 
                                 onChange={(e) => setReviewSort(e.target.value)}
-                                className="w-full sm:w-auto bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-[#1B3530] focus:border-[#1B3530] block p-2.5 outline-none"
+                                className="w-full sm:w-auto bg-gray-50 border border-gray-300 text-gray-700 text-base rounded-xl focus:ring-[#1B3530] focus:border-[#1B3530] block p-2.5 outline-none"
                             >
                                 <option value="RECENT">Más Recientes</option>
                                 <option value="DESC">Mayor Calificación</option>
@@ -1648,54 +1789,52 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                         </div>
                     </div>
 
-                    {/* Lista de Reseñas */}
                     <div className="space-y-4">
                         {filteredReviews.length === 0 ? (
-                            <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
                                 <p className="text-gray-500 font-medium">No hay reseñas con este filtro.</p>
                             </div>
                         ) : (
                             filteredReviews.map(review => (
-                                <Card key={review.id} className="p-6 transition-all hover:shadow-md">
+                                <Card key={(review as any).id} className="p-6 transition-all hover:shadow-md">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-[#1B3530]">
-                                                {review.clientName ? review.clientName.substring(0,2).toUpperCase() : 'AN'}
+                                                {(review as any).clientName ? (review as any).clientName.substring(0,2).toUpperCase() : 'AN'}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-[#112320] text-sm">{review.clientName}</h4>
-                                                <p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</p>
+                                                <h4 className="font-bold text-black text-lg">{(review as any).clientName}</h4>
+                                                <p className="text-base text-gray-500">{normalizeTime((review as any).created_at).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {renderStars(review.rating)}
+                                        <div className="flex items-center gap-3">
+                                            {renderStars((review as any).rating)}
                                         </div>
                                     </div>
-                                    <p className="text-gray-600 text-sm leading-relaxed mb-4 pl-[52px]">
-                                        "{review.comment}"
+                                    <p className="text-gray-600 text-lg leading-relaxed pl-[52px]">
+                                        "{(review as any).comment}"
                                     </p>
                                     
-                                    {/* Bloque de Respuesta del Club */}
-                                    {review.reply_comment && (
+                                    {(review as any).reply_comment && (
                                         <div className="mt-4 ml-[52px] bg-gray-50 p-4 rounded-xl border-l-4 border-[#1B3530]">
-                                            <p className="text-xs font-bold text-[#1B3530] mb-1">Respuesta del Club</p>
-                                            <p className="text-sm text-gray-600 italic">"{review.reply_comment}"</p>
-                                            {review.reply_at && (
-                                                <p className="text-[10px] text-gray-400 mt-2 text-right">{new Date(review.reply_at).toLocaleDateString()}</p>
+                                            <p className="text-base font-bold text-[#1B3530] mb-1">Respuesta del Club</p>
+                                            <p className="text-lg text-gray-600 italic">"{(review as any).reply_comment}"</p>
+                                            {(review as any).reply_at && (
+                                                <p className="text-sm text-gray-500 mt-2 text-right">{normalizeTime((review as any).reply_at).toLocaleDateString()}</p>
                                             )}
                                         </div>
                                     )}
 
-                                    <div className="flex justify-end gap-2 pl-[52px]">
+                                    <div className="flex justify-end gap-2 mt-4 pl-[52px]">
                                         <button 
-                                            onClick={() => onReplyReview(review.id)}
-                                            className="text-xs font-semibold text-[#1B3530] hover:underline flex items-center gap-1"
+                                            onClick={() => onReplyReview((review as any).id)}
+                                            className="text-base font-semibold text-[#1B3530] hover:underline flex items-center gap-1"
                                         >
                                             <MessageSquare size={14} /> Responder
                                         </button>
                                         <button 
-                                            onClick={() => onReportReview(review.id)}
-                                            className="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 ml-4"
+                                            onClick={() => onReportReview((review as any).id)}
+                                            className="text-base font-semibold text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1 ml-4"
                                         >
                                             <Flag size={14} /> Reportar
                                         </button>
@@ -1711,24 +1850,24 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                     <Card className="space-y-6 h-fit">
                         <div className="flex justify-between items-center mb-4">
                             <div>
-                                <h3 className="text-lg font-bold text-[#112320]">Configuración de Horarios</h3>
-                                <p className="text-gray-500 text-sm">Define los horarios de apertura y cierre.</p>
+                                <h3 className="text-lg font-bold text-black">Configuración de Horarios</h3>
+                                <p className="text-gray-500 text-base">Define los horarios de apertura y cierre.</p>
                             </div>
                         </div>
                         <div className="space-y-4">
                             {schedule.map((day, idx) => (
                                 <div key={day.day || idx} className="flex items-center gap-4 p-3 bg-[#F8F8F8] rounded-2xl">
-                                    <div className="w-24 font-bold text-[#112320]">{day.day}</div>
+                                    <div className="w-24 font-bold text-black">{day.day}</div>
                                     <div className="flex-1 flex items-center gap-4">
                                         <Checkbox label="Abierto" checked={day.open} onChange={(e) => handleScheduleChange(idx, 'open', e.target.checked)} />
                                         {day.open && (
                                             <div className="flex items-center gap-2">
-                                                <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.start} onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)} />
-                                                <span className="text-gray-400">-</span>
-                                                <input type="time" className="rounded-xl border-gray-200 p-2 text-sm bg-white" value={day.end} onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)} />
+                                                <input type="time" className="rounded-xl border-gray-300 p-2 text-base bg-white" value={day.start} onChange={(e) => handleScheduleChange(idx, 'start', e.target.value)} />
+                                                <span className="text-gray-500">-</span>
+                                                <input type="time" className="rounded-xl border-gray-300 p-2 text-base bg-white" value={day.end} onChange={(e) => handleScheduleChange(idx, 'end', e.target.value)} />
                                             </div>
                                         )}
-                                        {!day.open && <span className="text-sm text-gray-400 italic">Cerrado</span>}
+                                        {!day.open && <span className="text-base text-gray-500 italic">Cerrado</span>}
                                     </div>
                                 </div>
                             ))}
@@ -1738,12 +1877,12 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
 
                     <Card className="space-y-6 h-fit">
                         <div>
-                             <h3 className="text-lg font-bold text-[#112320]">Eventos Especiales</h3>
-                             <p className="text-gray-500 text-sm">Configura días feriados o cierres por mantenimiento.</p>
+                             <h3 className="text-lg font-bold text-black">Eventos Especiales</h3>
+                             <p className="text-gray-500 text-base">Configura días feriados o cierres por mantenimiento.</p>
                         </div>
                         
                         <div className="space-y-4 p-4 bg-[#F8F8F8] rounded-2xl">
-                             <h4 className="font-bold text-sm text-[#112320]">Nuevo Evento</h4>
+                             <h4 className="font-bold text-base text-black">Nuevo Evento</h4>
                              <div className="grid grid-cols-2 gap-4">
                                  <Input type="date" label="Fecha" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
                                  <Select label="Tipo" value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})}>
@@ -1754,15 +1893,15 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                              <Input label="Motivo / Nombre" placeholder="Ej. Día del Club" value={newEvent.name} onChange={e => setNewEvent({...newEvent, name: e.target.value})} />
                              
                              <div className="space-y-2">
-                                 <label className="text-base font-medium text-[#112320]">Aplica a</label>
+                                 <label className="text-base font-bold text-black">Aplica a</label>
                                  <div className="flex gap-4">
                                      <label className="flex items-center gap-2 cursor-pointer">
                                          <input type="radio" name="scope" checked={newEvent.scope === 'ALL'} onChange={() => setNewEvent({...newEvent, scope: 'ALL', courtIds: []})} className="accent-[#1B3530]" />
-                                         <span className="text-sm font-medium">Todo el Club</span>
+                                         <span className="text-base font-medium">Todo el Club</span>
                                      </label>
                                      <label className="flex items-center gap-2 cursor-pointer">
                                          <input type="radio" name="scope" checked={newEvent.scope === 'SPECIFIC'} onChange={() => setNewEvent({...newEvent, scope: 'SPECIFIC'})} className="accent-[#1B3530]" />
-                                         <span className="text-sm font-medium">Canchas Específicas</span>
+                                         <span className="text-base font-medium">Canchas Específicas</span>
                                      </label>
                                  </div>
                              </div>
@@ -1785,23 +1924,23 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
                         </div>
 
                         <div className="space-y-3">
-                             <h4 className="font-bold text-sm text-[#112320]">Próximos Eventos</h4>
+                             <h4 className="font-bold text-base text-black">Próximos Eventos</h4>
                              {specialEvents.length === 0 ? (
-                                 <p className="text-sm text-gray-400 italic text-center py-4">No hay eventos configurados.</p>
+                                 <p className="text-base text-gray-500 italic text-center py-4">No hay eventos configurados.</p>
                              ) : (
                                  specialEvents.map(event => (
                                      <div key={event.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-[#F8F8F8] transition-colors group">
                                          <div>
                                              <div className="flex items-center gap-2">
-                                                 <span className="font-bold text-[#112320] text-sm">{new Date(event.date + 'T00:00:00').toLocaleDateString()}</span>
+                                                 <span className="font-bold text-black text-base">{normalizeTime(event.date + 'T00:00:00').toLocaleDateString()}</span>
                                                  <Badge color={event.type === 'Feriado' ? 'blue' : 'red'}>{event.type}</Badge>
                                              </div>
-                                             <p className="text-sm text-gray-600">{event.name}</p>
-                                             <p className="text-xs text-gray-400">
+                                             <p className="text-base text-gray-600">{event.name}</p>
+                                             <p className="text-sm text-gray-500">
                                                  {event.scope === 'ALL' ? 'Todo el Club' : `${event.courtIds.length} canchas`}
                                              </p>
                                          </div>
-                                         <button onClick={() => handleDeleteEvent(event.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                         <button onClick={() => handleDeleteEvent(event.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors">
                                              <Trash2 size={16} />
                                          </button>
                                      </div>
@@ -1813,13 +1952,14 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
               )}
               {activeTab === 'SERVICIOS' && (
                  <Card className="animate-in fade-in duration-300">
-                   <h3 className="text-lg font-bold mb-6 text-[#112320]">Servicios del Club</h3>
+                   <h3 className="text-lg font-bold text-black">Servicios del Club</h3>
+                   <p className="text-gray-500 text-base mb-6">Selecciona las características de tu club.</p>
                    <div className="grid grid-cols-2 gap-4">
                       {['Wi-Fi', 'Vestuario', 'Gimnasio', 'Estacionamiento', 'Ayuda Médica', 'Torneos', 'Cumpleaños', 'Parrilla', 'Escuelita deportiva', 'Colegios', 'Bar / Restaurante', 'Quincho'].map(s => {
                           const isChecked = services.includes(s);
                           return (
                               <div key={s} className={`flex items-center justify-between p-4 border rounded-2xl transition-all cursor-pointer ${isChecked ? 'border-[#1B3530] bg-[#C7F269]/10' : 'border-gray-100 bg-[#F8F8F8]/50 hover:border-gray-300'}`} onClick={() => toggleService(s)}>
-                                  <span className="font-medium text-[#112320]">{s}</span>
+                                  <span className="font-medium text-black">{s}</span>
                                   <div className={`w-5 h-5 rounded border flex items-center justify-center ${isChecked ? 'bg-[#1B3530] border-[#1B3530]' : 'border-gray-300 bg-white'}`}>{isChecked && <Check size={14} className="text-[#C7F269]" />}</div>
                               </div>
                           )
@@ -1830,47 +1970,47 @@ const MyClubPage = ({ users, onAddUser, onEditUser, onToggleStatus, onDeleteUser
               )}
               {activeTab === 'INTEGRACIONES' && (
                  <Card className="animate-in fade-in duration-300 space-y-6">
-                   <h3 className="text-lg font-bold mb-4 text-[#112320]">Integraciones</h3>
+                   <h3 className="text-lg font-bold mb-4 text-black">Integraciones</h3>
                    <div className="space-y-4">
-                       <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
+                       <div className="p-6 border border-gray-300 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
                           <div className="flex items-center gap-4">
                               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold">MP</div>
-                              <div><h4 className="font-bold text-[#112320] text-lg">Mercado Pago</h4><p className="text-sm text-gray-500">Procesa pagos online para señas y reservas.</p></div>
+                              <div><h4 className="font-bold text-black text-lg">Mercado Pago</h4><p className="text-base text-gray-500">Procesa pagos online para señas y reservas.</p></div>
                           </div>
                           <Button variant="secondary" className="rounded-full">Conectar</Button>
                        </div>
-                       <div className="p-6 border border-gray-200 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
+                       <div className="p-6 border border-gray-300 rounded-3xl flex items-center justify-between hover:shadow-sm transition-shadow">
                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" /></div>
-                              <div><h4 className="font-bold text-[#112320] text-lg">Google Calendar</h4><p className="text-sm text-gray-500">Sincroniza tus reservas con tu calendario personal.</p></div>
+                              <div className="w-12 h-12 bg-white border border-gray-300 rounded-xl flex items-center justify-center"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" alt="Google Calendar" /></div>
+                              <div><h4 className="font-bold text-black text-lg">Google Calendar</h4><p className="text-base text-gray-500">Sincroniza tus reservas con tu calendario personal.</p></div>
                           </div>
-                          <div className="flex items-center gap-2"><Button variant="ghost" className="text-gray-400">Conectar</Button></div>
+                          <div className="flex items-center gap-2"><Button variant="ghost" className="text-gray-500">Conectar</Button></div>
                        </div>
                    </div>
                  </Card>
               )}
               {activeTab === 'APARIENCIA' && (
                  <Card className="animate-in fade-in duration-300 space-y-8">
-                   <h3 className="text-lg font-bold mb-4 text-[#112320]">Personalización Visual</h3>
+                   <h3 className="text-lg font-bold mb-4 text-black">Personalización Visual</h3>
                    <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e, 'LOGO')} />
                    <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e, 'COVER')} />
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                          <label className="text-base font-medium text-[#112320] block">Logo del Club</label>
-                          <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48 relative overflow-hidden" onClick={() => logoInputRef.current?.click()}>
-                               {basicInfo.logo ? <img src={basicInfo.logo} alt="Logo Preview" className="absolute inset-0 w-full h-full object-contain p-4" /> : <><div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><ImageIcon className="text-gray-400" size={32} /></div><p className="text-sm font-bold text-[#1B3530]">Subir Logo</p><p className="text-xs text-gray-400">PNG, JPG (Max 2MB)</p><p className="text-[10px] text-gray-400">Recomendado: 500x500px</p></>}
+                          <label className="text-base font-bold text-black block">Logo del Club</label>
+                          <div className="border-2 border-dashed border-gray-300 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48 relative overflow-hidden" onClick={() => logoInputRef.current?.click()}>
+                               {basicInfo.logo ? <img src={basicInfo.logo} alt="Logo Preview" className="absolute inset-0 w-full h-full object-contain p-4" /> : <><div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><ImageIcon className="text-gray-500" size={32} /></div><p className="text-base font-bold text-[#1B3530]">Subir Logo</p><p className="text-sm text-gray-500">PNG, JPG (Max 2MB)</p><p className="text-[10px] text-gray-500">Recomendado: 500x500px</p></>}
                           </div>
                       </div>
                       <div className="space-y-4">
-                          <label className="text-base font-medium text-[#112320] block">Imagen de Portada</label>
-                          <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48 relative overflow-hidden" onClick={() => coverInputRef.current?.click()}>
-                               {basicInfo.cover ? <img src={basicInfo.cover} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" /> : <><div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300"><ImageIcon size={48} /></div><p className="text-sm font-bold text-[#1B3530]">Subir Portada</p><p className="text-xs text-gray-400">Max 5MB</p><p className="text-xs text-gray-400">Max 5MB</p><p className="text-xs text-gray-400">Recomendado: 1920x1080px</p></>}
+                          <label className="text-base font-bold text-black block">Imagen de Portada</label>
+                          <div className="border-2 border-dashed border-gray-300 rounded-3xl p-8 flex flex-col items-center justify-center text-center hover:bg-[#F8F8F8] transition-colors cursor-pointer group h-48 relative overflow-hidden" onClick={() => coverInputRef.current?.click()}>
+                               {basicInfo.cover ? <img src={basicInfo.cover} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" /> : <><div className="w-full h-20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-gray-300"><ImageIcon size={48} /></div><p className="text-base font-bold text-[#1B3530]">Subir Portada</p><p className="text-sm text-gray-500">Max 5MB</p><p className="text-sm text-gray-500">Recomendado: 1920x1080px</p></>}
                           </div>
                       </div>
                    </div>
                    <div className="pt-4 relative">
                        <Input label="Mensaje de Bienvenida" placeholder="¡Bienvenidos a Club Central!" value={basicInfo.description} onChange={(e) => { if (e.target.value.length <= 140) { setBasicInfo({...basicInfo, description: e.target.value}); } }} />
-                       <div className="absolute right-0 top-0 text-xs text-gray-400 mt-2">{basicInfo.description.length}/140</div>
+                       <div className="absolute right-0 top-0 text-sm text-gray-500 mt-2">{basicInfo.description.length}/140</div>
                    </div>
                    <div className="flex justify-end pt-4 border-t border-gray-100"><Button onClick={handleUpdateAppearance}>Guardar Apariencia</Button></div>
                  </Card>
@@ -1900,7 +2040,6 @@ const UserProfilePage = ({
   const [formData, setFormData] = useState({ full_name: user?.name || '', phone: user?.phone || '' });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   
-  // Initialize from user settings if available, else defaults
   const [notificationSettings, setNotificationSettings] = useState({
       newReservation: true,
       cancelledReservation: true,
@@ -1958,15 +2097,15 @@ const UserProfilePage = ({
   return (
     <div className="p-8 space-y-4 w-full pb-20 h-full overflow-y-auto">
       <div className="pb-2">
-        <h1 className="text-3xl font-bold text-[#112320]">Mi Perfil</h1>
+        <h1 className="text-4xl font-semibold text-black">Mi Perfil</h1>
       </div>
       
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-200">
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar border border-gray-300">
         {TABS.map(tab => {
             const TabIcon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-sm font-medium ${isActive ? 'bg-white text-[#1B3530] font-bold shadow-sm' : 'text-gray-500 hover:text-[#112320]'}`}>
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap text-base font-medium ${isActive ? 'bg-white text-[#1B3530] font-bold shadow-sm' : 'text-gray-500 hover:text-black'}`}>
                     <TabIcon size={16} />{tab.label}
                 </button>
             )
@@ -1977,7 +2116,7 @@ const UserProfilePage = ({
           <div className="w-full max-w-2xl mx-auto md:mx-0">
             {activeTab === 'PROFILE' && (
                 <Card className="p-6 space-y-6 animate-in fade-in duration-300">
-                <h2 className="text-xl font-bold text-[#112320]">Información Personal</h2>
+                <h2 className="text-xl font-bold text-black">Información Personal</h2>
                 <form onSubmit={handleProfileSubmit} className="space-y-4">
                     <Input label="Nombre Completo" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
                     <Input label="Email" value={email || ''} disabled className="bg-gray-50 text-gray-500" />
@@ -1992,7 +2131,7 @@ const UserProfilePage = ({
 
             {activeTab === 'SECURITY' && (
                 <Card className="p-6 space-y-6 h-fit animate-in fade-in duration-300">
-                <h2 className="text-xl font-bold text-[#112320]">Seguridad</h2>
+                <h2 className="text-xl font-bold text-black">Seguridad</h2>
                 <form onSubmit={handlePasswordSubmit} className="space-y-4">
                     <Input type="password" label="Contraseña Actual" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} required />
                     <Input type="password" label="Nueva Contraseña" value={passwords.new} onChange={e => setPasswords({...passwords, new: e.target.value})} required />
@@ -2007,30 +2146,30 @@ const UserProfilePage = ({
 
             {activeTab === 'NOTIFICATIONS' && (
                  <Card className="p-6 space-y-6 animate-in fade-in duration-300">
-                    <h2 className="text-xl font-bold text-[#112320]">Configuración de Notificaciones</h2>
-                    <p className="text-gray-500 text-sm">Elige qué alertas deseas recibir en tu correo electrónico.</p>
+                    <h2 className="text-xl font-bold text-black">Configuración de Notificaciones</h2>
+                    <p className="text-gray-500 text-base">Elige qué alertas deseas recibir en tu correo electrónico.</p>
                     
                     <div className="space-y-6">
                         <div className="flex items-center justify-between p-4 bg-[#F8F8F8] rounded-2xl">
                              <div>
-                                 <h4 className="font-bold text-[#112320]">Nueva Reserva</h4>
-                                 <p className="text-sm text-gray-500">Recibir un mail cuando se cree una reserva.</p>
+                                 <h4 className="font-bold text-black">Nueva Reserva</h4>
+                                 <p className="text-base text-gray-500">Recibir un mail cuando se cree una reserva.</p>
                              </div>
                              <Switch checked={notificationSettings.newReservation} onChange={() => handleNotificationChange('newReservation')} />
                         </div>
 
                         <div className="flex items-center justify-between p-4 bg-[#F8F8F8] rounded-2xl">
                              <div>
-                                 <h4 className="font-bold text-[#112320]">Reserva Cancelada</h4>
-                                 <p className="text-sm text-gray-500">Recibir un mail cuando se cancele una reserva.</p>
+                                 <h4 className="font-bold text-black">Reserva Cancelada</h4>
+                                 <p className="text-base text-gray-500">Recibir un mail cuando se cancele una reserva.</p>
                              </div>
                              <Switch checked={notificationSettings.cancelledReservation} onChange={() => handleNotificationChange('cancelledReservation')} />
                         </div>
 
                         <div className="flex items-center justify-between p-4 bg-[#F8F8F8] rounded-2xl">
                              <div>
-                                 <h4 className="font-bold text-[#112320]">Reserva Modificada</h4>
-                                 <p className="text-sm text-gray-500">Recibir un mail cuando se edite una reserva.</p>
+                                 <h4 className="font-bold text-black">Reserva Modificada</h4>
+                                 <p className="text-base text-gray-500">Recibir un mail cuando se edite una reserva.</p>
                              </div>
                              <Switch checked={notificationSettings.modifiedReservation} onChange={() => handleNotificationChange('modifiedReservation')} />
                         </div>
@@ -2079,16 +2218,16 @@ const HelpPage = () => {
     return (
         <div className="p-8 space-y-6 h-full overflow-y-auto w-full pb-20">
              <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-[#112320]">Centro de Ayuda</h1>
+                <h1 className="text-4xl font-semibold text-black">Centro de Ayuda</h1>
                 <p className="text-gray-500">Encuentra respuestas a las preguntas más frecuentes.</p>
             </div>
 
             <div className="relative max-w-2xl">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                 <input 
                     type="text" 
                     placeholder="Buscar por palabra clave..." 
-                    className="w-full pl-11 pr-4 py-4 border border-gray-200 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
+                    className="w-full pl-11 pr-4 py-4 border border-gray-300 rounded-full focus:outline-none focus:border-[#1B3530] focus:ring-1 focus:ring-[#1B3530] text-base bg-white shadow-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -2103,13 +2242,13 @@ const HelpPage = () => {
                                 {groupedFaqs[category].map(faq => {
                                     const isExpanded = expandedIds.includes(faq.id);
                                     return (
-                                        <div key={faq.id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300">
+                                        <div key={faq.id} className="border border-gray-300 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300">
                                             <button 
                                                 onClick={() => toggleExpand(faq.id)}
                                                 className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none"
                                             >
-                                                <span className="font-semibold text-[#112320]">{faq.question}</span>
-                                                {isExpanded ? <ChevronDown className="text-gray-400 rotate-180 transition-transform" /> : <ChevronDown className="text-gray-400 transition-transform" />}
+                                                <span className="font-semibold text-black">{faq.question}</span>
+                                                {isExpanded ? <ChevronDown className="text-gray-500 rotate-180 transition-transform" /> : <ChevronDown className="text-gray-500 transition-transform" />}
                                             </button>
                                             <div className={`px-6 text-gray-600 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
                                                 <p className="leading-relaxed">{faq.answer}</p>
@@ -2157,10 +2296,7 @@ const App: React.FC = () => {
   };
   const closeSnackbar = () => { setSnackbar(prev => ({ ...prev, isOpen: false })); };
 
-  // --- Auth & Initial Load Logic ---
-
   useEffect(() => {
-      // Check active session
       supabase.auth.getSession().then(({ data: { session } }) => {
           setSession(session);
           if (session) {
@@ -2175,7 +2311,6 @@ const App: React.FC = () => {
               fetchClubs(session.user.id);
               fetchUserProfile(session.user.id);
           } else {
-              // Reset state on logout
               setAvailableClubs([]);
               setSelectedClub(null);
               setUserProfile(null);
@@ -2209,14 +2344,14 @@ const App: React.FC = () => {
           if (error) throw error;
           
           if (data && data.length > 0) {
-              // Filter out clubs where the user status is not ACTIVE
               const activeClubs = data.filter((member: any) => member.status === 'ACTIVE');
               setAvailableClubs(activeClubs);
           } else {
               setAvailableClubs([]);
           }
-      } catch (error) {
-          console.error('Error fetching clubs:', error);
+      } catch (error: any) {
+          console.error('Error fetching clubs:', error?.message || error);
+          showFeedback('Error al cargar clubes. Por favor revise su conexión.', 'error');
       }
   };
 
@@ -2238,34 +2373,27 @@ const App: React.FC = () => {
 
   const handleSelectClub = (clubData: any) => {
       setSelectedClub(clubData);
-      // Fetch all data for this club
       fetchData(clubData.id);
   };
 
   const fetchData = async (clubId: string) => {
       setLoading(true);
       try {
-          // 1. Fetch Club Settings
           const { data: clubData } = await supabase.from('club_settings').select('*').eq('id', clubId).single();
           if (clubData) setClubConfig(clubData);
 
-          // 2. Fetch Courts
           const { data: courtsData } = await supabase.from('courts').select('*').eq('club_id', clubId);
           if (courtsData) setCourts(courtsData);
 
-          // 3. Fetch Reservations
           const { data: resData } = await supabase.from('reservations').select('*').eq('club_id', clubId);
           if (resData) setReservations(resData as unknown as Reservation[]);
 
-          // 4. Fetch Clients
           const { data: clientData } = await supabase.from('clients').select('*').eq('club_id', clubId);
           if (clientData) setClients(clientData);
 
-          // 5. Fetch Inventory
           const { data: invData } = await supabase.from('products').select('*').eq('club_id', clubId);
           if (invData) setInventory(invData);
 
-          // 6. Fetch Users (Members of this club)
           const { data: membersData } = await supabase
               .from('club_members')
               .select('user_id, role, status')
@@ -2273,7 +2401,6 @@ const App: React.FC = () => {
           
           if (membersData && membersData.length > 0) {
               const userIds = membersData.map(m => m.user_id);
-              
               const { data: profilesData } = await supabase
                   .from('profiles')
                   .select('*')
@@ -2296,14 +2423,12 @@ const App: React.FC = () => {
               setUsersDb([]);
           }
 
-          // 7. Fetch Reviews
             const { data: reviewsData } = await supabase
                 .from('reviews')
-                .select('*, client:clients(name)') // Hacemos el join con la tabla clients
+                .select('*, client:clients(name)')
                 .eq('club_id', clubId);
 
             if (reviewsData) {
-                // Mapeamos para "aplanar" el nombre del cliente y facilitar su uso
                 setReviews(reviewsData.map((r: any) => ({
                     ...r,
                     clientName: r.client?.name || 'Cliente Anónimo' 
@@ -2312,9 +2437,9 @@ const App: React.FC = () => {
                 setReviews([]);
             }
 
-      } catch (error) {
-          console.error("Error loading club data", error);
-          showFeedback("Error cargando datos del club", 'error');
+      } catch (error: any) {
+          console.error("Error loading club data", error?.message || error);
+          showFeedback("Error cargando datos del club. Verifique su conexión.", 'error');
       } finally {
           setLoading(false);
       }
@@ -2329,8 +2454,6 @@ const App: React.FC = () => {
       setActiveSheet(null); 
   };
 
-  // --- Data Mutation Handlers ---
-  
   const handleUpdateProfile = async (data: any) => { 
       if (!session) return;
       const { error } = await supabase
@@ -2361,7 +2484,6 @@ const App: React.FC = () => {
       
       if (!error) {
           setUserProfile((prev: any) => ({ ...prev, notification_settings: settings }));
-          // Optional: showFeedback('Notificaciones actualizadas');
       } else {
           showFeedback('Error al guardar notificaciones', 'error');
       }
@@ -2375,9 +2497,7 @@ const App: React.FC = () => {
           showFeedback('Error al actualizar club', 'error');
       } else {
           setClubConfig((prev: any) => ({ ...prev, ...newData })); 
-          // Sync Selected Club Header
           setSelectedClub((prev: any) => ({ ...prev, ...newData }));
-          // Sync Selection List
           setAvailableClubs((prev) => prev.map(c => 
             c.club_id === selectedClub.id ? { ...c, club: { ...c.club, ...newData } } : c
           ));
@@ -2385,13 +2505,8 @@ const App: React.FC = () => {
       }
   };
 
-  // Reviews Mock (Not connected to DB yet as per SQL)
   const [reviews, setReviews] = useState([]);
-
-  // Sheets State
   const [activeSheet, setActiveSheet] = useState<null | 'RESERVATION' | 'COURT' | 'USER' | 'CLIENT' | 'VIEW_CLIENT' | 'PRODUCT' | 'VIEW_RESERVATION' | 'EXPORT_OPTIONS' | 'IMPORT_INVENTORY' | 'DELETE_USER_CONFIRMATION' | 'DELETE_RESERVATION_CONFIRMATION' | 'REPLY_REVIEW' | 'REPORT_REVIEW' | 'LOGOUT_CONFIRMATION' | 'DELETE_COURT_CONFIRMATION' | 'DELETE_CLIENT_CONFIRMATION' | 'DELETE_PRODUCT_CONFIRMATION'>(null);
-  
-  // Selection State
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -2412,19 +2527,53 @@ const App: React.FC = () => {
   const closeSheet = () => { setActiveSheet(null); };
   const resetReservationForm = () => { setReservationForm({ clientName: '', clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: 'Efectivo', notes: '', type: 'Normal', duration: '60', isRecurring: false, price: '4500' }); setPrefillReservation(null); setSelectedReservation(null); };
 
-  // --- Specific Handlers with Supabase ---
-
   const handleClientNameChange = (val: string) => { setReservationForm(prev => ({ ...prev, clientName: val })); };
   const handleClientSelect = (client: any) => { setReservationForm(prev => ({ ...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email })); };
   
+  /**
+   * Helper to get available starting hours for a court and date.
+   */
+  const getAvailableTimes = (courtId?: string, date?: string) => {
+    if (!courtId || !date) return [];
+    
+    const possibleHours = [];
+    for (let h = 8; h < 24; h++) {
+        possibleHours.push(`${h.toString().padStart(2, '0')}:00`);
+        possibleHours.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+
+    return possibleHours.filter(timeString => {
+      const slotStart = new Date(`${date}T${timeString}`).getTime();
+      
+      return !reservations.some(r => {
+        if (selectedReservation && r.id === selectedReservation.id) return false;
+        if (r.status === ReservationStatus.CANCELLED) return false;
+        if (r.courtId !== courtId) return false;
+        
+        // NORMALIZAMOS A TIEMPO LOCAL
+        const start = normalizeTime(r.startTime).getTime();
+        const end = normalizeTime(r.endTime).getTime();
+        
+        return slotStart >= start && slotStart < end;
+      });
+    });
+  };
+
   const handleSaveReservation = async (e: React.FormEvent) => { 
       e.preventDefault(); 
       if (!selectedClub) return;
 
-      const formCourtId = prefillReservation?.courtId || courts[0].id; 
-      const formDate = prefillReservation?.date || selectedDate; 
-      const formTime = prefillReservation?.time || '10:00'; 
-      const endTime = `${formDate}T${(parseInt(formTime.split(':')[0]) + (parseInt(reservationForm.duration) / 60)).toString().padStart(2, '0')}:${formTime.split(':')[1]}`; 
+    const formCourtId = prefillReservation?.courtId || courts[0].id; 
+    const formDate = prefillReservation?.date || selectedDate; 
+    const formTime = prefillReservation?.time || '10:00'; 
+
+        const start = new Date(`${formDate}T${formTime}`);
+        const durationMinutes = parseInt(reservationForm.duration);
+        const end = new Date(start.getTime() + durationMinutes * 60000);
+
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const endTime = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+
       const creatorName = session.user.email; 
       const clientNameInput = reservationForm.clientName; 
       
@@ -2441,7 +2590,6 @@ const App: React.FC = () => {
 
           if (!error && newClient) {
               setClients(prev => [...prev, newClient]);
-              showFeedback(`Nuevo cliente registrado`, 'info'); 
           }
       } 
       
@@ -2649,10 +2797,9 @@ const handleSaveReply = async (e: React.FormEvent) => {
         .eq('id', reviewActionId);
 
     if (!error) {
-        setReviews(reviews.map(r => r.id === reviewActionId ? { ...r, reply_comment: replyText, reply_at: replyDate } : r));
+        setReviews(reviews.map(r => (r as any).id === reviewActionId ? { ...r, reply_comment: replyText, reply_at: replyDate } : r));
         showFeedback('Respuesta enviada correctamente'); 
     } else {
-        console.error(error); // Agrega esto para ver el error real en la consola del navegador
         showFeedback('Error al enviar respuesta', 'error');
     }
     setActiveSheet(null); 
@@ -2673,8 +2820,7 @@ const handleSaveReport = async (e: React.FormEvent) => {
         .eq('id', reviewActionId);
 
     if (!error) {
-        // Actualizar estado local
-        setReviews(reviews.map(r => r.id === reviewActionId ? { ...r, report_reason: reportReason } : r));
+        setReviews(reviews.map(r => (r as any).id === reviewActionId ? { ...r, report_reason: reportReason } : r));
         showFeedback('Reseña reportada correctamente'); 
     } else {
         showFeedback('Error al reportar reseña', 'error');
@@ -2682,17 +2828,33 @@ const handleSaveReport = async (e: React.FormEvent) => {
     setActiveSheet(null); 
 }; 
 
-  // Other utility functions
   const openBookClient = (client: Client) => { setPrefillReservation({ date: selectedDate, time: '10:00', courtId: courts[0].id, clientName: client.name }); setReservationForm(prev => ({...prev, clientName: client.name, clientPhone: client.phone, clientEmail: client.email})); setActiveSheet('RESERVATION'); };
   const handleExport = (format: string) => { showFeedback(`Exportando reporte en formato ${format}...`, 'info'); setActiveSheet(null); };
   
   const handleEditReservation = () => { 
       if (!selectedReservation) return; 
-      const startDate = new Date(selectedReservation.startTime); 
-      const endDate = new Date(selectedReservation.endTime); 
-      const duration = (endDate.getTime() - startDate.getTime()) / 60000; 
-      setPrefillReservation({ date: selectedReservation.startTime.split('T')[0], time: selectedReservation.startTime.split('T')[1].substring(0, 5), courtId: selectedReservation.courtId, clientName: selectedReservation.clientName }); 
-      setReservationForm({ clientName: selectedReservation.clientName, clientPhone: '', clientEmail: '', depositAmount: '', depositMethod: 'Efectivo', paymentMethod: selectedReservation.paymentMethod || 'Efectivo', notes: (selectedReservation as any).notes || '', type: (selectedReservation as any).type || 'Normal', duration: duration.toString(), isRecurring: false, price: selectedReservation.price.toString() }); 
+      const start = normalizeTime(selectedReservation.startTime); 
+      const end = normalizeTime(selectedReservation.endTime); 
+      const duration = (end.getTime() - start.getTime()) / 60000; 
+      setPrefillReservation({ 
+          date: getOnlyDate(selectedReservation.startTime), 
+          time: getOnlyTime(selectedReservation.startTime), 
+          courtId: selectedReservation.courtId, 
+          clientName: selectedReservation.clientName 
+      }); 
+      setReservationForm({ 
+          clientName: selectedReservation.clientName, 
+          clientPhone: '', 
+          clientEmail: '', 
+          depositAmount: '', 
+          depositMethod: 'Efectivo', 
+          paymentMethod: selectedReservation.paymentMethod || 'Efectivo', 
+          notes: (selectedReservation as any).notes || '', 
+          type: (selectedReservation as any).type || 'Normal', 
+          duration: duration.toString(), 
+          isRecurring: false, 
+          price: selectedReservation.price.toString() 
+      }); 
       setActiveSheet('RESERVATION'); 
   };
 
@@ -2713,7 +2875,6 @@ const handleSaveReport = async (e: React.FormEvent) => {
         .eq('club_id', selectedClub.id);
 
     if (error) {
-        console.error('Error updating status:', error);
         showFeedback('Error al actualizar estado', 'error');
     } else {
         setUsersDb(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
@@ -2723,7 +2884,6 @@ const handleSaveReport = async (e: React.FormEvent) => {
 
   const handleSaveUser = async (e: React.FormEvent) => { 
       e.preventDefault(); 
-      // User creation involves Auth API + Club Members table, complex flow for simple example
       showFeedback('Para agregar usuarios, invítalos desde el panel de Supabase Auth (simulado)', 'info');
       setActiveSheet(null); 
   };
@@ -2732,7 +2892,6 @@ const handleSaveReport = async (e: React.FormEvent) => {
   const initiateDeleteUser = (id: string) => { setDeleteUserId(id); setActiveSheet('DELETE_USER_CONFIRMATION'); };
   const confirmDeleteUser = () => { showFeedback('Usuario eliminado (Simulado)', 'error'); setActiveSheet(null); };
 
-  // Role Logic
   const role = availableClubs.find(c => c.club_id === selectedClub?.id)?.role;
   const userDisplay = { 
       name: userProfile?.name || session?.user?.email?.split('@')[0] || 'Usuario', 
@@ -2741,8 +2900,6 @@ const handleSaveReport = async (e: React.FormEvent) => {
       phone: userProfile?.phone
   };
   const canAccessFullApp = role === 'OWNER' || role === 'ADMIN';
-
-  // --- Main Render Flow ---
 
   if (!session) {
       return (
@@ -2789,16 +2946,13 @@ const handleSaveReport = async (e: React.FormEvent) => {
                     <Route path="/courts" element={<CourtsPage courts={courts} onAddCourt={() => { setSelectedCourt(null); setCourtFormTypes([]); setActiveSheet('COURT'); }} onEditCourt={(c) => { setSelectedCourt(c); setCourtFormTypes(c.types); setActiveSheet('COURT'); }} onDeleteCourt={(id) => { setDeleteCourtId(id); setActiveSheet('DELETE_COURT_CONFIRMATION'); }} loading={loading} />} />
                     <Route path="/clients" element={<ClientsPage clients={clients} onAddClient={() => { setSelectedClient(null); setActiveSheet('CLIENT'); }} onEditClient={(c) => { setSelectedClient(c); setActiveSheet('CLIENT'); }} loading={loading} />} />
                     <Route path="/inventory" element={<InventoryPage inventory={inventory} onAddProduct={() => { setSelectedProduct(null); setActiveSheet('PRODUCT'); }} onEditProduct={(p) => { setSelectedProduct(p); setActiveSheet('PRODUCT'); }} onDeleteProduct={(id) => { setDeleteProductId(id); setActiveSheet('DELETE_PRODUCT_CONFIRMATION'); }} onImport={() => setActiveSheet('IMPORT_INVENTORY')} loading={loading} />} />
-                    <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} loading={loading} />} />
+                    <Route path="/reports" element={<ReportsPage onExport={() => setActiveSheet('EXPORT_OPTIONS')} reservations={reservations} courts={courts} loading={loading} />} />
                     <Route path="/my-club" element={<MyClubPage users={usersDb} onAddUser={() => { setSelectedUser(null); setActiveSheet('USER'); }} onEditUser={(u) => { setSelectedUser(u); setActiveSheet('USER'); }} onToggleStatus={handleToggleUserStatus} onDeleteUser={(id) => initiateDeleteUser(id)} reviews={reviews} clubConfig={clubConfig} onUpdateClub={handleUpdateClub} onReplyReview={(id) => { setReviewActionId(id); setActiveSheet('REPLY_REVIEW'); }} onReportReview={(id) => { setReviewActionId(id); setActiveSheet('REPORT_REVIEW'); }} selectedClub={selectedClub} onChangeClub={() => setSelectedClub(null)} loading={loading} courts={courts} />} />
                 </>
               ) : ( <Route path="*" element={<Navigate to="/" />} /> )}
             </Routes>
         </main>
 
-        {/* --- All SideSheets and Modals --- */}
-        {/* Same SideSheets as before */}
-        
         <SideSheet isOpen={activeSheet === 'RESERVATION'} onClose={closeSheet} title={selectedReservation ? "Editar Reserva" : "Nueva Reserva"}>
             <form className="space-y-6" onSubmit={handleSaveReservation}>
                <div className="space-y-4">
@@ -2807,7 +2961,18 @@ const handleSaveReport = async (e: React.FormEvent) => {
                </div>
                <div className="space-y-4 pt-4 border-t border-gray-100">
                    <Select label="Cancha" defaultValue={prefillReservation?.courtId} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, courtId: e.target.value} : null)}>{courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-                   <div className="grid grid-cols-2 gap-4"><Input type="date" label="Fecha" value={prefillReservation?.date} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, date: e.target.value} : null)} /><Input type="time" label="Hora" value={prefillReservation?.time} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, time: e.target.value} : null)} /></div>
+                   <div className="grid grid-cols-2 gap-4">
+                   <Input type="date" label="Fecha" value={prefillReservation?.date} onChange={(e) => setPrefillReservation(prev => prev ? {...prev, date: e.target.value} : null)} />
+                   <Select 
+                    label="Hora" 
+                    value={prefillReservation?.time} 
+                    onChange={(e) => setPrefillReservation(prev => prev ? {...prev, time: e.target.value} : null)}
+                    >
+                    {getAvailableTimes(prefillReservation?.courtId, prefillReservation?.date).map(time => (
+                        <option key={time} value={time}>{time}</option>
+                    ))}
+                    </Select>
+                    </div>
                    <Select label="Duración" value={reservationForm.duration} onChange={(e) => setReservationForm({...reservationForm, duration: e.target.value})}><option value="60">1 Hora</option><option value="90">1 Hora 30 min</option><option value="120">2 Horas</option></Select>
                    <Select label="Tipo de Reserva" value={reservationForm.type} onChange={(e) => setReservationForm({...reservationForm, type: e.target.value})}>{Object.keys(RESERVATION_META).map(key => (<option key={key} value={key}>{RESERVATION_META[key].label}</option>))}</Select>
                </div>
@@ -2818,8 +2983,19 @@ const handleSaveReport = async (e: React.FormEvent) => {
          <SideSheet isOpen={activeSheet === 'VIEW_RESERVATION'} onClose={closeSheet} title="Detalle de Reserva">
             {selectedReservation && (
                 <div className="space-y-6">
-                     <div className="bg-[#F8F8F8] p-4 rounded-2xl flex items-center justify-between"><div><p className="text-xs text-gray-500 font-bold uppercase">Estado</p><Badge color={selectedReservation.status === 'Confirmed' ? 'green' : selectedReservation.status === 'Cancelled' ? 'red' : 'yellow'}>{selectedReservation.status === 'Cancelled' ? 'Cancelada' : selectedReservation.status}</Badge></div><div className="text-right"><p className="text-xs text-gray-500 font-bold uppercase">Precio Total</p><p className="text-2xl font-bold text-[#1B3530]">${selectedReservation.price}</p></div></div>
-                     <div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><p className="text-sm text-gray-500">Fecha</p><p className="font-bold text-[#112320]">{new Date(selectedReservation.startTime).toLocaleDateString()}</p></div><div><p className="text-sm text-gray-500">Horario</p><p className="font-bold text-[#112320]">{selectedReservation.startTime.split('T')[1].substring(0, 5)} - {selectedReservation.endTime.split('T')[1].substring(0, 5)}</p></div></div><div><p className="text-sm text-gray-500">Cancha</p><p className="font-bold text-[#112320]">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p></div><div><p className="text-sm text-gray-500">Cliente</p><p className="font-bold text-[#112320]">{selectedReservation.clientName}</p></div><div><p className="text-sm text-gray-500">Tipo</p><Badge color="gray">{RESERVATION_META[(selectedReservation as any).type || 'Normal']?.label || (selectedReservation as any).type || 'Normal'}</Badge></div><div><p className="text-sm text-gray-500">Creado Por</p><p className="font-bold text-[#112320]">{selectedReservation.createdBy || 'Sistema'}</p></div><div><p className="text-sm text-gray-500">Método de Pago</p><p className="font-bold text-[#112320]">{selectedReservation.paymentMethod || 'No especificado'}</p></div>{(selectedReservation as any).notes && (<div><p className="text-sm text-gray-500">Notas</p><p className="text-[#112320] italic">{(selectedReservation as any).notes}</p></div>)}{selectedReservation.status === ReservationStatus.CANCELLED && selectedReservation.cancellationReason && (<div className="bg-red-50 p-4 rounded-xl border border-red-100"><p className="text-xs font-bold text-red-600 uppercase mb-1">Motivo Cancelación</p><p className="text-sm text-gray-700">{selectedReservation.cancellationReason}</p></div>)}</div>
+                     <div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Estado</p><p className="text-base text-black">{selectedReservation.status === 'Cancelled' ? 'Cancelada' : selectedReservation.status}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Fecha</p><p className="text-base text-black">{normalizeTime(selectedReservation.startTime).toLocaleDateString()}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Horario</p><p className="text-base text-black">{getOnlyTime(selectedReservation.startTime)} - {getOnlyTime(selectedReservation.endTime)}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Cancha</p><p className="text-base text-black">{courts.find(c => c.id === selectedReservation.courtId)?.name}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Cliente</p><p className="text-base text-black">{selectedReservation.clientName}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Tipo</p><p className="text-base text-black">{RESERVATION_META[(selectedReservation as any).type || 'Normal']?.label || (selectedReservation as any).type || 'Normal'}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Creado Por</p><p className="text-base text-black">{selectedReservation.createdBy || 'Sistema'}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-base text-gray-500">Método de Pago</p><p className="text-base text-black">{selectedReservation.paymentMethod || 'No especificado'}</p></div>
+                        <div className="grid grid-cols-2 gap-4 border-b py-3"><p className="text-xl font-bold text-black">TOTAL</p><p className="text-xl font-bold text-black">${selectedReservation.price}</p></div>
+                        {(selectedReservation as any).notes && (<div><p className="text-base text-gray-500">Notas</p><p className="text-black italic">{(selectedReservation as any).notes}</p></div>)}
+                        {selectedReservation.status === ReservationStatus.CANCELLED && selectedReservation.cancellationReason && (<div className="bg-red-50 p-4 rounded-xl border border-red-100"><p className="text-sm font-bold text-red-600 uppercase mb-1">Motivo Cancelación</p><p className="text-base text-gray-700">{selectedReservation.cancellationReason}</p></div>)}
+                    </div>
                      {selectedReservation.status !== ReservationStatus.CANCELLED && (<div className="pt-6 flex flex-col gap-3"><Button onClick={handleEditReservation}>Editar Reserva</Button><Button variant="destructive" onClick={initiateDeleteReservation}>Cancelar Reserva</Button></div>)}
                 </div>
             )}
@@ -2830,7 +3006,7 @@ const handleSaveReport = async (e: React.FormEvent) => {
                 <div className="space-y-2"><MultiSelect label="Deportes" options={SPORTS_LIST} selected={courtFormTypes} onChange={setCourtFormTypes} /></div>
                 <Select name="surface" label="Superficie" defaultValue={selectedCourt?.surface}>{SURFACE_LIST.map(s => <option key={s} value={s}>{s}</option>)}</Select>
                 <RadioGroup label="Forzar Inicio de Turnos" name="forceStart" defaultValue={selectedCourt?.forceStart || 'NO_ROUNDING'} options={[{ label: 'No redondear (Cualquier horario)', value: 'NO_ROUNDING' }, { label: 'En punto (XX:00)', value: 'ON_HOUR' }, { label: 'Y media (XX:30)', value: 'HALF_HOUR' }]} />
-                <div className="space-y-3"><label className="text-base font-medium text-[#112320]">Atributos</label><div className="flex flex-col gap-3"><Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} /><Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} /></div></div>
+                <div className="space-y-3"><label className="text-base font-bold text-black">Atributos</label><div className="flex flex-col gap-3"><Checkbox name="isIndoor" label="Techada" defaultChecked={selectedCourt?.isIndoor} /><Checkbox name="hasLighting" label="Iluminación" defaultChecked={selectedCourt?.hasLighting} /></div></div>
                 <div className="pt-6 flex gap-3"><Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button><Button type="submit" className="flex-1">Guardar</Button></div>
             </form>
         </SideSheet>
@@ -2845,9 +3021,9 @@ const handleSaveReport = async (e: React.FormEvent) => {
          <SideSheet isOpen={activeSheet === 'VIEW_CLIENT'} onClose={closeSheet} title="Detalle del Cliente">
             {selectedClient && (
                 <div className="space-y-6">
-                    <div className="flex items-center gap-4 mb-6"><div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] text-2xl font-bold">{selectedClient.name.substring(0,2).toUpperCase()}</div><div><h3 className="text-xl font-bold text-[#112320]">{selectedClient.name}</h3><p className="text-gray-500">{selectedClient.email}</p></div></div>
-                    <div className="grid grid-cols-2 gap-4"><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Reservas</p><p className="text-2xl font-bold text-[#112320]">{selectedClient.totalBookings}</p></Card><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-xs text-gray-500 font-bold uppercase">Gastado</p><p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent}</p></Card></div>
-                    <div className="space-y-4"><div><p className="text-sm text-gray-500">Teléfono</p><p className="font-bold text-[#112320]">{selectedClient.phone}</p></div><div><p className="text-sm text-gray-500">Última Visita</p><p className="font-bold text-[#112320]">{new Date(selectedClient.lastBooking).toLocaleDateString()}</p></div></div>
+                    <div className="flex items-center gap-4 mb-6"><div className="w-16 h-16 bg-[#1B3530] rounded-full flex items-center justify-center text-[#C7F269] text-2xl font-bold">{selectedClient.name.substring(0,2).toUpperCase()}</div><div><h3 className="text-xl font-bold text-black">{selectedClient.name}</h3><p className="text-gray-500">{selectedClient.email}</p></div></div>
+                    <div className="grid grid-cols-2 gap-4"><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-sm text-gray-500 font-bold uppercase">Reservas</p><p className="text-2xl font-bold text-black">{selectedClient.totalBookings}</p></Card><Card className="p-4 bg-[#F8F8F8] border-none"><p className="text-sm text-gray-500 font-bold uppercase">Gastado</p><p className="text-2xl font-bold text-[#1B3530]">${selectedClient.totalSpent}</p></Card></div>
+                    <div className="space-y-4"><div><p className="text-base text-gray-500">Teléfono</p><p className="font-bold text-black">{selectedClient.phone}</p></div><div><p className="text-base text-gray-500">Última Visita</p><p className="font-bold text-black">{normalizeTime(selectedClient.lastBooking).toLocaleDateString()}</p></div></div>
                     <div className="pt-6"><Button className="w-full" onClick={() => { openBookClient(selectedClient); }}>Nueva Reserva</Button></div>
                 </div>
             )}
@@ -2864,27 +3040,21 @@ const handleSaveReport = async (e: React.FormEvent) => {
         <SideSheet isOpen={activeSheet === 'USER'} onClose={closeSheet} title={selectedUser ? "Editar Usuario" : "Agregar Usuario"}>
             <form className="space-y-6" onSubmit={handleSaveUser}>
                 <Input label="Email" placeholder="usuario@email.com" defaultValue={selectedUser?.email} required disabled={!!selectedUser} />
-                {!selectedUser && <p className="text-xs text-gray-500">Se enviará una invitación a este correo.</p>}
+                {!selectedUser && <p className="text-sm text-gray-500">Se enviará una invitación a este correo.</p>}
                 <Select label="Rol" defaultValue={selectedUser?.role || 'RECEPTIONIST'}>
                     <option value="ADMIN">Encargado (Admin)</option>
                     <option value="RECEPTIONIST">Empleado (Recepción)</option>
                 </Select>
                 {selectedUser && (
                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                      <p className="text-sm text-yellow-800">Para cambiar la contraseña, el usuario debe hacerlo desde su perfil.</p>
+                      <p className="text-base text-yellow-800">Para cambiar la contraseña, el usuario debe hacerlo desde su perfil.</p>
                    </div>
                 )}
-                
                 <div className="pt-6 flex flex-col gap-3">
                     <div className="flex gap-3">
                        <Button type="button" variant="ghost" onClick={closeSheet} className="flex-1">Cancelar</Button>
                        <Button type="submit" className="flex-1">{selectedUser ? 'Guardar Cambios' : 'Enviar Invitación'}</Button>
                     </div>
-                    {selectedUser && selectedUser.role !== 'OWNER' && (
-                        <Button type="button" variant="destructive" className="w-full mt-2" onClick={() => { closeSheet(); initiateDeleteUser(selectedUser.id); }}>
-                            Eliminar Usuario
-                        </Button>
-                    )}
                 </div>
             </form>
         </SideSheet>
@@ -2892,14 +3062,14 @@ const handleSaveReport = async (e: React.FormEvent) => {
         <SideSheet isOpen={activeSheet === 'REPLY_REVIEW'} onClose={closeSheet} title="Responder Reseña">
         <form className="space-y-6" onSubmit={handleSaveReply}>
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <p className="text-xs text-gray-500 mb-1">Comentario del Cliente:</p>
-                <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+                <p className="text-sm text-gray-500 mb-1">Comentario del Cliente:</p>
+                <p className="text-base text-gray-700 italic">"{(reviews.find(r => (r as any).id === reviewActionId) as any)?.comment}"</p>
             </div>
             <div className="space-y-2">
-                <label className="text-base font-medium text-[#112320]">Tu Respuesta</label>
+                <label className="text-base font-medium text-black">Tu Respuesta</label>
                 <textarea 
                     name="replyText" 
-                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" 
+                    className="w-full rounded-2xl border border-gray-300 bg-white p-4 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none h-32" 
                     placeholder="Escribe una respuesta amable..." 
                     required
                 ></textarea>
@@ -2914,8 +3084,8 @@ const handleSaveReport = async (e: React.FormEvent) => {
     <SideSheet isOpen={activeSheet === 'REPORT_REVIEW'} onClose={closeSheet} title="Reportar Reseña">
         <form className="space-y-6" onSubmit={handleSaveReport}>
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <p className="text-xs text-gray-500 mb-1">Comentario a Reportar:</p>
-                <p className="text-sm text-gray-700 italic">"{reviews.find(r => r.id === reviewActionId)?.comment}"</p>
+                <p className="text-sm text-gray-500 mb-1">Comentario a Reportar:</p>
+                <p className="text-base text-gray-700 italic">"{(reviews.find(r => (r as any).id === reviewActionId) as any)?.comment}"</p>
             </div>
             <div className="space-y-2">
                 <RadioGroup 
@@ -2941,9 +3111,9 @@ const handleSaveReport = async (e: React.FormEvent) => {
              <div className="space-y-4">
                  <p className="text-gray-600 mb-4">Selecciona el formato de exportación:</p>
                  <div className="grid grid-cols-1 gap-3">
-                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('EXCEL')}><span className="font-bold text-[#112320]">Excel (.xlsx)</span><FileSpreadsheet className="text-green-600" /></button>
-                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('CSV')}><span className="font-bold text-[#112320]">CSV (.csv)</span><FileText className="text-blue-600" /></button>
-                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('PDF')}><span className="font-bold text-[#112320]">PDF (.pdf)</span><FileType className="text-red-600" /></button>
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-300 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('EXCEL')}><span className="font-bold text-black">Excel (.xlsx)</span><FileSpreadsheet className="text-green-600" /></button>
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-300 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('CSV')}><span className="font-bold text-black">CSV (.csv)</span><FileText className="text-blue-600" /></button>
+                    <button className="flex items-center justify-between p-4 rounded-xl border border-gray-300 hover:border-[#1B3530] hover:bg-[#F8F8F8] transition-all group" onClick={() => handleExport('PDF')}><span className="font-bold text-black">PDF (.pdf)</span><FileType className="text-red-600" /></button>
                  </div>
              </div>
         </Modal>
@@ -2952,8 +3122,8 @@ const handleSaveReport = async (e: React.FormEvent) => {
             <div className="space-y-4">
                 <p className="text-gray-600">Sube un archivo CSV con la lista de productos para importar masivamente.</p>
                 <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Upload size={32} className="text-gray-400 mb-2"/>
-                    <p className="text-sm font-medium text-gray-600">Click para seleccionar archivo</p>
+                    <Upload size={32} className="text-gray-500 mb-2"/>
+                    <p className="text-base font-medium text-gray-600">Click para seleccionar archivo</p>
                     <input type="file" accept=".csv" className="opacity-0 absolute inset-0 cursor-pointer" />
                 </div>
                 <div className="flex gap-3 justify-end pt-2">
@@ -3006,7 +3176,7 @@ const handleSaveReport = async (e: React.FormEvent) => {
                  </div>
                  {cancellationReason === 'OTHER' && (
                      <textarea 
-                        className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#1B3530]"
+                        className="w-full border border-gray-300 rounded-lg p-3 text-base focus:outline-none focus:border-[#1B3530]"
                         placeholder="Especificar motivo..."
                         value={cancellationOtherText}
                         onChange={(e) => setCancellationOtherText(e.target.value)}

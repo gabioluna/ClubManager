@@ -7,9 +7,9 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 }) => {
   const baseStyles = "inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold transition-all focus:outline-none disabled:opacity-50 disabled:pointer-events-none active:scale-95";
   const variants = {
-    primary: "bg-[#1B3530] text-[#C7F269] hover:bg-[#112320] shadow-md hover:shadow-lg",
-    secondary: "bg-white text-[#1B3530] border border-gray-200 hover:bg-[#F8F8F8] hover:border-gray-300 shadow-sm",
-    ghost: "text-[#1B3530] hover:bg-[#F8F8F8]",
+    primary: "bg-[#003F37] text-[#C4F100] hover:bg-[#112320] shadow-md hover:shadow-lg",
+    secondary: "bg-white text-[#003F37] border border-gray-300 hover:bg-[#F8F8F8] hover:border-gray-300 shadow-sm",
+    ghost: "text-[#003F37] hover:bg-[#F8F8F8]",
     destructive: "bg-red-50 text-red-600 hover:bg-red-100"
   };
 
@@ -23,7 +23,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string, icon?: React.ElementType }> = ({ label, icon: Icon, className = '', ...props }) => (
   <div className="space-y-1.5 w-full">
-    {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+    {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
     <div className="relative">
       {Icon && (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
@@ -31,7 +31,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
         </div>
       )}
       <input 
-        className={`w-full rounded-2xl border border-gray-200 bg-white py-3 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'} ${className}`}
+        className={`w-full rounded-2xl border border-gray-300 bg-white py-3 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'} ${className}`}
         {...props}
       />
     </div>
@@ -40,9 +40,9 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
 
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }> = ({ label, className = '', ...props }) => (
   <div className="space-y-1.5 w-full">
-    {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+    {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
     <textarea
-      className={`w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none ${className}`}
+      className={`w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all resize-none ${className}`}
       {...props}
     />
   </div>
@@ -50,10 +50,10 @@ export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, className = '', children, ...props }) => (
   <div className="space-y-1.5 w-full">
-    {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+    {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
     <div className="relative">
         <select 
-        className={`w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all appearance-none ${className}`}
+        className={`w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all appearance-none ${className}`}
         {...props}
         >
         {children}
@@ -93,14 +93,14 @@ export const AutocompleteInput: React.FC<{
 
   return (
     <div className="space-y-1.5 w-full" ref={containerRef}>
-      {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+      {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
       <div className="relative">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
           <Search size={18} />
         </div>
         <input
           type="text"
-          className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all"
+          className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-11 pr-4 text-base placeholder:text-gray-400 focus:border-[#1B3530] focus:outline-none focus:ring-1 focus:ring-[#1B3530] transition-all"
           placeholder={placeholder}
           value={value}
           onChange={(e) => {
@@ -153,7 +153,7 @@ export const Switch: React.FC<{ checked: boolean; onChange: (checked: boolean) =
     onClick={() => !disabled && onChange(!checked)}
     className={`
       relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3530] focus:ring-offset-2
-      ${checked ? 'bg-[#1B3530]' : 'bg-gray-200'}
+      ${checked ? 'bg-[#003F37]' : 'bg-gray-200'}
       ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
     `}
   >
@@ -175,7 +175,7 @@ export const RadioGroup: React.FC<{
 }> = ({ label, name, options, defaultValue, onChange }) => {
   return (
     <div className="space-y-2">
-      {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+      {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
       <div className="flex flex-col gap-2">
         {options.map((opt) => (
           <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
@@ -224,11 +224,11 @@ export const MultiSelect: React.FC<{
 
   return (
     <div className="space-y-1.5" ref={containerRef}>
-      {label && <label className="text-base font-medium text-[#112320]">{label}</label>}
+      {label && <label className="text-base font-bold text-[#112320]">{label}</label>}
       
       <div className="relative">
         <div 
-          className="w-full min-h-[46px] rounded-2xl border border-gray-200 bg-white px-3 py-3 text-base focus-within:border-[#1B3530] focus-within:ring-1 focus-within:ring-[#1B3530] transition-all cursor-pointer flex flex-wrap gap-2 items-center"
+          className="w-full min-h-[46px] rounded-2xl border border-gray-300 bg-white px-3 py-3 text-base focus-within:border-[#1B3530] focus-within:ring-1 focus-within:ring-[#1B3530] transition-all cursor-pointer flex flex-wrap gap-2 items-center"
           onClick={() => setIsOpen(!isOpen)}
         >
           {selected.length === 0 && <span className="text-gray-400 px-1">Seleccionar...</span>}
@@ -278,7 +278,7 @@ export const Tooltip: React.FC<{ children: React.ReactNode, text: string, show: 
   return (
     <div className="relative flex items-center group">
       {children}
-      <div className="absolute left-full ml-3 px-3 py-1.5 bg-[#1B3530] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-lg">
+      <div className="absolute ml-2 left-full px-3 py-1.5 bg-[#003F37] text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-lg">
         {text}
       </div>
     </div>
@@ -288,7 +288,7 @@ export const Tooltip: React.FC<{ children: React.ReactNode, text: string, show: 
 export const Card: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = '' }) => {
   const paddingClass = className.includes('p-') || className.includes('px-') || className.includes('py-') ? '' : 'p-6';
   return (
-    <div className={`rounded-3xl border border-gray-200 ${paddingClass} ${className.includes('bg-') ? '' : 'bg-white'} ${className} shadow-sm`}>
+    <div className={`rounded-3xl border border-gray-300 ${paddingClass} ${className.includes('bg-') ? '' : 'bg-white'} ${className} shadow-sm`}>
       {children}
     </div>
   );
@@ -298,10 +298,10 @@ export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'blu
   const colors = {
     green: "bg-emerald-50 text-emerald-700 border-emerald-100",
     blue: "bg-blue-50 text-blue-700 border-blue-100",
-    gray: "bg-gray-50 text-gray-600 border-gray-200",
+    gray: "bg-gray-50 text-gray-600 border-gray-300",
     red: "bg-red-50 text-red-700 border-red-100",
     yellow: "bg-yellow-50 text-yellow-700 border-yellow-100",
-    black: "bg-[#1B3530] text-white border-[#112320]",
+    black: "bg-[#003F37] text-white border-[#112320]",
     lime: "bg-[#C7F269] text-[#1B3530] border-[#C7F269]"
   };
   return (
@@ -393,7 +393,7 @@ export const Snackbar: React.FC<SnackbarProps> = ({ message, type = 'success', i
   if (!isOpen) return null;
 
   const typeStyles = {
-    success: 'bg-[#1B3530] text-[#C7F269] border-[#C7F269]/20',
+    success: 'bg-[#003F37] text-[#C4F100] border-[#C7F269]/20',
     error: 'bg-red-600 text-white border-red-700',
     info: 'bg-blue-600 text-white border-blue-700'
   };

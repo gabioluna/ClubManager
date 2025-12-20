@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.API_KEY || '';
@@ -19,13 +20,13 @@ export const analyzeFinancials = async (data: any) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
     return response.text;
-  } catch (error) {
-    console.error("Error calling Gemini:", error);
+  } catch (error: any) {
+    console.error("Error calling Gemini:", error?.message || error);
     return "No se pudo generar el análisis en este momento. Verifique su conexión o clave API.";
   }
 };

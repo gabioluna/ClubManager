@@ -9,11 +9,11 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
     <NavLink 
       to={to}
       className={({ isActive }) => 
-        `flex items-center gap-4 px-4 py-3.5 rounded-full text-base font-medium transition-all duration-200 ${
+        `flex items-center gap-4 px-4 py-4 rounded-full text-base font-medium transition-all duration-200 ${
           isActive 
-            ? "text-[#1B3530] bg-[#C7F269] font-bold shadow-sm" 
-            : "text-gray-500 hover:text-[#1B3530] hover:bg-[#F8F8F8]"
-        } ${collapsed ? 'justify-center px-2' : ''}`
+            ? "text-[#003F37] bg-[#C4F100] font-bold" 
+            : "text-[#003F37] hover:bg-[#F8F8F8]"
+        } ${collapsed ? 'justify-center' : ''}`
       }
     >
       <Icon size={22} strokeWidth={1.5} className="flex-shrink-0" />
@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onChangeClub, user }
 
   return (
     <aside 
-      className={`${collapsed ? 'w-[88px]' : 'w-[280px]'} border-r border-gray-200 bg-white h-screen sticky top-0 flex flex-col p-4 transition-all duration-300 flex-shrink-0 z-[60] shadow-sm`}
+      className={`${collapsed ? 'w-[88px] justify-center items-center' : 'w-[280px]'} border-r border-gray-300 bg-white h-screen sticky top-0 flex flex-col p-4 transition-all duration-300 flex-shrink-0 z-[60]`}
     >
       <div className={`mb-10 px-2 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center gap-3">
@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onChangeClub, user }
         <NavItem to="/help" icon={HelpCircle} label="Ayuda" collapsed={collapsed} />
       </nav>
 
-      <div className="pt-6 border-t border-gray-200 mt-4 relative" ref={menuRef}>
+      <div className="pt-6 border-t border-gray-300 mt-4 relative" ref={menuRef}>
           <button 
             onClick={() => setShowUserMenu(!showUserMenu)}
             className={`flex items-center gap-3 px-2 py-2 rounded-full hover:bg-[#F8F8F8] transition-colors group w-full ${collapsed ? 'justify-center' : ''} ${showUserMenu ? 'bg-[#F8F8F8]' : ''}`}
